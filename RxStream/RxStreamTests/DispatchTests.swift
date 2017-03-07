@@ -9,6 +9,11 @@
 import XCTest
 import Rx
 
+private class WeakBox<T: AnyObject> {
+  weak var value: T?
+  init(value: T) { self.value = value }
+}
+
 class DispatchTests: XCTestCase {
   
   func testDelayedDispatch() {
@@ -110,6 +115,37 @@ class DispatchTests: XCTestCase {
       }
     }
     waitForExpectations(timeout: 5.0)
+  }
+  
+  func testReferenceCycleBreak() {
+    var chains = [WeakBox<ExecutionChain>]()
+    let expectChainCompletion = expectation(description: "Chain has completed")
+    let expectTimeout = expectation(description: "Deinit Timeout")
+    
+    var chain = Dispatch.async(on: .main).execute { }
+    chains.append(WeakBox(value: chain))
+    
+    chain = chain.then(.async(on: .background)) {  }
+    chains.append(WeakBox(value: chain))
+    
+    chain = chain.then(.async(on: .main)) {  }
+    chains.append(WeakBox(value: chain))
+    
+    chain = chain.then(.async(on: .background)) {
+      expectChainCompletion.fulfill()
+    }
+    chains.append(WeakBox(value: chain))
+    
+    chain = Dispatch.after(delay: 1.0, on: .main).execute {
+      expectTimeout.fulfill()
+    }
+    
+    waitForExpectations(timeout: 3.0)
+    
+    XCTAssertNil(chains[0].value)
+    XCTAssertNil(chains[1].value)
+    XCTAssertNil(chains[2].value)
+    XCTAssertNil(chains[3].value)
   }
   
 }

@@ -63,6 +63,7 @@ import Foundation
  - warning: Dispatch will attempt to detect re-entry on synchronous queues. It does so by using `setSpecific` and `getSpecific` on the serial queues created with this system.  However, it's always recommended to use good design when using serial queues to minimize the risk of reentry locks.  Reentry lock can still occur if you nest sync operations across threads.
 */
 public enum Dispatch {
+  
   /// Dispatches asynchronously on the Queue provided
   case async(on: Queue)
   
@@ -206,7 +207,7 @@ public enum QueueType {
 open class CustomQueue {
   fileprivate let queueT: DispatchQueue
   fileprivate let type: QueueType
-  fileprivate let key: String = CFUUIDCreateString(nil, CFUUIDCreate(nil)) as String
+  fileprivate let key: String = String.newUUID()
   fileprivate let dispatchKey = DispatchSpecificKey<String>()
   
   /// Mus be initialized with a name and a QueueType

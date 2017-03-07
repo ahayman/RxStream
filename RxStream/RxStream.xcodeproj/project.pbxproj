@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		651477D81E6E17A800190A44 /* DispatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651477D71E6E17A800190A44 /* DispatchTests.swift */; };
+		651478001E6F189700190A44 /* Functional.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651477FF1E6F189700190A44 /* Functional.swift */; };
+		651478021E6F2F1600190A44 /* Throttle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651478011E6F2F1600190A44 /* Throttle.swift */; };
+		651478041E6F42A200190A44 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651478031E6F42A200190A44 /* StringExtensions.swift */; };
 		653271B31E5F2BA300E3DE9C /* Rx.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 653271A91E5F2BA300E3DE9C /* Rx.framework */; };
 		653271BA1E5F2BA300E3DE9C /* RxStream.h in Headers */ = {isa = PBXBuildFile; fileRef = 653271AC1E5F2BA300E3DE9C /* RxStream.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		653271C41E5F2C6100E3DE9C /* Stream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653271C31E5F2C6100E3DE9C /* Stream.swift */; };
@@ -26,6 +29,9 @@
 
 /* Begin PBXFileReference section */
 		651477D71E6E17A800190A44 /* DispatchTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DispatchTests.swift; sourceTree = "<group>"; };
+		651477FF1E6F189700190A44 /* Functional.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Functional.swift; sourceTree = "<group>"; };
+		651478011E6F2F1600190A44 /* Throttle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Throttle.swift; sourceTree = "<group>"; };
+		651478031E6F42A200190A44 /* StringExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
 		653271A91E5F2BA300E3DE9C /* Rx.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Rx.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		653271AC1E5F2BA300E3DE9C /* RxStream.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RxStream.h; sourceTree = "<group>"; };
 		653271AD1E5F2BA300E3DE9C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -78,7 +84,10 @@
 				653271AC1E5F2BA300E3DE9C /* RxStream.h */,
 				653271AD1E5F2BA300E3DE9C /* Info.plist */,
 				653271C31E5F2C6100E3DE9C /* Stream.swift */,
+				651478011E6F2F1600190A44 /* Throttle.swift */,
 				653271C51E5F2C6E00E3DE9C /* Dispatch.swift */,
+				651477FF1E6F189700190A44 /* Functional.swift */,
+				651478031E6F42A200190A44 /* StringExtensions.swift */,
 			);
 			path = RxStream;
 			sourceTree = "<group>";
@@ -205,8 +214,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				651478001E6F189700190A44 /* Functional.swift in Sources */,
 				653271C41E5F2C6100E3DE9C /* Stream.swift in Sources */,
+				651478041E6F42A200190A44 /* StringExtensions.swift in Sources */,
 				653271C61E5F2C6E00E3DE9C /* Dispatch.swift in Sources */,
+				651478021E6F2F1600190A44 /* Throttle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
