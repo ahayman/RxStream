@@ -64,14 +64,16 @@ public class Stream<T> {
   /// Storage of all down streams.
   private var downStreams = [EventProcessor]()
   
-  typealias EventWork = (_ event: Event<T>, _ complete: () -> Void) -> Void
+  /// Defines work that should be done for an event.  The event is passed in, and the completion handler is called when the work has completed.
+  typealias EventWork<U, T> = (_ prior: U?, _ next: U, _ inStream: Stream<T>, _ complete: (T?) -> Void) -> Void
+  
+  /// The amount of work currently in progress.  Mostly, it's used to keep track of running work so that termination events are only processed after
   private var currentWork: UInt = 0
-  private var terminateWork: (event: Event<T>, work: EventWork)?
   
   /// The queue contains the prior value, if any, and the current value.  The queue will be `nil` when the stream is first created.
   private var queue: (prior: T?, current: T)?
   
-  /// When the tream is terminated, this will contain the Terminate reason.  It's primarily used to replay terminate events downstream.
+  /// When the stream is terminated, this will contain the Terminate reason.  It's primarily used to replay terminate events downstream when a stream is attached.
   private var termination: Termination? {
     guard case let .terminated(terminate) = state else { return nil }
     return terminate
@@ -97,18 +99,17 @@ public class Stream<T> {
    - note: This discussion really only applies when you care how multiple chains are processed.  99% of the time you don't need to worry abou it since an individual chain will always process in order and that covers the majority use cases.
    - warning: A dispatch will not forcefully propogate downstream, but it will propogate into newly attached streams. So any existing downsteams won't be affected by changing the dispatch, but any streams attached to this stream after the dispatch is set will.
    */
-  public var dispatch = Dispatch.inline
-  
-  /// Passthrough: Allows you to set the dispatch as part of a chain operation. Returns `self` to continue the chain.
-  public func dispatchOn(_ dispatch: Dispatch) -> Self {
-    self.dispatch = dispatch
-    return self
-  }
+  internal(set) public var dispatch = Dispatch.inline
   
   /// Convience variable returning whether the stream is currently active
   public var isActive: Bool { return state == .active }
   
-  public var throttle: Throttle?
+  /// A Throttle is used to restrict the flow of information that moves through the stream.
+  internal(set) public var throttle: Throttle?
+  
+  init(dispatch: Dispatch) {
+    self.dispatch = dispatch
+  }
   
   /**
    Used internally by concrete subclasses to append downstream processors.
@@ -145,9 +146,8 @@ public class Stream<T> {
    Used internally to push events into the stream. This will update the stream's state and push the event further down stream.
    - warning: if the stream is not active, the event will be ignored.
   */
-  func push(event: Event<T>) {
+  private func push(event: Event<T>) {
     dispatch.execute {
-      guard self.isActive else { return }
       
       // Push the event down stream
       self.downStreams = self.downStreams.filter{ return $0(self.queue?.current, event) }
@@ -163,6 +163,16 @@ public class Stream<T> {
     }
   }
   
+  func terminate(reason: Termination) {
+    dispatch.execute {
+      guard self.isActive else { return }
+      self.state = .terminated(reason: reason)
+      if self.currentWork > 0 {
+        self.push(event: .terminate(reason: reason))
+      }
+    }
+  }
+  
   /**
    This is an internal function used to process event work.  It's important that all processing work done for a stream use this function.
    The main point of this is to ensure that work is correctly dispatched and throttled.
@@ -170,29 +180,31 @@ public class Stream<T> {
    
    - parameter event: The event that should be processed
    - parameter work: The work processor that should process the event.
+   
+   - warning: All work for a stream should use this function to process events.
    */
-  func process(event: Event<T>, withWork work: @escaping EventWork) {
+  func process<U>(prior: U?, next: Event<U>, withWork work: @escaping EventWork<U, T>) -> Bool {
+    guard isActive else { return false }
     dispatch.execute {
-      // If there is terminate work, then a terminate signal has already ocurred and we cannot process more work
-      guard self.terminateWork == nil else { return }
       // Make sure we're receiving data, otherwise it's a termination event and we should set the terminateWork
-      guard case .next = event else {
-        self.terminateWork = (event, work)
-        return
+      let nextValue: U
+      switch next {
+      case let .next(value): nextValue = value
+      case let .terminate(reason): return self.terminate(reason: reason)
       }
       
       self.currentWork += 1
       
       // Abstract out the process work so it can be done inline or applied to a throttle
       let workProcessor: ThrottledWork = { completion in
-        work(event) {
+        work(prior, nextValue, self) { result in
+          result >>? { self.push(event: .next($0)) }
           self.dispatch.execute {
             self.currentWork -= 1
             
-            // If all current work is done and there is pending terminate work, we want to process the pending terminate work
-            if self.currentWork == 0, let work = self.terminateWork{
-              work.work(work.event){ }
-              self.terminateWork = nil
+            // If all current work is done and the stream is terminated, we need to push that termination downstream
+            if self.currentWork == 0, let reason = self.termination {
+              self.push(event: .terminate(reason: reason))
             }
             completion()
           }
@@ -205,7 +217,44 @@ public class Stream<T> {
         workProcessor { }
       }
     }
-    
+    return true
+  }
+  
+}
+
+// MARK: Mutating Functions
+extension Stream {
+  
+  /** 
+   Allows you to set the dispatch as part of a chain operation. Returns `self` to continue the chain.
+   Dispatches are propogated down _new_ streams, but any existing stream won't be affected by the dispatch.
+   */
+  public func dispatchOn(_ dispatch: Dispatch) -> Self {
+    self.dispatch = dispatch
+    return self
+  }
+  
+}
+
+// MARK: Observation functions
+extension Stream {
+  
+  /**
+   ## Non-branching
+   While this function returns self for easy chaining, it does _not_ return a new stream.
+   Attach a handler to this function that will be called when the stream is terminated.
+   
+   - parameter callback: The callback handler to be called when the stream is terminated
+   
+   - returns: Self
+  */
+  public func onTerminate(_ callback: @escaping (Termination) -> Void) -> Self {
+    appendDownStream(replay: true) { (_, event) -> Bool in
+      guard case let .terminate(reason) = event else { return true }
+      callback(reason)
+      return false
+    }
+    return self
   }
   
 }
