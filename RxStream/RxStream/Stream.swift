@@ -51,27 +51,50 @@ enum Event<T> {
   case next(T)
   /// Stream terminate signal
   case terminate(reason: Termination)
+  
+  @discardableResult func onValue(_ handler: (T) -> Void) -> Event<T> {
+    if case let .next(value) = self { handler(value) }
+    return self
+  }
+  
+  @discardableResult func onTerminate(_ handler: (Termination) -> Void) -> Event<T> {
+    if case let .terminate(reason) = self { handler(reason) }
+    return self
+  }
 }
+
+/** 
+ An event processor takes an event (along with an optional prior), processes it, and passes it into the down stream.
+ It should return a `Bool` value to indicate whether the down stream is still active.  It not active, the processor will be removed.
+ */
+private typealias EventProcessor<T> = (_ prior: T?, _ next: Event<T>) -> Bool
+
+/// Defines work that should be done for an event.  The event is passed in, and the completion handler is called when the work has completed.
+typealias EventWork<U, T> = (_ prior: U?, _ next: Event<U>, _ complete: ([Event<T>]?) -> Void) -> Void
+  
+internal protocol BaseStream : class {
+  associatedtype Data
+  var dispatch: Dispatch { get set }
+  var replay: Bool { get set }
+  func process<U>(prior: U?, next: Event<U>, withWork work: @escaping EventWork<U, Data>) -> Bool
+}
+extension Stream : BaseStream { }
 
 /// Base class for Streams.  It cannot be instantiated directly and should not generally be used as a type directly.
 public class Stream<T> {
-  /** 
-   An event processor takes an event (along with an optional prior), processes it, and passes it into the down stream.
-   It should return a `Bool` value to indicate whether the down stream is still active.  It not active, the processor will be removed.
-  */
-  typealias EventProcessor = (_ prior: T?, _ next: Event<T>) -> Bool
+  typealias Data = T
   
   /// Storage of all down streams.
-  private var downStreams = [EventProcessor]()
-  
-  /// Defines work that should be done for an event.  The event is passed in, and the completion handler is called when the work has completed.
-  typealias EventWork<U, T> = (_ prior: U?, _ next: U, _ inStream: Stream<T>, _ complete: (T?) -> Void) -> Void
+  private var downStreams = [EventProcessor<T>]()
   
   /// The amount of work currently in progress.  Mostly, it's used to keep track of running work so that termination events are only processed after
   private var currentWork: UInt = 0
   
   /// The queue contains the prior value, if any, and the current value.  The queue will be `nil` when the stream is first created.
   private var queue: (prior: T?, current: T)?
+  
+  /// If this is set `true`, the next stream attached will have the current values replayed into it, if any.
+  var replay: Bool = false
   
   /// When the stream is terminated, this will contain the Terminate reason.  It's primarily used to replay terminate events downstream when a stream is attached.
   private var termination: Termination? {
@@ -107,10 +130,6 @@ public class Stream<T> {
   /// A Throttle is used to restrict the flow of information that moves through the stream.
   internal(set) public var throttle: Throttle?
   
-  init(dispatch: Dispatch) {
-    self.dispatch = dispatch
-  }
-  
   /**
    Used internally by concrete subclasses to append downstream processors.
    A processor will normally be a closure that captures the subclassed `Stream`, processes the data (possibly transforms it), and passes it on to the down stream.
@@ -120,8 +139,10 @@ public class Stream<T> {
    - parameter processor: The processor should take an event, process it and pass it into a capture downstream
    - note: Termination will always replay. We don't want an active downstream that's attached to an inactive one.
    */
-  func appendDownStream(replay: Bool, processor: @escaping EventProcessor) {
+  fileprivate func appendDownStream(processor: @escaping EventProcessor<T>) {
     dispatch.execute {
+      let replay = self.replay
+      self.replay = false
       
       // If replay is specified, and there are items in the queue, pass those into the processor
       if
@@ -187,18 +208,16 @@ public class Stream<T> {
     guard isActive else { return false }
     dispatch.execute {
       // Make sure we're receiving data, otherwise it's a termination event and we should set the terminateWork
-      let nextValue: U
-      switch next {
-      case let .next(value): nextValue = value
-      case let .terminate(reason): return self.terminate(reason: reason)
+      if case let .terminate(reason) = next {
+        self.terminate(reason: reason)
       }
       
       self.currentWork += 1
       
       // Abstract out the process work so it can be done inline or applied to a throttle
       let workProcessor: ThrottledWork = { completion in
-        work(prior, nextValue, self) { result in
-          result >>? { self.push(event: .next($0)) }
+        work(prior, next) { result in
+          result >>? { $0.forEach{ self.push(event: $0) } }
           self.dispatch.execute {
             self.currentWork -= 1
             
@@ -229,8 +248,17 @@ extension Stream {
    Allows you to set the dispatch as part of a chain operation. Returns `self` to continue the chain.
    Dispatches are propogated down _new_ streams, but any existing stream won't be affected by the dispatch.
    */
-  public func dispatchOn(_ dispatch: Dispatch) -> Self {
+  @discardableResult public func dispatchOn(_ dispatch: Dispatch) -> Self {
     self.dispatch = dispatch
+    return self
+  }
+  
+  /**
+   This will cause the last value pushed into the next stream attached to this one.
+   - note: The replay will chain, so that the attached stream will also replay it's value into the next stream attached to it.  This causes the replay to propogate down the chain.
+  */
+  public func replayNext(_ replay: Bool = true) -> Self {
+    self.replay = true
     return self
   }
   
@@ -249,12 +277,338 @@ extension Stream {
    - returns: Self
   */
   public func onTerminate(_ callback: @escaping (Termination) -> Void) -> Self {
-    appendDownStream(replay: true) { (_, event) -> Bool in
+    appendDownStream { (_, event) -> Bool in
       guard case let .terminate(reason) = event else { return true }
       callback(reason)
       return false
     }
     return self
+  }
+  
+}
+
+// Mark: Work Generation
+extension Stream {
+  
+  fileprivate func appendStream<U: BaseStream>(_ stream: U, withWork work: @escaping EventWork<T,U.Data>) -> U {
+    stream.dispatch = dispatch
+    stream.replay = replay
+    self.appendDownStream { (prior, next) -> Bool in
+      stream.process(prior: prior, next: next, withWork: work)
+    }
+    return stream
+  }
+  
+  func append<U: BaseStream>(stream: U, handler: @escaping (U.Data) -> Bool) -> U where U.Data == T {
+    return appendStream(stream) { (_, next, completion) in
+      var events = [next]
+      next.onValue { value in
+        if !handler(value) {
+          events.append(.terminate(reason: .completed))
+        }
+      }
+      completion(events)
+    }
+  }
+  
+  func append<U: BaseStream>(stream: U, handler: @escaping (U.Data?, U.Data) -> Bool) -> U where U.Data == T {
+    return appendStream(stream) { (prior, next, completion) in
+      var events = [next]
+      next.onValue { value in
+        if !handler(prior, value) {
+          events.append(.terminate(reason: .completed))
+        }
+      }
+      completion(events)
+    }
+  }
+  
+  func append<U: BaseStream>(stream: U, withMapper mapper: @escaping (T) -> U.Data?) -> U {
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ mapper($0) >>? { completion([.next($0)]) } }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func append<U: BaseStream>(stream: U, withMapper mapper: @escaping (T) -> Result<U.Data>) -> U {
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue {
+          mapper($0)
+            .onSuccess{ completion([.next($0)]) }
+            .onFailure{ completion([.terminate(reason: .error($0))]) }
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func append<U: BaseStream>(stream: U, withMapper mapper: @escaping (T, (Result<U.Data>) -> Void) -> Void) -> U {
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue {
+          mapper($0) { $0
+            .onSuccess{ completion([.next($0)]) }
+            .onFailure{ completion([.terminate(reason: .error($0))]) }
+          }
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func append<U: BaseStream>(stream: U, withFlatMapper mapper: @escaping (T) -> [U.Data]) -> U {
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ completion(mapper($0).map{ .next($0) }) }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func append<U: BaseStream>(stream: U, initial: U.Data, withScanner scanner: @escaping (U.Data, T) -> U.Data) -> U {
+    var reduction: U.Data = initial
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{
+          reduction = scanner(reduction, $0)
+          completion([.next(reduction)])
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendFirst<U: BaseStream>(stream: U) -> U where U.Data == T {
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ completion([.next($0), .terminate(reason: .completed)]) }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendFirst<U: BaseStream>(stream: U, count: Int, partial: Bool) -> U where U.Data == [T] {
+    let first = max(1, count)
+    var buffer = [T]()
+    buffer.reserveCapacity(first)
+    return appendStream(stream) { (_, next, completion) in
+      var events: [Event<[T]>] = []
+      next
+        .onValue{
+          buffer.append($0)
+          if buffer.count >= count {
+            events.append(.next(buffer))
+            events.append(.terminate(reason: .completed))
+          }
+        }
+        .onTerminate { _ in
+          guard partial else { return }
+          events.append(.next(buffer))
+      }
+      completion(events)
+    }
+  }
+  
+  func appendLast<U: BaseStream>(stream: U) -> U where U.Data == T {
+    var last: Event<U.Data>? = nil
+    return appendStream(stream) { (_, next, completion) in
+      switch next {
+      case .next:
+        last = next
+        completion(nil)
+      case .terminate:
+        completion(last >>? { [$0] })
+      }
+    }
+  }
+  
+  func appendLast<U: BaseStream>(stream: U, count: Int, partial: Bool) -> U where U.Data == [T] {
+    var buffer = CircularBuffer<T>(size: max(1, count))
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{
+          buffer.append($0)
+          completion(nil)
+        }
+        .onTerminate{ _ in
+          guard buffer.count == count || partial else { return completion(nil) }
+          completion([.next(buffer.map{ $0 })])
+      }
+    }
+  }
+  
+  func appendBuffer<U: BaseStream>(stream: U, bufferSize: Int, partial: Bool) -> U where U.Data == [T] {
+    let size = Int(max(1, bufferSize)) - 1
+    var buffer: U.Data = []
+    buffer.reserveCapacity(size)
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue {
+          if buffer.count < size {
+            buffer.append($0)
+            completion(nil)
+          } else {
+            let filledBuffer = buffer + [$0]
+            buffer.removeAll(keepingCapacity: true)
+            completion([.next(filledBuffer)])
+          }
+        }
+        .onTerminate{ _ in
+          guard partial else { return completion(nil) }
+          completion([.next(buffer)])
+      }
+    }
+  }
+  
+  func appendWindow<U: BaseStream>(stream: U, windowSize: Int, partial: Bool) -> U where U.Data == [T] {
+    var buffer = CircularBuffer<T>(size: windowSize)
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{
+          buffer.append($0)
+          if !partial && buffer.count < windowSize {
+            completion(nil)
+          } else {
+            let window = buffer.map{ $0 } as U.Data
+            completion([.next(window)])
+          }
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendWindow<U: BaseStream>(stream: U, windowSize: TimeInterval, limit: Int?) -> U where U.Data == [T] {
+    var buffer = [(TimeInterval, T)]()
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{
+          let now = Date.timeIntervalSinceReferenceDate
+          buffer.append((now, $0))
+          var window = buffer
+            .filter{ now - $0.0 < windowSize }
+            .map{ $0.1 }
+          if let limit = limit, window.count > limit {
+            window = ((window.count - limit)..<window.count).map{ window[$0] }
+          }
+          completion([.next(window as U.Data)])
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendFilter<U: BaseStream>(stream: U, include: @escaping (T) -> Bool) -> U where U.Data == T {
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ completion(include($0) ? [next] : nil) }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendStride<U: BaseStream>(stream: U, stride: Int) -> U where U.Data == T {
+    let stride = max(1, stride)
+    var current = 0
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ _ in
+          current += 1
+          if stride == current {
+            current = 0
+            completion([next])
+          } else {
+            completion(nil)
+          }
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendTimeStamp<U: BaseStream>(stream: U) -> U where U.Data == (Date, T) {
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ completion([.next(Date(), $0)]) }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendDistinct<U: BaseStream>(stream: U, isDistinct: @escaping (T, T) -> Bool) -> U where U.Data == T {
+    return appendStream(stream) { (prior, next, completion) in
+      next
+        .onValue{
+          guard let prior = prior else { return completion([next]) }
+          completion(isDistinct(prior, $0) ? [next] : nil)
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendMin<U: BaseStream>(stream: U, lessThan: @escaping (T, T) -> Bool) -> U where U.Data == T {
+    var min: T? = nil
+    return appendStream(stream) { (prior, next, completion) in
+      next
+        .onValue{
+          guard let prior = min ?? prior, !lessThan($0, prior) else {
+            min = $0
+            return (completion([next]))
+          }
+          completion(nil)
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendMax<U: BaseStream>(stream: U, greaterThan: @escaping (T, T) -> Bool) -> U where U.Data == T {
+    var max: T? = nil
+    return appendStream(stream) { (prior, next, completion) in
+      next
+        .onValue{
+          guard let prior = max ?? prior, !greaterThan($0, prior) else {
+            max = $0
+            return (completion([next]))
+          }
+          completion(nil)
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendCount<U: BaseStream>(stream: U) -> U where U.Data == UInt {
+    var count: UInt = 0
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ _ in
+          count += 1
+          completion([.next(count)])
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  
+}
+
+extension Stream where T: Arithmetic {
+  
+  func appendAverage<U: BaseStream>(stream: U) -> U where U.Data == Data {
+    var total = T(0)
+    var count = T(0)
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ value in
+          count = count + T(1)
+          total = total + value
+          completion([.next(total / count)])
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendSum<U: BaseStream>(stream: U) -> U where U.Data == Data {
+    var current = T(0)
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ value in
+          current = value + current
+          completion([.next(current)])
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
   }
   
 }
