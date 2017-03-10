@@ -113,6 +113,14 @@ public class Hot<T> : Stream<T> {
   public func merge(_ stream: Stream<T>) -> Hot<T> {
     return appendMerge(stream: stream, intoStream: Hot<T>())
   }
+  
+  public func start(with: [T]) -> Hot<T> {
+    return appendStart(stream: Hot<T>(), startWith: with)
+  }
+  
+  public func concat(_ concat: [T]) -> Hot<T> {
+    return appendConcat(stream: Hot<T>(), concat: concat)
+  }
 }
 
 extension Hot where T : Sequence {
