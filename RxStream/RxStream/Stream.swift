@@ -70,13 +70,11 @@ enum Event<T> {
 private typealias EventProcessor<T> = (_ prior: T?, _ next: Event<T>) -> Bool
 
 /// Defines work that should be done for an event.  The event is passed in, and the completion handler is called when the work has completed.
-typealias EventWork<U, T> = (_ prior: U?, _ next: Event<U>, _ complete: ([Event<T>]?) -> Void) -> Void
-  
+typealias StreamWork<U, T> = (_ prior: U?, _ next: Event<U>, _ complete: @escaping ([Event<T>]?) -> Void) -> Void
+
 internal protocol BaseStream : class {
   associatedtype Data
-  var dispatch: Dispatch { get set }
-  var replay: Bool { get set }
-  func process<U>(prior: U?, next: Event<U>, withWork work: @escaping EventWork<U, Data>) -> Bool
+  func process<U>(prior: U?, next: Event<U>, withWork work: @escaping StreamWork<U, Data>) -> Bool
 }
 extension Stream : BaseStream { }
 
@@ -94,7 +92,7 @@ public class Stream<T> {
   private var queue: (prior: T?, current: T)?
   
   /// If this is set `true`, the next stream attached will have the current values replayed into it, if any.
-  var replay: Bool = false
+  fileprivate var replay: Bool = false
   
   /// When the stream is terminated, this will contain the Terminate reason.  It's primarily used to replay terminate events downstream when a stream is attached.
   private var termination: Termination? {
@@ -102,7 +100,7 @@ public class Stream<T> {
     return terminate
   }
   
-  /** 
+  /**
    Represents the current state of the stream.
    If active, new events can be passed into the stream. Otherwise, the stream will reject all attempts to use it.
    Once a stream is terminated, it cannot be made active again.
@@ -122,7 +120,7 @@ public class Stream<T> {
    - note: This discussion really only applies when you care how multiple chains are processed.  99% of the time you don't need to worry abou it since an individual chain will always process in order and that covers the majority use cases.
    - warning: A dispatch will not forcefully propogate downstream, but it will propogate into newly attached streams. So any existing downsteams won't be affected by changing the dispatch, but any streams attached to this stream after the dispatch is set will.
    */
-  internal(set) public var dispatch = Dispatch.inline
+  fileprivate(set) public var dispatch = Dispatch.inline
   
   /// Convience variable returning whether the stream is currently active
   public var isActive: Bool { return state == .active }
@@ -204,7 +202,7 @@ public class Stream<T> {
    
    - warning: All work for a stream should use this function to process events.
    */
-  func process<U>(prior: U?, next: Event<U>, withWork work: @escaping EventWork<U, T>) -> Bool {
+  func process<U>(prior: U?, next: Event<U>, withWork work: @escaping StreamWork<U, T>) -> Bool {
     guard isActive else { return false }
     dispatch.execute {
       // Make sure we're receiving data, otherwise it's a termination event and we should set the terminateWork
@@ -290,9 +288,11 @@ extension Stream {
 // Mark: Work Generation
 extension Stream {
   
-  fileprivate func appendStream<U: BaseStream>(_ stream: U, withWork work: @escaping EventWork<T,U.Data>) -> U {
-    stream.dispatch = dispatch
-    stream.replay = replay
+  fileprivate func appendStream<U: BaseStream>(_ stream: U, withWork work: @escaping StreamWork<T,U.Data>) -> U {
+    if let stream = stream as? Stream<U.Data> {
+      stream.dispatch = dispatch
+      stream.replay = replay
+    }
     self.appendDownStream { (prior, next) -> Bool in
       stream.process(prior: prior, next: next, withWork: work)
     }
@@ -580,7 +580,57 @@ extension Stream {
     }
   }
   
+  func appendDelay<U: BaseStream>(stream: U, delay: TimeInterval) -> U where U.Data == T {
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ _ in
+          Dispatch.after(delay: delay, on: .main).execute{ completion([next]) }
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
   
+  func appendUsing<U: BaseStream, V: AnyObject>(stream: U, object: V) -> U where U.Data == (V, T) {
+    let box = WeakBox(object)
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ value in
+          if let object = box.object {
+            completion([.next(object, value)])
+          } else {
+            completion([.terminate(reason: .completed)])
+          }
+          
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendMerge<U: BaseStream, V>(stream: Stream<V>, intoStream: U) -> U where U.Data == Either<V, T> {
+    _ = stream.appendStream(intoStream) { (_, next, completion) in
+      next
+        .onValue{ completion([.next(.left($0))]) }
+        .onTerminate{ _ in completion(nil) }
+    }
+    return appendStream(intoStream) { (_, next, completion) in
+      next
+        .onValue{ completion([.next(.right($0))]) }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendMerge<U: BaseStream>(stream: Stream<T>, intoStream: U) -> U where U.Data == T {
+    _ = stream.appendStream(intoStream) { (_, next, completion) in
+      next
+        .onValue{ completion([.next($0)]) }
+        .onTerminate{ _ in completion(nil) }
+    }
+    return appendStream(intoStream) { (_, next, completion) in
+      next
+        .onValue{ completion([.next($0)]) }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
 }
 
 extension Stream where T: Arithmetic {

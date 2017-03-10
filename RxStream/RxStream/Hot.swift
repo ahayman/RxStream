@@ -97,6 +97,22 @@ public class Hot<T> : Stream<T> {
   public func count() -> Hot<UInt> {
     return appendCount(stream: Hot<UInt>())
   }
+  
+  public func delay(_ delay: TimeInterval) -> Hot<T> {
+    return appendDelay(stream: Hot<T>(), delay: delay)
+  }
+  
+  public func using<U: AnyObject>(_ object: U) -> Hot<(U, T)> {
+    return appendUsing(stream: Hot<(U, T)>(), object: object)
+  }
+  
+  public func merge<U>(_ stream: Stream<U>) -> Hot<Either<U, T>> {
+    return appendMerge(stream: stream, intoStream: Hot<Either<U, T>>())
+  }
+  
+  public func merge(_ stream: Stream<T>) -> Hot<T> {
+    return appendMerge(stream: stream, intoStream: Hot<T>())
+  }
 }
 
 extension Hot where T : Sequence {

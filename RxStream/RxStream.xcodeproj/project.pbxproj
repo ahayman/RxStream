@@ -15,6 +15,8 @@
 		651478081E70966D00190A44 /* Result.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651478071E70966D00190A44 /* Result.swift */; };
 		6514780A1E71B46000190A44 /* CircularBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651478091E71B46000190A44 /* CircularBuffer.swift */; };
 		6514780C1E720B7D00190A44 /* Arithmetic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6514780B1E720B7D00190A44 /* Arithmetic.swift */; };
+		6514780E1E72429F00190A44 /* WeakBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6514780D1E72429F00190A44 /* WeakBox.swift */; };
+		651478101E72468800190A44 /* Either.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6514780F1E72468800190A44 /* Either.swift */; };
 		653271B31E5F2BA300E3DE9C /* Rx.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 653271A91E5F2BA300E3DE9C /* Rx.framework */; };
 		653271BA1E5F2BA300E3DE9C /* RxStream.h in Headers */ = {isa = PBXBuildFile; fileRef = 653271AC1E5F2BA300E3DE9C /* RxStream.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		653271C41E5F2C6100E3DE9C /* Stream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653271C31E5F2C6100E3DE9C /* Stream.swift */; };
@@ -40,6 +42,8 @@
 		651478071E70966D00190A44 /* Result.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Result.swift; sourceTree = "<group>"; };
 		651478091E71B46000190A44 /* CircularBuffer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CircularBuffer.swift; sourceTree = "<group>"; };
 		6514780B1E720B7D00190A44 /* Arithmetic.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Arithmetic.swift; sourceTree = "<group>"; };
+		6514780D1E72429F00190A44 /* WeakBox.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WeakBox.swift; sourceTree = "<group>"; };
+		6514780F1E72468800190A44 /* Either.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Either.swift; sourceTree = "<group>"; };
 		653271A91E5F2BA300E3DE9C /* Rx.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Rx.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		653271AC1E5F2BA300E3DE9C /* RxStream.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RxStream.h; sourceTree = "<group>"; };
 		653271AD1E5F2BA300E3DE9C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -93,11 +97,13 @@
 				653271AD1E5F2BA300E3DE9C /* Info.plist */,
 				653271C31E5F2C6100E3DE9C /* Stream.swift */,
 				651478051E70480400190A44 /* Hot.swift */,
+				6514780D1E72429F00190A44 /* WeakBox.swift */,
 				651478011E6F2F1600190A44 /* Throttle.swift */,
 				653271C51E5F2C6E00E3DE9C /* Dispatch.swift */,
 				651477FF1E6F189700190A44 /* Functional.swift */,
 				651478031E6F42A200190A44 /* StringExtensions.swift */,
 				651478071E70966D00190A44 /* Result.swift */,
+				6514780F1E72468800190A44 /* Either.swift */,
 				651478091E71B46000190A44 /* CircularBuffer.swift */,
 				6514780B1E720B7D00190A44 /* Arithmetic.swift */,
 			);
@@ -231,7 +237,9 @@
 				651478041E6F42A200190A44 /* StringExtensions.swift in Sources */,
 				653271C61E5F2C6E00E3DE9C /* Dispatch.swift in Sources */,
 				651478081E70966D00190A44 /* Result.swift in Sources */,
+				6514780E1E72429F00190A44 /* WeakBox.swift in Sources */,
 				651478021E6F2F1600190A44 /* Throttle.swift in Sources */,
+				651478101E72468800190A44 /* Either.swift in Sources */,
 				6514780A1E71B46000190A44 /* CircularBuffer.swift in Sources */,
 				6514780C1E720B7D00190A44 /* Arithmetic.swift in Sources */,
 				651478061E70480400190A44 /* Hot.swift in Sources */,
