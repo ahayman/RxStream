@@ -631,6 +631,29 @@ extension Stream {
         .onTerminate{ _ in completion(nil) }
     }
   }
+  
+  func appendStart<U: BaseStream>(stream: U, startWith: [T]) -> U where U.Data == T {
+    var start: [T]? = startWith
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ _ in
+          if let events = start {
+            completion(events.map{ .next($0) } + [next])
+            start = nil
+          } else {
+            completion([next])
+          }
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendConcat<U: BaseStream>(stream: U, concat: [T]) -> U where U.Data == T {
+    return appendStream(stream) { (_, next, completion) in
+      next
+        .onValue{ _ in completion([next]) }
+        .onTerminate{ _ in completion(concat.map{ .next($0) }) }
+  }
 }
 
 extension Stream where T: Arithmetic {
