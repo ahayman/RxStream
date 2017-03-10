@@ -653,6 +653,7 @@ extension Stream {
       next
         .onValue{ _ in completion([next]) }
         .onTerminate{ _ in completion(concat.map{ .next($0) }) }
+    }
   }
 }
 
