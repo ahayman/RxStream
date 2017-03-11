@@ -10,16 +10,8 @@ import Foundation
 
 extension Hot {
   
-  public func until(handler: @escaping (T) -> Bool) -> Hot<T> {
-    return appendOn(stream: Hot<T>(), handler: handler)
-  }
-  
   public func on(handler: @escaping (T) -> Void) -> Hot<T> {
     return appendOn(stream: Hot<T>(), handler: handler)
-  }
-  
-  public func until(handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Hot<T> {
-    return appendTransition(stream: Hot<T>(), handler: handler)
   }
   
   public func onTransition(handler: @escaping (_ prior: T?, _ next: T) -> Void) -> Hot<T> {
@@ -114,14 +106,6 @@ extension Hot {
     return appendDelay(stream: Hot<T>(), delay: delay)
   }
   
-  public func using<U: AnyObject>(_ object: U) -> Hot<(U, T)> {
-    return appendUsing(stream: Hot<(U, T)>(), object: object)
-  }
-  
-  public func lifeOf<U: AnyObject>(_ object: U) -> Hot<T> {
-    return appendUsing(stream: Hot<(U, T)>(), object: object).map{ $0.1 }
-  }
-  
   public func next(_ count: UInt = 1) -> Hot<T> {
     return appendNext(stream: Hot<T>(), count: count)
   }
@@ -141,6 +125,35 @@ extension Hot {
   public func concat(_ concat: [T]) -> Hot<T> {
     return appendConcat(stream: Hot<T>(), concat: concat)
   }
+}
+
+// MARK: Lifetime operators
+extension Hot {
+  
+  public func doWhile(handler: @escaping (T) -> Bool) -> Hot<T> {
+    return appendWhile(stream: Hot<T>(), handler: handler)
+  }
+  
+  public func until(handler: @escaping (T) -> Bool) -> Hot<T> {
+    return appendUntil(stream: Hot<T>(), handler: handler)
+  }
+  
+  public func doWhile(handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Hot<T> {
+    return appendWhile(stream: Hot<T>(), handler: handler)
+  }
+  
+  public func until(handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Hot<T> {
+    return appendUntil(stream: Hot<T>(), handler: handler)
+  }
+  
+  public func using<U: AnyObject>(_ object: U) -> Hot<(U, T)> {
+    return appendUsing(stream: Hot<(U, T)>(), object: object)
+  }
+  
+  public func lifeOf<U: AnyObject>(_ object: U) -> Hot<T> {
+    return appendUsing(stream: Hot<(U, T)>(), object: object).map{ $0.1 }
+  }
+  
 }
 
 extension Hot where T : Sequence {
