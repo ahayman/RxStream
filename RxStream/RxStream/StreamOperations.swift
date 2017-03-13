@@ -76,13 +76,18 @@ extension Stream {
     }
   }
   
-  func appendMap<U: BaseStream>(stream: U, withMapper mapper: @escaping (T, (Result<U.Data>) -> Void) -> Void) -> U {
+  func appendMap<U: BaseStream>(stream: U, withMapper mapper: @escaping (T, (Result<U.Data>?) -> Void) -> Void) -> U {
     return append(stream, toParent: self) { (_, next, completion) in
       next
         .onValue {
-          mapper($0) { $0
-            .onSuccess{ completion([.next($0)]) }
-            .onFailure{ completion([.terminate(reason: .error($0))]) }
+          mapper($0) {
+            if let result = $0 {
+              result
+                .onSuccess{ completion([.next($0)]) }
+                .onFailure{ completion([.terminate(reason: .error($0))]) }
+            } else {
+              completion(nil)
+            }
           }
         }
         .onTerminate{ _ in completion(nil) }
@@ -117,24 +122,21 @@ extension Stream {
     }
   }
   
-  func appendFirst<U: BaseStream>(stream: U, count: Int, partial: Bool, then: Termination) -> U where U.Data == [T] {
+  func appendFirst<U: BaseStream>(stream: U, count: Int, then: Termination) -> U where U.Data == T {
     let first = max(1, count)
-    var buffer = [T]()
-    buffer.reserveCapacity(first)
+    var count = 0
     return append(stream, toParent: self) { (_, next, completion) in
-      var events: [Event<[T]>] = []
+      var events: [Event<T>] = []
       next
         .onValue{
-          buffer.append($0)
-          if buffer.count >= count {
-            events.append(.next(buffer))
+          count += 1
+          if count < first {
+            events.append(.next($0))
+          }
+          if count >= first {
             events.append(.terminate(reason: then))
           }
         }
-        .onTerminate { _ in
-          guard partial else { return }
-          events.append(.next(buffer))
-      }
       completion(events)
     }
   }
@@ -152,7 +154,7 @@ extension Stream {
     }
   }
   
-  func appendLast<U: BaseStream>(stream: U, count: Int, partial: Bool) -> U where U.Data == [T] {
+  func appendLast<U: BaseStream>(stream: U, count: Int, partial: Bool) -> U where U.Data == T {
     var buffer = CircularBuffer<T>(size: max(1, count))
     return append(stream, toParent: self) { (_, next, completion) in
       next
@@ -162,7 +164,7 @@ extension Stream {
         }
         .onTerminate{ _ in
           guard buffer.count == count || partial else { return completion(nil) }
-          completion([.next(buffer.map{ $0 })])
+          completion(buffer.map{ .next($0) })
       }
     }
   }
@@ -191,19 +193,27 @@ extension Stream {
   }
   
   func appendWindow<U: BaseStream>(stream: U, windowSize: Int, partial: Bool) -> U where U.Data == [T] {
+    let windowSize = max(1, windowSize)
     var buffer = CircularBuffer<T>(size: windowSize)
     return append(stream, toParent: self) { (_, next, completion) in
       next
         .onValue{
           buffer.append($0)
-          if !partial && buffer.count < windowSize {
+          if buffer.count < windowSize {
             completion(nil)
           } else {
             let window = buffer.map{ $0 } as U.Data
             completion([.next(window)])
           }
         }
-        .onTerminate{ _ in completion(nil) }
+        .onTerminate{ _ in
+          if partial && buffer.count < windowSize {
+            let window = buffer.map{ $0 } as U.Data
+            completion([.next(window)])
+          } else {
+            completion(nil)
+          }
+        }
     }
   }
   
