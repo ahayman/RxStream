@@ -333,36 +333,10 @@ extension Stream {
           count -= 1
           var events = [next]
           if count == 0 {
-            events.append(.terminate(reason: .completed))
+            events.append(.terminate(reason: .cancelled))
           }
           completion(events)
         }
-        .onTerminate{ _ in completion(nil) }
-    }
-  }
-  
-  func appendMerge<U: BaseStream, V>(stream: Stream<V>, intoStream: U) -> U where U.Data == Either<V, T> {
-    _ = append(intoStream, toParent: stream) { (_, next, completion) in
-      next
-        .onValue{ completion([.next(.left($0))]) }
-        .onTerminate{ _ in completion(nil) }
-    }
-    return append(intoStream, toParent: self) { (_, next, completion) in
-      next
-        .onValue{ completion([.next(.right($0))]) }
-        .onTerminate{ _ in completion(nil) }
-    }
-  }
-  
-  func appendMerge<U: BaseStream>(stream: Stream<T>, intoStream: U) -> U where U.Data == T {
-    _ = append(intoStream, toParent: stream) { (_, next, completion) in
-      next
-        .onValue{ completion([.next($0)]) }
-        .onTerminate{ _ in completion(nil) }
-    }
-    return append(intoStream, toParent: self) { (_, next, completion) in
-      next
-        .onValue{ completion([.next($0)]) }
         .onTerminate{ _ in completion(nil) }
     }
   }
@@ -390,9 +364,134 @@ extension Stream {
         .onTerminate{ _ in completion(concat.map{ .next($0) }) }
     }
   }
+  
+  func appendDefault<U: BaseStream>(stream: U, value: T) -> U where U.Data == T {
+    var empty = true
+    return append(stream, toParent: self) { (_, next, completion) in
+      next
+        .onValue{ _ in
+          empty = false
+          completion([next])
+        }
+        .onTerminate{ _ in completion(empty ? [.next(value)] : nil) }
+    }
+  }
 }
 
-// MARK: Lifetime operators
+// MARK: Combining Operators
+extension Stream {
+  
+  func appendMerge<U: BaseStream, V>(stream: Stream<V>, intoStream: U) -> U where U.Data == Either<T, V> {
+    _ = append(intoStream, toParent: self) { (_, next, completion) in
+      next
+        .onValue{ completion([.next(.left($0))]) }
+        .onTerminate{ _ in completion(nil) }
+    }
+    return append(intoStream, toParent: stream) { (_, next, completion) in
+      next
+        .onValue{ completion([.next(.right($0))]) }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendMerge<U: BaseStream>(stream: Stream<T>, intoStream: U) -> U where U.Data == T {
+    _ = append(intoStream, toParent: stream) { (_, next, completion) in
+      next
+        .onValue{ completion([.next($0)]) }
+        .onTerminate{ _ in completion(nil) }
+    }
+    return append(intoStream, toParent: self) { (_, next, completion) in
+      next
+        .onValue{ completion([.next($0)]) }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendZip<U: BaseStream, V>(stream: Stream<V>, intoStream: U, buffer: Int?) -> U where U.Data == (T, V) {
+    var leftBuffer = [T]()
+    var rightBuffer = [V]()
+    
+    // Right Stream
+    _ = append(intoStream, toParent: stream) { (_, next, completion) in
+      next
+        .onValue{
+          if leftBuffer.count > 0 {
+            completion([.next(leftBuffer.removeFirst(), $0)])
+          } else {
+            if let buffer = buffer, rightBuffer.count >= buffer {
+              return completion(nil)
+            }
+            rightBuffer.append($0)
+            completion(nil)
+          }
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+    
+    // Left Stream
+    return append(intoStream, toParent: self) { (_, next, completion) in
+      next
+        .onValue{
+          if rightBuffer.count > 0 {
+            completion([.next($0, rightBuffer.removeFirst())])
+          } else {
+            if let buffer = buffer, leftBuffer.count >= buffer {
+              return completion(nil)
+            }
+            leftBuffer.append($0)
+            completion(nil)
+          }
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendCombine<U: BaseStream, V>(stream: Stream<V>, intoStream: U, latest: Bool) -> U where U.Data == (T, V) {
+    var left: T? = nil
+    var right: V? = nil
+    
+    // Right Stream
+    _ = append(intoStream, toParent: stream) { (_, next, completion) in
+      next
+        .onValue{
+          guard let leftValue = left else {
+            right = $0
+            return completion(nil)
+          }
+          if latest {
+            right = $0
+          } else {
+            left = nil
+            right = nil
+          }
+          completion([.next(leftValue, $0)])
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+    
+    // Left Stream
+    return append(intoStream, toParent: self) { (_, next, completion) in
+      next
+        .onValue{
+          guard let rightValue = right else {
+            left = $0
+            return completion(nil)
+          }
+          if latest {
+            left = $0
+          } else {
+            left = nil
+            right = nil
+          }
+          completion([.next($0, rightValue)])
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+}
+
+// MARK: Lifetime Operators
 extension Stream {
   
   func appendWhile<U: BaseStream>(stream: U, handler: @escaping (U.Data) -> Bool) -> U where U.Data == T {

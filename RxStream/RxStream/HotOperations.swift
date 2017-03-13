@@ -110,14 +110,6 @@ extension Hot {
     return appendNext(stream: Hot<T>(), count: count)
   }
   
-  public func merge<U>(_ stream: Stream<U>) -> Hot<Either<U, T>> {
-    return appendMerge(stream: stream, intoStream: Hot<Either<U, T>>())
-  }
-  
-  public func merge(_ stream: Stream<T>) -> Hot<T> {
-    return appendMerge(stream: stream, intoStream: Hot<T>())
-  }
-  
   public func start(with: [T]) -> Hot<T> {
     return appendStart(stream: Hot<T>(), startWith: with)
   }
@@ -125,6 +117,31 @@ extension Hot {
   public func concat(_ concat: [T]) -> Hot<T> {
     return appendConcat(stream: Hot<T>(), concat: concat)
   }
+  
+  public func defaultValue(_ value: T) -> Hot<T> {
+    return appendDefault(stream: Hot<T>(), value: value)
+  }
+}
+
+// MARK: Combining operators
+extension Hot {
+  
+  public func merge<U>(_ stream: Stream<U>) -> Hot<Either<T, U>> {
+    return appendMerge(stream: stream, intoStream: Hot<Either<T, U>>())
+  }
+  
+  public func merge(_ stream: Stream<T>) -> Hot<T> {
+    return appendMerge(stream: stream, intoStream: Hot<T>())
+  }
+  
+  public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Hot<(T, U)> {
+    return appendZip(stream: stream, intoStream: Hot<(T, U)>(), buffer: buffer)
+  }
+  
+  public func combine<U>(latest: Bool = true, stream: Stream<U>) -> Hot<(T, U)> {
+    return appendCombine(stream: stream, intoStream: Hot<(T, U)>(), latest: latest)
+  }
+  
 }
 
 // MARK: Lifetime operators
