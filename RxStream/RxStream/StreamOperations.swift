@@ -109,15 +109,15 @@ extension Stream {
     }
   }
   
-  func appendFirst<U: BaseStream>(stream: U) -> U where U.Data == T {
+  func appendFirst<U: BaseStream>(stream: U, then: Termination) -> U where U.Data == T {
     return append(stream, toParent: self) { (_, next, completion) in
       next
-        .onValue{ completion([.next($0), .terminate(reason: .completed)]) }
+        .onValue{ completion([.next($0), .terminate(reason: then)]) }
         .onTerminate{ _ in completion(nil) }
     }
   }
   
-  func appendFirst<U: BaseStream>(stream: U, count: Int, partial: Bool) -> U where U.Data == [T] {
+  func appendFirst<U: BaseStream>(stream: U, count: Int, partial: Bool, then: Termination) -> U where U.Data == [T] {
     let first = max(1, count)
     var buffer = [T]()
     buffer.reserveCapacity(first)
@@ -128,7 +128,7 @@ extension Stream {
           buffer.append($0)
           if buffer.count >= count {
             events.append(.next(buffer))
-            events.append(.terminate(reason: .completed))
+            events.append(.terminate(reason: then))
           }
         }
         .onTerminate { _ in
@@ -373,7 +373,10 @@ extension Stream {
           empty = false
           completion([next])
         }
-        .onTerminate{ _ in completion(empty ? [.next(value)] : nil) }
+        .onTerminate{ reason in
+          guard empty, case .completed = reason else { return completion(nil) }
+          completion([.next(value)])
+        }
     }
   }
 }
@@ -494,55 +497,55 @@ extension Stream {
 // MARK: Lifetime Operators
 extension Stream {
   
-  func appendWhile<U: BaseStream>(stream: U, handler: @escaping (U.Data) -> Bool) -> U where U.Data == T {
+  func appendWhile<U: BaseStream>(stream: U, handler: @escaping (U.Data) -> Bool, then: Termination) -> U where U.Data == T {
     return append(stream, toParent: self) { (_, next, completion) in
       var events = [next]
       next.onValue { value in
         if !handler(value) {
-          events = [.terminate(reason: .completed)]
+          events = [.terminate(reason: then)]
         }
       }
       completion(events)
     }
   }
   
-  func appendUntil<U: BaseStream>(stream: U, handler: @escaping (U.Data) -> Bool) -> U where U.Data == T {
+  func appendUntil<U: BaseStream>(stream: U, handler: @escaping (U.Data) -> Bool, then: Termination) -> U where U.Data == T {
     return append(stream, toParent: self) { (_, next, completion) in
       var events = [next]
       next.onValue { value in
         if handler(value) {
-          events = [.terminate(reason: .completed)]
+          events = [.terminate(reason: then)]
         }
       }
       completion(events)
     }
   }
   
-  func appendWhile<U: BaseStream>(stream: U, handler: @escaping (U.Data?, U.Data) -> Bool) -> U where U.Data == T {
+  func appendWhile<U: BaseStream>(stream: U, handler: @escaping (U.Data?, U.Data) -> Bool, then: Termination) -> U where U.Data == T {
     return append(stream, toParent: self) { (prior, next, completion) in
       var events = [next]
       next.onValue { value in
         if !handler(prior, value) {
-          events = [.terminate(reason: .completed)]
+          events = [.terminate(reason: then)]
         }
       }
       completion(events)
     }
   }
   
-  func appendUntil<U: BaseStream>(stream: U, handler: @escaping (U.Data?, U.Data) -> Bool) -> U where U.Data == T {
+  func appendUntil<U: BaseStream>(stream: U, handler: @escaping (U.Data?, U.Data) -> Bool, then: Termination) -> U where U.Data == T {
     return append(stream, toParent: self) { (prior, next, completion) in
       var events = [next]
       next.onValue { value in
         if handler(prior, value) {
-          events = [.terminate(reason: .completed)]
+          events = [.terminate(reason: then)]
         }
       }
       completion(events)
     }
   }
   
-  func appendUsing<U: BaseStream, V: AnyObject>(stream: U, object: V) -> U where U.Data == (V, T) {
+  func appendUsing<U: BaseStream, V: AnyObject>(stream: U, object: V, then: Termination) -> U where U.Data == (V, T) {
     let box = WeakBox(object)
     return append(stream, toParent: self) { (_, next, completion) in
       next
@@ -550,7 +553,7 @@ extension Stream {
           if let object = box.object {
             completion([.next(object, value)])
           } else {
-            completion([.terminate(reason: .completed)])
+            completion([.terminate(reason: then)])
           }
           
         }
