@@ -42,11 +42,11 @@ extension Hot {
     return appendScan(stream: Hot<U>(), initial: initial, withScanner: scanner)
   }
   
-  public func first(then: Termination = .completed) -> Hot<T> {
+  public func first(then: Termination = .cancelled) -> Hot<T> {
     return appendFirst(stream: Hot<T>(), then: then)
   }
   
-  public func first(_ count: Int, partial: Bool = false, then: Termination = .completed) -> Hot<[T]> {
+  public func first(_ count: Int, partial: Bool = false, then: Termination = .cancelled) -> Hot<[T]> {
     return appendFirst(stream: Hot<[T]>(), count: count, partial: partial, then: then)
   }
   
@@ -147,27 +147,27 @@ extension Hot {
 // MARK: Lifetime operators
 extension Hot {
   
-  public func doWhile(then: Termination = .completed, handler: @escaping (T) -> Bool) -> Hot<T> {
+  public func doWhile(then: Termination = .cancelled, handler: @escaping (T) -> Bool) -> Hot<T> {
     return appendWhile(stream: Hot<T>(), handler: handler, then: then)
   }
   
-  public func until(then: Termination = .completed, handler: @escaping (T) -> Bool) -> Hot<T> {
+  public func until(then: Termination = .cancelled, handler: @escaping (T) -> Bool) -> Hot<T> {
     return appendUntil(stream: Hot<T>(), handler: handler, then: then)
   }
   
-  public func doWhile(then: Termination = .completed, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Hot<T> {
+  public func doWhile(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Hot<T> {
     return appendWhile(stream: Hot<T>(), handler: handler, then: then)
   }
   
-  public func until(then: Termination = .completed, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Hot<T> {
+  public func until(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Hot<T> {
     return appendUntil(stream: Hot<T>(), handler: handler, then: then)
   }
   
-  public func using<U: AnyObject>(_ object: U, then: Termination = .completed) -> Hot<(U, T)> {
+  public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Hot<(U, T)> {
     return appendUsing(stream: Hot<(U, T)>(), object: object, then: then)
   }
   
-  public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .completed) -> Hot<T> {
+  public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Hot<T> {
     return appendUsing(stream: Hot<(U, T)>(), object: object, then: then).map{ $0.1 }
   }
   
