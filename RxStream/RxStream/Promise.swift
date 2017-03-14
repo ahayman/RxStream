@@ -28,7 +28,9 @@ public class Promise<T> : Stream<T> {
   /**
    A Promise is initialized with the task.
    The task should call the completions handler with the result when it's done.
-   The task will also be passed an observable
+   The task will also be passed an observable that indicates the current stream state.  
+   If the stream is terminated, the task should cancel whatever it's doing (if possible).  
+   After a stream has been terminated, calling the completion handler will do nothing.
    
    - parameter task: The task that should complete the future
    
@@ -40,7 +42,7 @@ public class Promise<T> : Stream<T> {
     self.lock = self
     var complete = false
     task(self.state) { [weak self] completion in
-      guard let me = self, !complete else { return }
+      guard let me = self, !complete, me.isActive else { return }
       complete = true
       completion
         .onFailure{ me.push(value: .terminate(reason: .error($0))) }
@@ -49,6 +51,7 @@ public class Promise<T> : Stream<T> {
     }
   }
   
+  /// Internal init for creating down stream promises
   override init() {
     super.init()
   }
@@ -71,13 +74,16 @@ public class Promise<T> : Stream<T> {
   }
   
   func cancelTask() {
+    guard isActive else { return }
     guard task == nil else {
       push(value: .terminate(reason: .cancelled))
+      lock = nil
       return
     }
     cancelParent?.cancelTask()
   }
   
+  /// This will cancel the promise, including any task associated with it.  If the stream is not active, this does nothing.
   public func cancel() {
     self.cancelTask()
   }
