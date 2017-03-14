@@ -24,6 +24,8 @@
 		653271BA1E5F2BA300E3DE9C /* RxStream.h in Headers */ = {isa = PBXBuildFile; fileRef = 653271AC1E5F2BA300E3DE9C /* RxStream.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		653271C41E5F2C6100E3DE9C /* Stream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653271C31E5F2C6100E3DE9C /* Stream.swift */; };
 		653271C61E5F2C6E00E3DE9C /* Dispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653271C51E5F2C6E00E3DE9C /* Dispatch.swift */; };
+		653A8F071E78604A003B3203 /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653A8F061E78604A003B3203 /* Future.swift */; };
+		653A8F091E786C9A003B3203 /* FutureOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653A8F081E786C9A003B3203 /* FutureOperations.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +59,8 @@
 		653271B91E5F2BA300E3DE9C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		653271C31E5F2C6100E3DE9C /* Stream.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Stream.swift; sourceTree = "<group>"; };
 		653271C51E5F2C6E00E3DE9C /* Dispatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Dispatch.swift; sourceTree = "<group>"; };
+		653A8F061E78604A003B3203 /* Future.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Future.swift; sourceTree = "<group>"; };
+		653A8F081E786C9A003B3203 /* FutureOperations.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FutureOperations.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,6 +113,7 @@
 				653271C31E5F2C6100E3DE9C /* Stream.swift */,
 				651478051E70480400190A44 /* Hot.swift */,
 				651478191E73124F00190A44 /* Observable.swift */,
+				653A8F061E78604A003B3203 /* Future.swift */,
 			);
 			name = Streams;
 			sourceTree = "<group>";
@@ -118,6 +123,7 @@
 			children = (
 				651478131E730C8300190A44 /* StreamOperations.swift */,
 				651478171E730FEA00190A44 /* HotOperations.swift */,
+				653A8F081E786C9A003B3203 /* FutureOperations.swift */,
 			);
 			name = "Stream Operations";
 			sourceTree = "<group>";
@@ -273,9 +279,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				653A8F091E786C9A003B3203 /* FutureOperations.swift in Sources */,
 				651478001E6F189700190A44 /* Functional.swift in Sources */,
 				653271C41E5F2C6100E3DE9C /* Stream.swift in Sources */,
 				651478041E6F42A200190A44 /* StringExtensions.swift in Sources */,
+				653A8F071E78604A003B3203 /* Future.swift in Sources */,
 				651478181E730FEA00190A44 /* HotOperations.swift in Sources */,
 				653271C61E5F2C6E00E3DE9C /* Dispatch.swift in Sources */,
 				651478081E70966D00190A44 /* Result.swift in Sources */,
