@@ -318,7 +318,7 @@ extension Stream {
   /**
    Setting this to `true` will cause this stream to persist even if all down streams are removed.  By default, if a stream no longer has any down streams attached to it, it will automatically close itself.
    */
-  public func persist(_ persist: Bool = true) -> Self {
+  @discardableResult public func persist(_ persist: Bool = true) -> Self {
     self.persist = persist
     return self
   }

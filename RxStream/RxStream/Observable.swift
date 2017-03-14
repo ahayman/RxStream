@@ -8,29 +8,59 @@
 
 import Foundation
 
+/**
+ An Observable is a Hot stream that retains and gives access to it's current value.
+ 
+ - note: All operations of an observable will resolve to a Hot Stream.
+ - note: Observables will automatically persist themselves.
+ */
 public class Observable<T> : Hot<T> {
   
+  /// Privately used to push new events down stream
   private func push(event: Event<T>) {
     self.process(prior: nil, next: event) { (_, event, completion) in
       completion([event])
     }
   }
   
+  /// The current value of the observable
   fileprivate(set) public var value: T {
     didSet { push(event: .next(value)) }
   }
   
-  public init(value: T) {
+  /// Private initilization.  An Observable is not intended to be initialized directly, except by it's subclass.
+  fileprivate init(_ value: T) {
     self.value = value
+    super.init()
+    persist()
   }
   
 }
 
 public class ObservableInput<T> : Observable<T> {
   
+  /**
+   Updates the Observable with the
+   
+   - parameter value: The value to set the observable to.
+   - warning: If the Observable has been terminated, this function will fail to update the value
+   - returns: self
+   */
   @discardableResult public func set(_ value: T) -> Self {
+    guard isActive else { return self }
     self.value = value
     return self
+  }
+  
+  /**
+   Initialize the Observable with an initial value
+   
+   - parameter value: The initial value of the observable.
+   
+   - returns: A persistent observable
+   */
+  public override init(_ value: T) {
+    super.init(value)
   }
   
 }
