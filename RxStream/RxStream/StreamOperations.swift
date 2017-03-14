@@ -22,6 +22,13 @@ private func append<T: BaseStream, U: BaseStream>(_ stream: U, toParent parent: 
   child.replay = parent.replay
   child.parent = parent
   
+  if
+    let cancelChild = stream as? Cancelable,
+    let cancelParent = stream as? Cancelable
+  {
+    cancelChild.cancelParent = cancelParent
+  }
+  
   parent.appendDownStream { (prior, next) -> Bool in
     guard let next = next else { return child.isActive }
     return child.process(prior: prior, next: next, withOp: op)

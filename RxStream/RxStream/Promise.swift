@@ -1,5 +1,5 @@
 //
-//  Future.swift
+//  Promise.swift
 //  RxStream
 //
 //  Created by Aaron Hayman on 3/14/17.
@@ -8,30 +8,38 @@
 
 import Foundation
 
-/**
- A Future Task is a closure that takes a completion handler.
- The closure is called to begin the task and the completion handler should be called with the result when the task has completed.
- */
-public typealias FutureTask<T> = (_ completion: @escaping (Result<T>) -> Void) -> Void
+public typealias PromiseTask<T> = (_ terminated: Observable<StreamState>, _ completion: (Result<T>) -> Void) -> Void
 
-public class Future<T> : Stream<T> {
+protocol Cancelable : class {
+  var cancelParent: Cancelable? { get set }
+  func cancelTask()
+}
+
+extension Promise : Cancelable { }
+
+public class Promise<T> : Stream<T> {
   
-  private var lock: Future<T>?
+  var task: PromiseTask<T>?
+  var cancelParent: Cancelable?
+  
+  private var lock: Promise<T>?
   private var complete: Bool = false
   
   /**
-   A Future is initialized with the task.  The task should call the completions handler with the result when it's done.
+   A Promise is initialized with the task.
+   The task should call the completions handler with the result when it's done.
+   The task will also be passed an observable
    
    - parameter task: The task that should complete the future
    
    - returns: A new Future
    */
-  public init(task: @escaping FutureTask<T>) {
+  public init(task: @escaping PromiseTask<T>) {
     super.init()
     persist()
     self.lock = self
     var complete = false
-    task { [weak self] completion in
+    task(self.state) { [weak self] completion in
       guard let me = self, !complete else { return }
       complete = true
       completion
@@ -41,7 +49,9 @@ public class Future<T> : Stream<T> {
     }
   }
   
-  override init() { }
+  override init() {
+    super.init()
+  }
   
   /// Override the process function to ensure it can only be alled once
   override func process<U>(prior: U?, next: Event<U>, withOp op: @escaping (U?, Event<U>, @escaping ([Event<T>]?) -> Void) -> Void) -> Bool {
@@ -58,6 +68,18 @@ public class Future<T> : Stream<T> {
   /// Privately used to push new events down stream
   private func push(value: Event<T>) {
     _ = self.process(prior: nil, next: value) { (_, _, _) in }
+  }
+  
+  func cancelTask() {
+    guard task == nil else {
+      push(value: .terminate(reason: .cancelled))
+      return
+    }
+    cancelParent?.cancelTask()
+  }
+  
+  public func cancel() {
+    self.cancelTask()
   }
   
 }

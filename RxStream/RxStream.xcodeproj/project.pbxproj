@@ -26,6 +26,8 @@
 		653271C61E5F2C6E00E3DE9C /* Dispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653271C51E5F2C6E00E3DE9C /* Dispatch.swift */; };
 		653A8F071E78604A003B3203 /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653A8F061E78604A003B3203 /* Future.swift */; };
 		653A8F091E786C9A003B3203 /* FutureOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653A8F081E786C9A003B3203 /* FutureOperations.swift */; };
+		653A8F0B1E787AB1003B3203 /* Promise.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653A8F0A1E787AB1003B3203 /* Promise.swift */; };
+		653A8F0D1E7889E5003B3203 /* PromiseOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653A8F0C1E7889E5003B3203 /* PromiseOperations.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +63,8 @@
 		653271C51E5F2C6E00E3DE9C /* Dispatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Dispatch.swift; sourceTree = "<group>"; };
 		653A8F061E78604A003B3203 /* Future.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Future.swift; sourceTree = "<group>"; };
 		653A8F081E786C9A003B3203 /* FutureOperations.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FutureOperations.swift; sourceTree = "<group>"; };
+		653A8F0A1E787AB1003B3203 /* Promise.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Promise.swift; sourceTree = "<group>"; };
+		653A8F0C1E7889E5003B3203 /* PromiseOperations.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PromiseOperations.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +118,7 @@
 				651478051E70480400190A44 /* Hot.swift */,
 				651478191E73124F00190A44 /* Observable.swift */,
 				653A8F061E78604A003B3203 /* Future.swift */,
+				653A8F0A1E787AB1003B3203 /* Promise.swift */,
 			);
 			name = Streams;
 			sourceTree = "<group>";
@@ -124,6 +129,7 @@
 				651478131E730C8300190A44 /* StreamOperations.swift */,
 				651478171E730FEA00190A44 /* HotOperations.swift */,
 				653A8F081E786C9A003B3203 /* FutureOperations.swift */,
+				653A8F0C1E7889E5003B3203 /* PromiseOperations.swift */,
 			);
 			name = "Stream Operations";
 			sourceTree = "<group>";
@@ -290,11 +296,13 @@
 				6514780E1E72429F00190A44 /* WeakBox.swift in Sources */,
 				651478021E6F2F1600190A44 /* Throttle.swift in Sources */,
 				651478101E72468800190A44 /* Either.swift in Sources */,
+				653A8F0D1E7889E5003B3203 /* PromiseOperations.swift in Sources */,
 				6514780A1E71B46000190A44 /* CircularBuffer.swift in Sources */,
 				6514781A1E73124F00190A44 /* Observable.swift in Sources */,
 				651478141E730C8300190A44 /* StreamOperations.swift in Sources */,
 				6514780C1E720B7D00190A44 /* Arithmetic.swift in Sources */,
 				651478061E70480400190A44 /* Hot.swift in Sources */,
+				653A8F0B1E787AB1003B3203 /* Promise.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

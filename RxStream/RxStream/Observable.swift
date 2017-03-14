@@ -85,4 +85,13 @@ public class ObservableInput<T> : Observable<T> {
     super.init(value)
   }
   
+  /// This will return a new immutable Observable attached to this one.
+  public func observable() -> Observable<T> {
+    let stream = Observable<T>(self.value)
+    return appendMap(stream: stream) { (value: T) -> T? in
+      stream.value = value
+      return value
+    }
+  }
+  
 }

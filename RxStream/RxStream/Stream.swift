@@ -107,7 +107,7 @@ public class Stream<T> {
   
   /// When the stream is terminated, this will contain the Terminate reason.  It's primarily used to replay terminate events downstream when a stream is attached.
   private var termination: Termination? {
-    guard case let .terminated(terminate) = state else { return nil }
+    guard case let .terminated(terminate) = _state.value else { return nil }
     return terminate
   }
   
@@ -119,7 +119,8 @@ public class Stream<T> {
    If active, new events can be passed into the stream. Otherwise, the stream will reject all attempts to use it.
    Once a stream is terminated, it cannot be made active again.
    */
-  private(set) public var state = StreamState.active
+  public var state: Observable<StreamState> { return _state.observable() }
+  private var _state = ObservableInput(StreamState.active)
   
   /**
    All processing and stream operations will occur on this dispatch.  By default, processing is performed inline, but this can be changed.
@@ -137,7 +138,7 @@ public class Stream<T> {
   internal(set) public var dispatch = Dispatch.inline
   
   /// Convience variable returning whether the stream is currently active
-  public var isActive: Bool { return state == .active }
+  public var isActive: Bool { return _state.value == .active }
   
   /// A Throttle is used to restrict the flow of information that moves through the stream.
   internal(set) public var throttle: Throttle?
@@ -186,7 +187,7 @@ public class Stream<T> {
       guard !self.persist else { return }
       self.downStreams = self.downStreams.filter{ $0(nil, nil) }
       if self.downStreams.count == 0 {
-        self.state = .terminated(reason: reason)
+        self._state.set(.terminated(reason: reason))
         self.terminationWork?(reason)
         self.parent?.prune(withReason: reason)
       }
@@ -208,7 +209,7 @@ public class Stream<T> {
       case let .next(value):
         self.queue = (self.queue?.current, value)
       case let .terminate(reason):
-        self.state = .terminated(reason: reason)
+        self._state.set(.terminated(reason: reason))
         self.downStreams = []
         self.parent?.prune(withReason: reason)
       }
@@ -222,7 +223,7 @@ public class Stream<T> {
   func terminate(reason: Termination) {
     dispatch.execute {
       guard self.isActive else { return }
-      self.state = .terminated(reason: reason)
+      self._state.set(.terminated(reason: reason))
       if self.currentWork > 0 {
         self.push(event: .terminate(reason: reason))
       }
