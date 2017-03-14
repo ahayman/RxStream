@@ -224,13 +224,11 @@ extension Stream {
         .onValue{
           let now = Date.timeIntervalSinceReferenceDate
           buffer.append((now, $0))
-          var window = buffer
-            .filter{ now - $0.0 < windowSize }
-            .map{ $0.1 }
-          if let limit = limit, window.count > limit {
-            window = ((window.count - limit)..<window.count).map{ window[$0] }
+          buffer = buffer.filter{ now - $0.0 < windowSize }
+          if let limit = limit, buffer.count > limit {
+            buffer = ((buffer.count - limit)..<buffer.count).map{ buffer[$0] }
           }
-          completion([.next(window as U.Data)])
+          completion([.next(buffer.map { $0.1 } as U.Data)])
         }
         .onTerminate{ _ in completion(nil) }
     }
@@ -262,10 +260,10 @@ extension Stream {
     }
   }
   
-  func appendTimeStamp<U: BaseStream>(stream: U) -> U where U.Data == (Date, T) {
+  func appendStamp<U: BaseStream, V>(stream: U, stamper: @escaping (T) -> V) -> U where U.Data == (T, V) {
     return append(stream, toParent: self) { (_, next, completion) in
       next
-        .onValue{ completion([.next(Date(), $0)]) }
+        .onValue{ completion([.next($0, stamper($0))]) }
         .onTerminate{ _ in completion(nil) }
     }
   }
@@ -333,7 +331,21 @@ extension Stream {
     }
   }
   
-  func appendNext<U: BaseStream>(stream: U, count: UInt) -> U where U.Data == T {
+  func appendSkip<U: BaseStream>(stream: U, count: Int) -> U where U.Data == T {
+    var count = max(0, count)
+    
+    return append(stream, toParent: self) { (_, next, completion) in
+      next
+        .onValue{ _ in
+          guard count > 0 else { return completion([next]) }
+          count -= 1
+          completion(nil)
+        }
+        .onTerminate{ _ in completion(nil) }
+    }
+  }
+  
+  func appendNext<U: BaseStream>(stream: U, count: UInt, then: Termination) -> U where U.Data == T {
     var count = max(1, count)
     
     return append(stream, toParent: self) { (_, next, completion) in
@@ -343,7 +355,7 @@ extension Stream {
           count -= 1
           var events = [next]
           if count == 0 {
-            events.append(.terminate(reason: .cancelled))
+            events.append(.terminate(reason: then))
           }
           completion(events)
         }
