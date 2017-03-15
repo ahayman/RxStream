@@ -12,7 +12,8 @@ import Foundation
  This file contains all the base stream operations that can be appended to another stream.
  */
 
-private func append<T: BaseStream, U: BaseStream>(_ stream: U, toParent parent: T, op: @escaping StreamOp<T.Data, U.Data>) -> U {
+/// The main function used to attach a stream to a parent stream along with the child's stream work
+func append<T: BaseStream, U: BaseStream>(_ stream: U, toParent parent: T, op: @escaping StreamOp<T.Data, U.Data>) -> U {
   guard
     let child = stream as? Stream<U.Data>,
     let parent = parent as? Stream<T.Data>
@@ -27,6 +28,13 @@ private func append<T: BaseStream, U: BaseStream>(_ stream: U, toParent parent: 
     let cancelParent = stream as? Cancelable
   {
     cancelChild.cancelParent = cancelParent
+  }
+  
+  if
+    let retryChild = stream as? Retriable,
+    let retryParent = parent as? Retriable
+  {
+    retryChild.retryParent = retryParent
   }
   
   parent.appendDownStream { (prior, next) -> Bool in

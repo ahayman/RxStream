@@ -8,6 +8,86 @@
 
 import Foundation
 
+// MARK: Retry Operations
+extension Promise {
+  
+  /**
+   ## Branching
+   
+   Signify that a Promise should be retried when receiving an error.
+   
+   - parameter handler: When receiving an error, the handler should return whether the task should be retried
+   
+   - returns: a new Promise
+   */
+  public func retryOn(_ handler: @escaping (_ value: Error) -> Bool) -> Promise<T> {
+    let promise = Promise<T>()
+    return append(promise, toParent: self) { [weak self] (_, next, completion) in
+      guard case let .terminate(.error(error)) = next else { return completion([next]) }
+      if handler(error) {
+        self?.retry()
+        completion(nil)
+      } else {
+        completion([next])
+      }
+    }
+  }
+  
+  /**
+   ## Branching
+   
+   Asynchronously signify that a Promise should be retried when receiving an error.
+   
+   - parameter handler: When receiving an error, the handler should call back the completion handler with whether the promise should be retried or not.
+   
+   - returns: a new Promise
+   */
+  public func retryOn(_ handler: @escaping (_ value: Error, _ retry: (Bool) -> Void) -> Void) -> Promise<T> {
+    let promise = Promise<T>()
+    return append(promise, toParent: self) { [weak self] (_, next, completion) in
+      guard case let .terminate(.error(error)) = next else { return completion([next]) }
+      handler(error) { retry in
+        if retry {
+          self?.retry()
+          completion(nil)
+        } else {
+          completion([next])
+        }
+      }
+    }
+  }
+  
+  /**
+   ## Branching
+   
+   Specify that any error should be retried up to the provided limit.  
+   You may also specify a delay, so that the retry isn't attempted immediately.
+   
+   - parameter limit: The maximum number of times to attempt a retry
+   - parameter delay: _(Optional)_, **Default:** `nil`. If specified, the retry attempt will be delayed by the provided amount.
+   
+   - returns: a new Promise
+   */
+  public func retry(_ limit: UInt, delay: TimeInterval? = nil) -> Promise<T> {
+    let promise = Promise<T>()
+    var count: UInt = 0
+    return append(promise, toParent: self) { [weak self] (_, next, completion) in
+      guard case .terminate(.error) = next, count < limit else { return completion([next]) }
+      count += 1
+      if let delay = delay {
+        Dispatch.after(delay: delay, on: .main).execute {
+          self?.retry()
+        }
+      } else {
+        self?.retry()
+      }
+    }
+  }
+  
+  
+}
+
+// Mark: Standard Operations
 extension Promise {
   
   /**

@@ -102,6 +102,9 @@ public class Stream<T> {
   /// Defines the parent stream to which this stream is attached.  Currently used for pruning when a child is terminated.
   weak var parent: ParentStream? = nil
   
+  /// Some streams are reusable, ex: a Promise.  In that case, we don't want to discard the down streams since they can be reactivated.
+  var reusable: Bool = false
+  
   /// Determines whether the stream will persist even after all down streams have terminated.
   fileprivate var persist: Bool = false
   
@@ -142,6 +145,11 @@ public class Stream<T> {
   
   /// A Throttle is used to restrict the flow of information that moves through the stream.
   internal(set) public var throttle: Throttle?
+  
+  /// Returns the last value to be emitted from the stream
+  var last: T? {
+    return queue?.current
+  }
   
   /**
    Used internally by concrete subclasses to append downstream processors.
@@ -186,11 +194,11 @@ public class Stream<T> {
     dispatch.execute {
       guard !self.persist else { return }
       self.downStreams = self.downStreams.filter{ $0(nil, nil) }
-      if self.downStreams.count == 0 {
+      if self.downStreams.count == 0 && self.isActive {
         self._state.set(.terminated(reason: reason))
         self.terminationWork?(reason)
-        self.parent?.prune(withReason: reason)
       }
+      self.parent?.prune(withReason: reason)
     }
   }
   
@@ -201,8 +209,12 @@ public class Stream<T> {
   private func push(event: Event<T>) {
     dispatch.execute {
       
-      // Push the event down stream
-      self.downStreams = self.downStreams.filter{ return $0(self.queue?.current, event) }
+      // Push the event down stream.  If the stream is reusable, we don't want to filter downstreams.  
+      if self.reusable {
+        self.downStreams.forEach{ _ = $0(self.queue?.current, event) }
+      } else {
+        self.downStreams = self.downStreams.filter{ return $0(self.queue?.current, event) }
+      }
       
       // update internal state
       switch event {
@@ -210,8 +222,12 @@ public class Stream<T> {
         self.queue = (self.queue?.current, value)
       case let .terminate(reason):
         self._state.set(.terminated(reason: reason))
-        self.downStreams = []
-        self.parent?.prune(withReason: reason)
+        if !self.reusable {
+          self.downStreams = []
+        }
+        if self.downStreams.count == 0 {
+          self.parent?.prune(withReason: reason)
+        }
       }
     }
   }
@@ -228,6 +244,11 @@ public class Stream<T> {
         self.push(event: .terminate(reason: reason))
       }
     }
+  }
+  
+  /// Primarily used by Promise when it needs to reactivate
+  func reactivate() {
+    self._state.set(.active)
   }
   
   /**
