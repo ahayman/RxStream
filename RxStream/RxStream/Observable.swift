@@ -18,7 +18,7 @@ public class Observable<T> : Hot<T> {
   
   /// Privately used to push new events down stream
   fileprivate func push(event: Event<T>) {
-    self.process(prior: nil, next: event) { (_, event, completion) in
+    self.process(key: nil, prior: nil, next: event) { (_, event, completion) in
       if case .next(let value) = event {
         self.value = value
       }

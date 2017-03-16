@@ -70,12 +70,12 @@ public class Promise<T> : Stream<T> {
   }
   
   /// Override the process function to ensure it can only be alled once
-  override func process<U>(prior: U?, next: Event<U>, withOp op: @escaping (U?, Event<U>, @escaping ([Event<T>]?) -> Void) -> Void) -> Bool {
+  override func process<U>(key: String?, prior: U?, next: Event<U>, withOp op: @escaping (U?, Event<U>, @escaping ([Event<T>]?) -> Void) -> Void) -> Bool {
     guard !complete else { return false }
     complete = true
-    super.process(prior: prior, next: next, withOp: op)
+    super.process(key: key, prior: prior, next: next, withOp: op)
     if case .next(let value) = next {
-      super.process(prior: value, next: .terminate(reason: .completed), withOp: op)
+      super.process(key: key, prior: value, next: .terminate(reason: .completed), withOp: op)
     }
     
     return false
@@ -83,7 +83,7 @@ public class Promise<T> : Stream<T> {
   
   /// Privately used to push new events down stream
   private func push(value: Event<T>) {
-    _ = self.process(prior: nil, next: value) { (_, _, _) in }
+    _ = self.process(key: nil, prior: nil, next: value) { (_, _, _) in }
   }
   
   /// Used to run the task
