@@ -22,7 +22,7 @@ extension Promise {
    */
   public func retryOn(_ handler: @escaping (_ value: Error) -> Bool) -> Promise<T> {
     let promise = Promise<T>()
-    return append(promise, toParent: self) { [weak self] (_, next, completion) in
+    return append(stream: promise) { [weak self] (_, next, completion) in
       guard case let .terminate(.error(error)) = next else { return completion([next]) }
       if handler(error) {
         self?.retry()
@@ -44,7 +44,7 @@ extension Promise {
    */
   public func retryOn(_ handler: @escaping (_ value: Error, _ retry: (Bool) -> Void) -> Void) -> Promise<T> {
     let promise = Promise<T>()
-    return append(promise, toParent: self) { [weak self] (_, next, completion) in
+    return append(stream: promise) { [weak self] (_, next, completion) in
       guard case let .terminate(.error(error)) = next else { return completion([next]) }
       handler(error) { retry in
         if retry {
@@ -71,7 +71,7 @@ extension Promise {
   public func retry(_ limit: UInt, delay: TimeInterval? = nil) -> Promise<T> {
     let promise = Promise<T>()
     var count: UInt = 0
-    return append(promise, toParent: self) { [weak self] (_, next, completion) in
+    return append(stream: promise) { [weak self] (_, next, completion) in
       guard case .terminate(.error) = next, count < limit else { return completion([next]) }
       count += 1
       if let delay = delay {

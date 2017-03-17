@@ -175,6 +175,37 @@ public class Stream<T> {
   */
   var keys = Set<String>()
   
+  
+  /// The main function used to attach a stream to a parent stream along with the child's stream work
+  func append<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
+    guard let child = stream as? Stream<U.Data> else { fatalError("Error attaching streams: All Streams must descencend from Stream.") }
+    
+    child.dispatch = dispatch
+    child.replay = replay
+    child.parent = parent
+    
+    if
+      let cancelChild = stream as? Cancelable,
+      let cancelParent = stream as? Cancelable
+    {
+      cancelChild.cancelParent = cancelParent
+    }
+    
+    if
+      let retryChild = stream as? Retriable,
+      let retryParent = parent as? Retriable
+    {
+      retryChild.retryParent = retryParent
+    }
+    
+    appendDownStream(processor: DownstreamProcessor(stream: child, processor: op))
+    
+    child.terminationWork = { reason in
+      op(nil, .terminate(reason: reason)) { _ in }
+    }
+    return stream
+  }
+  
   /**
    Used internally by concrete subclasses to append downstream processors.
    A processor will normally be a closure that captures the subclassed `Stream`, processes the data (possibly transforms it), and passes it on to the down stream.

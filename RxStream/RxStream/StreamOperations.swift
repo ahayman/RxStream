@@ -17,7 +17,7 @@ func append<T: BaseStream, U: BaseStream>(_ stream: U, toParent parent: T, op: @
   guard
     let child = stream as? Stream<U.Data>,
     let parent = parent as? Stream<T.Data>
-    else { fatalError("Error attaching streams: All Streams must descencend from CoreStream.") }
+    else { fatalError("Error attaching streams: All Streams must descencend from Stream.") }
   
   child.dispatch = parent.dispatch
   child.replay = parent.replay
@@ -49,28 +49,28 @@ func append<T: BaseStream, U: BaseStream>(_ stream: U, toParent parent: T, op: @
 extension Stream {
   
   func appendOn<U: BaseStream>(stream: U, handler: @escaping (U.Data) -> Void) -> U where U.Data == T {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next.onValue { handler($0) }
       completion([next])
     }
   }
   
   func appendTransition<U: BaseStream>(stream: U, handler: @escaping (U.Data?, U.Data) -> Void) -> U where U.Data == T {
-    return append(stream, toParent: self) { (prior, next, completion) in
+    return append(stream: stream) { (prior, next, completion) in
       next.onValue { handler(prior, $0)  }
       completion([next])
     }
   }
   
   func appendOnTerminate<U: BaseStream>(stream: U, handler: @escaping (Termination) -> Void) -> U where U.Data == T {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next.onTerminate{ handler($0) }
       completion(nil)
     }
   }
   
   func appendMap<U: BaseStream>(stream: U, withMapper mapper: @escaping (T) -> U.Data?) -> U {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ mapper($0) >>? { completion([.next($0)]) } }
         .onTerminate{ _ in completion(nil) }
@@ -78,7 +78,7 @@ extension Stream {
   }
   
   func appendMap<U: BaseStream>(stream: U, withMapper mapper: @escaping (T) -> Result<U.Data>) -> U {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue {
           mapper($0)
@@ -90,7 +90,7 @@ extension Stream {
   }
   
   func appendMap<U: BaseStream>(stream: U, withMapper mapper: @escaping (T, (Result<U.Data>?) -> Void) -> Void) -> U {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue {
           mapper($0) {
@@ -108,7 +108,7 @@ extension Stream {
   }
   
   func appendFlatMap<U: BaseStream>(stream: U, withFlatMapper mapper: @escaping (T) -> [U.Data]) -> U {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ completion(mapper($0).map{ .next($0) }) }
         .onTerminate{ _ in completion(nil) }
@@ -117,7 +117,7 @@ extension Stream {
   
   func appendScan<U: BaseStream>(stream: U, initial: U.Data, withScanner scanner: @escaping (U.Data, T) -> U.Data) -> U {
     var reduction: U.Data = initial
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{
           reduction = scanner(reduction, $0)
@@ -128,7 +128,7 @@ extension Stream {
   }
   
   func appendFirst<U: BaseStream>(stream: U, then: Termination) -> U where U.Data == T {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ completion([.next($0), .terminate(reason: then)]) }
         .onTerminate{ _ in completion(nil) }
@@ -138,7 +138,7 @@ extension Stream {
   func appendFirst<U: BaseStream>(stream: U, count: Int, then: Termination) -> U where U.Data == T {
     let first = max(1, count)
     var count = 0
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       var events: [Event<T>] = []
       next
         .onValue{
@@ -156,7 +156,7 @@ extension Stream {
   
   func appendLast<U: BaseStream>(stream: U) -> U where U.Data == T {
     var last: Event<U.Data>? = nil
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       switch next {
       case .next:
         last = next
@@ -169,7 +169,7 @@ extension Stream {
   
   func appendLast<U: BaseStream>(stream: U, count: Int, partial: Bool) -> U where U.Data == T {
     var buffer = CircularBuffer<T>(size: max(1, count))
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{
           buffer.append($0)
@@ -186,7 +186,7 @@ extension Stream {
     let size = Int(max(1, bufferSize)) - 1
     var buffer: U.Data = []
     buffer.reserveCapacity(size)
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue {
           if buffer.count < size {
@@ -208,7 +208,7 @@ extension Stream {
   func appendWindow<U: BaseStream>(stream: U, windowSize: Int, partial: Bool) -> U where U.Data == [T] {
     let windowSize = max(1, windowSize)
     var buffer = CircularBuffer<T>(size: windowSize)
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{
           buffer.append($0)
@@ -232,7 +232,7 @@ extension Stream {
   
   func appendWindow<U: BaseStream>(stream: U, windowSize: TimeInterval, limit: Int?) -> U where U.Data == [T] {
     var buffer = [(TimeInterval, T)]()
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{
           let now = Date.timeIntervalSinceReferenceDate
@@ -248,7 +248,7 @@ extension Stream {
   }
   
   func appendFilter<U: BaseStream>(stream: U, include: @escaping (T) -> Bool) -> U where U.Data == T {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ completion(include($0) ? [next] : nil) }
         .onTerminate{ _ in completion(nil) }
@@ -258,7 +258,7 @@ extension Stream {
   func appendStride<U: BaseStream>(stream: U, stride: Int) -> U where U.Data == T {
     let stride = max(1, stride)
     var current = 0
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ _ in
           current += 1
@@ -274,7 +274,7 @@ extension Stream {
   }
   
   func appendStamp<U: BaseStream, V>(stream: U, stamper: @escaping (T) -> V) -> U where U.Data == (T, V) {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ completion([.next($0, stamper($0))]) }
         .onTerminate{ _ in completion(nil) }
@@ -282,7 +282,7 @@ extension Stream {
   }
   
   func appendDistinct<U: BaseStream>(stream: U, isDistinct: @escaping (T, T) -> Bool) -> U where U.Data == T {
-    return append(stream, toParent: self) { (prior, next, completion) in
+    return append(stream: stream) { (prior, next, completion) in
       next
         .onValue{
           guard let prior = prior else { return completion([next]) }
@@ -294,7 +294,7 @@ extension Stream {
   
   func appendMin<U: BaseStream>(stream: U, lessThan: @escaping (T, T) -> Bool) -> U where U.Data == T {
     var min: T? = nil
-    return append(stream, toParent: self) { (prior, next, completion) in
+    return append(stream: stream) { (prior, next, completion) in
       next
         .onValue{
           guard let prior = min ?? prior, !lessThan($0, prior) else {
@@ -309,7 +309,7 @@ extension Stream {
   
   func appendMax<U: BaseStream>(stream: U, greaterThan: @escaping (T, T) -> Bool) -> U where U.Data == T {
     var max: T? = nil
-    return append(stream, toParent: self) { (prior, next, completion) in
+    return append(stream: stream) { (prior, next, completion) in
       next
         .onValue{
           guard let prior = max ?? prior, !greaterThan($0, prior) else {
@@ -324,7 +324,7 @@ extension Stream {
   
   func appendCount<U: BaseStream>(stream: U) -> U where U.Data == UInt {
     var count: UInt = 0
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ _ in
           count += 1
@@ -335,7 +335,7 @@ extension Stream {
   }
   
   func appendDelay<U: BaseStream>(stream: U, delay: TimeInterval) -> U where U.Data == T {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ _ in
           Dispatch.after(delay: delay, on: .main).execute{ completion([next]) }
@@ -347,7 +347,7 @@ extension Stream {
   func appendSkip<U: BaseStream>(stream: U, count: Int) -> U where U.Data == T {
     var count = max(0, count)
     
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ _ in
           guard count > 0 else { return completion([next]) }
@@ -361,7 +361,7 @@ extension Stream {
   func appendNext<U: BaseStream>(stream: U, count: UInt, then: Termination) -> U where U.Data == T {
     var count = max(1, count)
     
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ _ in
           guard count > 0 else { return completion(nil) }
@@ -378,7 +378,7 @@ extension Stream {
   
   func appendStart<U: BaseStream>(stream: U, startWith: [T]) -> U where U.Data == T {
     var start: [T]? = startWith
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ _ in
           if let events = start {
@@ -393,7 +393,7 @@ extension Stream {
   }
   
   func appendConcat<U: BaseStream>(stream: U, concat: [T]) -> U where U.Data == T {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ _ in completion([next]) }
         .onTerminate{ _ in completion(concat.map{ .next($0) }) }
@@ -402,7 +402,7 @@ extension Stream {
   
   func appendDefault<U: BaseStream>(stream: U, value: T) -> U where U.Data == T {
     var empty = true
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ _ in
           empty = false
@@ -420,25 +420,25 @@ extension Stream {
 extension Stream {
   
   func appendMerge<U: BaseStream, V>(stream: Stream<V>, intoStream: U) -> U where U.Data == Either<T, V> {
-    _ = append(intoStream, toParent: self) { (_, next, completion) in
-      next
-        .onValue{ completion([.next(.left($0))]) }
-        .onTerminate{ _ in completion(nil) }
-    }
-    return append(intoStream, toParent: stream) { (_, next, completion) in
+    stream.append(stream: intoStream) { (_, next, completion) in
       next
         .onValue{ completion([.next(.right($0))]) }
+        .onTerminate{ _ in completion(nil) }
+    }
+    return append(stream: intoStream) { (_, next, completion) in
+      next
+        .onValue{ completion([.next(.left($0))]) }
         .onTerminate{ _ in completion(nil) }
     }
   }
   
   func appendMerge<U: BaseStream>(stream: Stream<T>, intoStream: U) -> U where U.Data == T {
-    _ = append(intoStream, toParent: stream) { (_, next, completion) in
+    _ = append(stream: intoStream) { (_, next, completion) in
       next
         .onValue{ completion([.next($0)]) }
         .onTerminate{ _ in completion(nil) }
     }
-    return append(intoStream, toParent: self) { (_, next, completion) in
+    return append(stream: intoStream) { (_, next, completion) in
       next
         .onValue{ completion([.next($0)]) }
         .onTerminate{ _ in completion(nil) }
@@ -450,7 +450,7 @@ extension Stream {
     var rightBuffer = [V]()
     
     // Right Stream
-    _ = append(intoStream, toParent: stream) { (_, next, completion) in
+    stream.append(stream: intoStream) { (_, next, completion) in
       next
         .onValue{
           if leftBuffer.count > 0 {
@@ -467,7 +467,7 @@ extension Stream {
     }
     
     // Left Stream
-    return append(intoStream, toParent: self) { (_, next, completion) in
+    return append(stream: intoStream) { (_, next, completion) in
       next
         .onValue{
           if rightBuffer.count > 0 {
@@ -489,7 +489,7 @@ extension Stream {
     var right: V? = nil
     
     // Right Stream
-    _ = append(intoStream, toParent: stream) { (_, next, completion) in
+    stream.append(stream: intoStream) { (_, next, completion) in
       next
         .onValue{
           guard let leftValue = left else {
@@ -508,7 +508,7 @@ extension Stream {
     }
     
     // Left Stream
-    return append(intoStream, toParent: self) { (_, next, completion) in
+    return append(stream: intoStream) { (_, next, completion) in
       next
         .onValue{
           guard let rightValue = right else {
@@ -533,7 +533,7 @@ extension Stream {
 extension Stream {
   
   func appendWhile<U: BaseStream>(stream: U, handler: @escaping (U.Data) -> Bool, then: Termination) -> U where U.Data == T {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       var events = [next]
       next.onValue { value in
         if !handler(value) {
@@ -545,7 +545,7 @@ extension Stream {
   }
   
   func appendUntil<U: BaseStream>(stream: U, handler: @escaping (U.Data) -> Bool, then: Termination) -> U where U.Data == T {
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       var events = [next]
       next.onValue { value in
         if handler(value) {
@@ -557,7 +557,7 @@ extension Stream {
   }
   
   func appendWhile<U: BaseStream>(stream: U, handler: @escaping (U.Data?, U.Data) -> Bool, then: Termination) -> U where U.Data == T {
-    return append(stream, toParent: self) { (prior, next, completion) in
+    return append(stream: stream) { (prior, next, completion) in
       var events = [next]
       next.onValue { value in
         if !handler(prior, value) {
@@ -569,7 +569,7 @@ extension Stream {
   }
   
   func appendUntil<U: BaseStream>(stream: U, handler: @escaping (U.Data?, U.Data) -> Bool, then: Termination) -> U where U.Data == T {
-    return append(stream, toParent: self) { (prior, next, completion) in
+    return append(stream: stream) { (prior, next, completion) in
       var events = [next]
       next.onValue { value in
         if handler(prior, value) {
@@ -582,7 +582,7 @@ extension Stream {
   
   func appendUsing<U: BaseStream, V: AnyObject>(stream: U, object: V, then: Termination) -> U where U.Data == (V, T) {
     let box = WeakBox(object)
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ value in
           if let object = box.object {
@@ -603,7 +603,7 @@ extension Stream where T: Arithmetic {
   func appendAverage<U: BaseStream>(stream: U) -> U where U.Data == Data {
     var total = T(0)
     var count = T(0)
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ value in
           count = count + T(1)
@@ -616,7 +616,7 @@ extension Stream where T: Arithmetic {
   
   func appendSum<U: BaseStream>(stream: U) -> U where U.Data == Data {
     var current = T(0)
-    return append(stream, toParent: self) { (_, next, completion) in
+    return append(stream: stream) { (_, next, completion) in
       next
         .onValue{ value in
           current = value + current
