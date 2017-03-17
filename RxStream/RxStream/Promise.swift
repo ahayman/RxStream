@@ -21,7 +21,39 @@ protocol Retriable : class {
   func retry()
 }
 
+class PromiseProcessor<T> : StreamProcessor<T> { }
+class DownstreamPromiseProcessor<T, U> : PromiseProcessor<T> {
+  var stream: Stream<U>
+  var processor: StreamOp<T, U>
+  
+  init(stream: Stream<U>, processor: @escaping StreamOp<T, U>) {
+    self.stream = stream
+    self.processor = processor
+    stream.onTerminate = { processor(nil, .terminate(reason: $0), { _ in }) }
+  }
+  
+  override var shouldPrune: Bool {
+    guard stream.isActive else { return false }
+    // We need to prune if there are no active down stream _promises_.  Since a promise emits only one value that can be retried, we can't prune until those streams complete.
+    let active = stream.downStreams.reduce(0) { (count, processor) -> Int in
+      guard !processor.shouldPrune else { return count }
+      guard processor is PromiseProcessor<U> else { return count }
+      return count + 1
+    }
+    return active < 1
+  }
+  
+  override func process(prior: T?, next: Event<T>, withKey key: String?) {
+    stream.process(key: key, prior: prior, next: next, withOp: processor)
+    if case .next = next, self.shouldPrune {
+      stream.prune(withReason: .completed)
+    }
+  }
+  
+}
+
 extension Promise : Cancelable { }
+extension Promise : Retriable { }
 
 public class Promise<T> : Stream<T> {
   
@@ -73,6 +105,14 @@ public class Promise<T> : Stream<T> {
     complete = true
     super.process(key: key, prior: prior, next: next, withOp: op)
     return 
+  }
+  
+  override func newDownstreamProcessor<U>(forStream stream: Stream<U>, withProcessor processor: @escaping (T?, Event<T>, @escaping ([Event<U>]?) -> Void) -> Void) -> StreamProcessor<T> {
+    if let child = stream as? Promise<U> {
+      child.cancelParent = self
+      child.retryParent = self
+    }
+    return DownstreamPromiseProcessor(stream: stream, processor: processor)
   }
   
   /// Privately used to push new events down stream

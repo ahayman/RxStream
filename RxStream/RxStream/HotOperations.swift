@@ -13,6 +13,21 @@ extension Hot {
   /**
    ## Branching
    
+   This will call the handler when the stream receives a _non-terminating_ error.
+   The handler can optionally return a Termination, which will cause the stream to terminate.
+   
+   - parameter handler: Receives an error and can optionally return a Termination.  If `nil` is returned, the stream will continue to be active.
+   - parameter error: The error thrown by the stream
+   
+   - returns: a new Hot stream
+   */
+  public func onError(_ handler: @escaping (_ error: Error) -> Termination?) -> Hot<T> {
+    return appendOnError(stream: Hot<T>(), handler: handler)
+  }
+  
+  /**
+   ## Branching
+   
    Attach a simple observation handler to the stream to observe new values.
    
    - parameter handler: The handler used to observe new values.

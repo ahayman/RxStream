@@ -57,7 +57,7 @@ typealias ParentProcessor = (Request, String) -> Void
       guard let requestKey = key else { return }
       key = nil
       $0
-        .onFailure{ self.push(event: .terminate(reason: .error($0)), withKey: requestKey) }
+        .onFailure{ self.push(event: .error($0), withKey: requestKey) }
         .onSuccess{ self.push(event: .next($0), withKey: requestKey) }
     }
   }
