@@ -46,7 +46,7 @@ typealias ParentProcessor = (Request, String) -> Void
   }
   
   private func process(event: Event<Response>, withKey key: String) {
-    self.process(key: key, prior: nil, next: event) { (_, event, completion) in
+    self.process(key: shared ? nil : key, prior: nil, next: event) { (_, event, completion) in
       completion([event])
     }
   }
@@ -74,5 +74,16 @@ typealias ParentProcessor = (Request, String) -> Void
    process(request: request, withKey: String.newUUID())
   }
   
+  /**
+   By default, only streams that make a request will receive a response. By setting `shared` to true, this stream will share its response to all down streams of it.
+   
+   - parameter share: Whether to share all responses with all downstreams
+   
+   - returns: Self
+   */
+  public func share(_ share: Bool = true) -> Self {
+    self.shared = share
+    return self
+  }
   
 }
