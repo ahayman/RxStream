@@ -8,12 +8,24 @@
 
 import Foundation
 
+/**
+ A Cold stream is a kind of stream that only produces values when it is asked to.
+ A cold stream can be asked to produce a value by making a `request` anywhere down stream.
+ It differs from other types of stream in that a cold stream will only produce one value per request.
+ Moreover, the result of a request will _only_ be passed back down the chain that originally requested it.  
+ This prevents other branches from receiving requests they did not ask for.
+ */
 public class Cold<Request, Response> : Stream<Response> {
   
 public typealias ColdTask = (_ state: Observable<StreamState>, _ request: Request, _ response: (Result<Response>) -> Void) -> Void
+  
 typealias ParentProcessor = (Request, String) -> Void
   
+  /// The processor responsible for filling a request.  It can either be a ColdTask or a ParentProcessor (a Parent stream that can handle fill the request).
   private var requestProcessor: Either<ColdTask, ParentProcessor>
+  
+  /// If this is set true, responses will be passed down to _all_ substreams
+  private var shared: Bool = false
   
   func newSubStream<U>() -> Cold<Request, U> {
     return Cold<Request, U>{ [weak self] (request, key) in
@@ -29,7 +41,11 @@ typealias ParentProcessor = (Request, String) -> Void
     self.requestProcessor = Either(processor)
   }
   
-  private func push(event: Event<Response>, withKey key: String) {
+  override func push(event: Event<Response>, withKey key: String?) {
+    super.push(event: event, withKey: shared ? nil : key)
+  }
+  
+  private func process(event: Event<Response>, withKey key: String) {
     self.process(key: key, prior: nil, next: event) { (_, event, completion) in
       completion([event])
     }

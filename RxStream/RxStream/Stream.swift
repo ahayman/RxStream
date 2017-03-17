@@ -63,12 +63,33 @@ public enum Event<T> {
   }
 }
 
-/** 
+/**
  An event processor takes an event (along with an optional prior), processes it, and passes it into the down stream.
  It should return a `Bool` value to indicate whether the down stream is still active.  It not active, the processor will be removed.
  - note: the next parameter is optional.  If it's not includes, nothing will be processed, but the processor should still return whether the stream is active or not.  The parent can use this to prune inactive streams.
  */
-typealias EventProcessor<T> = (_ key: String?, _ prior: T?, _ next: Event<T>?) -> Bool
+class Processor<T> {
+  var shouldPrune: Bool { return true }
+  
+  func process(prior: T?, next: Event<T>, withKey key: String?) { }
+}
+
+class DownstreamProcessor<T, U> : Processor<T> {
+  var stream: Stream<U>
+  var processor: StreamOp<T, U>
+  
+  override var shouldPrune: Bool { return !stream.isActive }
+  
+  override func process(prior: T?, next: Event<T>, withKey key: String?) {
+    stream.process(key: key, prior: prior, next: next, withOp: processor)
+  }
+  
+  init(stream: Stream<U>, processor: @escaping StreamOp<T, U>) {
+    self.stream = stream
+    self.processor = processor
+  }
+  
+}
 
 /// Defines work that should be done for an event.  The event is passed in, and the completion handler is called when the work has completed.
 typealias StreamOp<U, T> = (_ prior: U?, _ next: Event<U>, _ complete: @escaping ([Event<T>]?) -> Void) -> Void
@@ -88,7 +109,7 @@ public class Stream<T> {
   typealias Data = T
   
   /// Storage of all down streams.
-  private var downStreams = [EventProcessor<T>]()
+  private var downStreams = [Processor<T>]()
   
   /// The amount of work currently in progress.  Mostly, it's used to keep track of running work so that termination events are only processed after
   private var currentWork: UInt = 0
@@ -101,9 +122,6 @@ public class Stream<T> {
   
   /// Defines the parent stream to which this stream is attached.  Currently used for pruning when a child is terminated.
   weak var parent: ParentStream? = nil
-  
-  /// Some streams are reusable, ex: a Promise.  In that case, we don't want to discard the down streams since they can be reactivated.
-  var reusable: Bool = false
   
   /// Determines whether the stream will persist even after all down streams have terminated.
   fileprivate var persist: Bool = false
@@ -166,7 +184,7 @@ public class Stream<T> {
    - parameter processor: The processor should take an event, process it and pass it into a capture downstream
    - note: Termination will always replay. We don't want an active downstream that's attached to an inactive one.
    */
-  func appendDownStream(processor: @escaping EventProcessor<T>) {
+  func appendDownStream(processor: Processor<T>) {
     dispatch.execute {
       let replay = self.replay
       self.replay = false
@@ -174,16 +192,14 @@ public class Stream<T> {
       // If replay is specified, and there are items in the queue, pass those into the processor
       if
         replay,
-        let queue = self.queue,
-        !processor(nil, queue.prior, .next(queue.current))
+        let queue = self.queue
       {
-        // The processor returned false, meaning the downstream is inactive and nothing else need be done
-        return
+        processor.process(prior: queue.prior, next: .next(queue.current), withKey: nil)
       }
       
       // If this stream is terminated, pass that into the processor, else append the processor
       if let termination = self.termination {
-        _ = processor(nil, self.queue?.current, .terminate(reason: termination))
+        processor.process(prior: self.queue?.current, next: .terminate(reason: termination), withKey: nil)
       } else {
         self.downStreams.append(processor)
       }
@@ -199,7 +215,7 @@ public class Stream<T> {
   func prune(withReason reason: Termination) {
     dispatch.execute {
       guard !self.persist else { return }
-      self.downStreams = self.downStreams.filter{ $0(nil, nil, nil) }
+      self.downStreams = self.downStreams.filter{ $0.shouldPrune }
       if self.downStreams.count == 0 && self.isActive {
         self._state.set(.terminated(reason: reason))
         self.terminationWork?(reason)
@@ -213,14 +229,12 @@ public class Stream<T> {
    Provide a key to pass down stream if one was provided.
    - warning: if the stream is not active, the event will be ignored.
   */
-  private func push(event: Event<T>, withKey key: String?) {
+  func push(event: Event<T>, withKey key: String?) {
     dispatch.execute {
       
       // Push the event down stream.  If the stream is reusable, we don't want to filter downstreams.  
-      if self.reusable {
-        self.downStreams.forEach{ _ = $0(key, self.queue?.current, event) }
-      } else {
-        self.downStreams = self.downStreams.filter{ return $0(key, self.queue?.current, event) }
+      for processor in self.downStreams {
+        processor.process(prior: self.queue?.current, next: event, withKey: key) 
       }
       
       // update internal state
@@ -229,12 +243,6 @@ public class Stream<T> {
         self.queue = (self.queue?.current, value)
       case let .terminate(reason):
         self._state.set(.terminated(reason: reason))
-        if !self.reusable {
-          self.downStreams = []
-        }
-        if self.downStreams.count == 0 {
-          self.parent?.prune(withReason: reason)
-        }
       }
     }
   }
@@ -253,11 +261,6 @@ public class Stream<T> {
     }
   }
   
-  /// Primarily used by Promise when it needs to reactivate
-  func reactivate() {
-    self._state.set(.active)
-  }
-  
   /**
    This is an internal function used to process event work.  It's important that all processing work done for a stream use this function.
    The main point of this is to ensure that work is correctly dispatched and throttled.
@@ -269,43 +272,34 @@ public class Stream<T> {
    
    - warning: All work for a stream should use this function to process events.
    */
-  @discardableResult func process<U>(key: String?, prior: U?, next: Event<U>, withOp op: @escaping StreamOp<U, T>) -> Bool {
-    guard isActive else { return false }
+  func process<U>(key: String?, prior: U?, next: Event<U>, withOp op: @escaping StreamOp<U, T>) {
+    guard isActive else { return }
     dispatch.execute {
       // If a key is provided, we can only process the request if we have that key.
       if let key = key {
         guard let _ = self.keys.remove(key) else { return }
       }
-      // Keep track of a termination so we don't duplicate it
-      var eventTermination = false
-      var opTermination = false
       // Make sure we're receiving data, otherwise it's a termination event and we should set the terminateWork
-      if case let .terminate(reason) = next {
-        self.terminate(reason: reason)
-        eventTermination = true
-      }
-      
       self.currentWork += 1
       
       // Abstract out the process work so it can be done inline or applied to a throttle
       let workProcessor: ThrottledWork = { completion in
-        op(prior, next) { result in
-          result >>? { events in
-            for event in events {
-              // push each event
-              self.push(event: event, withKey: key)
-              // if the event is a termination, we break and prune if there wasn't already a termination
-              if case .terminate(let reason) = event {
-                if !eventTermination {
-                  opTermination = true
-                  self.parent?.prune(withReason: reason)
-                }
-                break
-              }
-            }
-          }
-          
           self.dispatch.execute {
+            var opTermination = false
+            op(prior, next) { result in
+              result >>? { events in
+                for event in events {
+                  // push each event
+                  self.push(event: event, withKey: key)
+                  // if the event is a termination, we break and prune if there wasn't already a termination
+                  if case .terminate(let reason) = event {
+                    opTermination = true
+                    self.parent?.prune(withReason: reason)
+                    break
+                  }
+                }
+              }
+              
             self.currentWork -= 1
             
             // If all current work is done and the stream is terminated and it hasn't been pushed, we need to push that termination downstream
@@ -323,7 +317,6 @@ public class Stream<T> {
         workProcessor { }
       }
     }
-    return true
   }
   
 }

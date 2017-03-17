@@ -59,26 +59,20 @@ public class Promise<T> : Stream<T> {
   public init(task: @escaping PromiseTask<T>) {
     super.init()
     persist()
-    self.reusable = true
     run(task: task)
   }
   
   /// Internal init for creating down stream promises
   override init() {
     super.init()
-    self.reusable = true
   }
   
   /// Override the process function to ensure it can only be alled once
-  override func process<U>(key: String?, prior: U?, next: Event<U>, withOp op: @escaping (U?, Event<U>, @escaping ([Event<T>]?) -> Void) -> Void) -> Bool {
-    guard !complete else { return false }
+  override func process<U>(key: String?, prior: U?, next: Event<U>, withOp op: @escaping (U?, Event<U>, @escaping ([Event<T>]?) -> Void) -> Void) {
+    guard !complete else { return }
     complete = true
     super.process(key: key, prior: prior, next: next, withOp: op)
-    if case .next(let value) = next {
-      super.process(key: key, prior: value, next: .terminate(reason: .completed), withOp: op)
-    }
-    
-    return false
+    return 
   }
   
   /// Privately used to push new events down stream
@@ -113,8 +107,7 @@ public class Promise<T> : Stream<T> {
   /// A Retry will propogate up the chain, re-enabling the the parent stream(s), until it find a task to retry, where it will retry that task.
   func retry() {
     // There's two states we can retry on: error and completed.  If the state is active, then the task we want to retry is already pending.  If the state is cancelled then someone cancelled the stream and no retry is possible.
-    guard !isActive && !isCancelled else { return }
-    self.reactivate()
+    guard !isCancelled else { return }
     // If complete is false, then a task is in progress and a retry is not necessary
     guard complete else { return }
     self.complete = false

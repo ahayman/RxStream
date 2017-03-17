@@ -37,10 +37,8 @@ func append<T: BaseStream, U: BaseStream>(_ stream: U, toParent parent: T, op: @
     retryChild.retryParent = retryParent
   }
   
-  parent.appendDownStream { (key, prior, next) -> Bool in
-    guard let next = next else { return child.isActive }
-    return child.process(key: key, prior: prior, next: next, withOp: op)
-  }
+  parent.appendDownStream(processor: DownstreamProcessor(stream: child, processor: op))
+  
   child.terminationWork = { reason in
     op(nil, .terminate(reason: reason)) { _ in }
   }

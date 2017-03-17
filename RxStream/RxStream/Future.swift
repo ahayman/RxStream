@@ -44,15 +44,13 @@ public class Future<T> : Stream<T> {
   override init() { }
   
   /// Override the process function to ensure it can only be alled once
-  override func process<U>(key: String?, prior: U?, next: Event<U>, withOp op: @escaping (U?, Event<U>, @escaping ([Event<T>]?) -> Void) -> Void) -> Bool {
-    guard !complete else { return false }
+  override func process<U>(key: String?, prior: U?, next: Event<U>, withOp op: @escaping (U?, Event<U>, @escaping ([Event<T>]?) -> Void) -> Void) {
+    guard !complete else { return }
     complete = true
     super.process(key: key, prior: prior, next: next, withOp: op)
-    if case .next(let value) = next {
-      super.process(key: key, prior: value, next: .terminate(reason: .completed), withOp: op)
+    if case .next = next {
+      self.terminate(reason: .completed)
     }
-    
-    return false
   }
   
   /// Privately used to push new events down stream
