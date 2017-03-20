@@ -27,6 +27,16 @@ typealias ParentProcessor = (Request, String) -> Void
   /// If this is set true, responses will be passed down to _all_ substreams
   private var shared: Bool = false
   
+  /// The promise needed to pass into the promise task.
+  lazy private var stateObservable: ObservableInput<StreamState> = ObservableInput(self.state)
+  
+  /// Override and observe didSet to update the observable
+  override public var state: StreamState {
+    didSet {
+      stateObservable.set(state)
+    }
+  }
+  
   func newSubStream<U>() -> Cold<Request, U> {
     return Cold<Request, U>{ [weak self] (request, key) in
       self?.process(request: request, withKey: key)
@@ -53,7 +63,7 @@ typealias ParentProcessor = (Request, String) -> Void
   
   private func make(request: Request, withKey key: String, withTask task: ColdTask) {
     var key: String? = key
-    task(self.state, request) {
+    task(self.stateObservable, request) {
       guard let requestKey = key else { return }
       key = nil
       $0

@@ -21,7 +21,7 @@ extension Hot {
    
    - returns: a new Hot stream
    */
-  public func onError(_ handler: @escaping (_ error: Error) -> Termination?) -> Hot<T> {
+  @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Termination?) -> Hot<T> {
     return appendOnError(stream: Hot<T>(), handler: handler)
   }
   
@@ -35,7 +35,7 @@ extension Hot {
    
    - returns: A new Hot stream
    */
-  public func on(_ handler: @escaping (_ value: T) -> Void) -> Hot<T> {
+  @discardableResult public func on(_ handler: @escaping (_ value: T) -> Void) -> Hot<T> {
     return appendOn(stream: Hot<T>(), handler: handler)
   }
   
@@ -50,7 +50,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func onTransition(_ handler: @escaping (_ prior: T?, _ next: T) -> Void) -> Hot<T> {
+  @discardableResult public func onTransition(_ handler: @escaping (_ prior: T?, _ next: T) -> Void) -> Hot<T> {
     return appendTransition(stream: Hot<T>(), handler: handler)
   }
   
@@ -63,7 +63,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func onTerminate(_ handler: @escaping (Termination) -> Void) -> Hot<T> {
+  @discardableResult public func onTerminate(_ handler: @escaping (Termination) -> Void) -> Hot<T> {
     return appendOnTerminate(stream: Hot<T>(), handler: handler)
   }
   
@@ -79,7 +79,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func map<U>(_ mapper: @escaping (_ value: T) -> U?) -> Hot<U> {
+  @discardableResult public func map<U>(_ mapper: @escaping (_ value: T) -> U?) -> Hot<U> {
     return appendMap(stream: Hot<U>(), withMapper: mapper)
   }
   
@@ -87,14 +87,14 @@ extension Hot {
    ## Branching
    
    Map values in the current stream to new values returned in a new stream. 
-   The mapper returns a result type that can return an error.  If an error is returned, the stream is terminated with that error.
+   The mapper returns a result type that can return an error or the mapped value.
    
    - parameter mapper: The handler to map the current value either to a new value or an error.
    - parameter value: The current value in the stream
    
    - returns: A new Hot Stream
    */
-  public func map<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Hot<U> {
+  @discardableResult public func map<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Hot<U> {
     return appendMap(stream: Hot<U>(), withMapper: mapper)
   }
   
@@ -106,7 +106,7 @@ extension Hot {
    Once ready, the completion handler should be called with:
    
     - New Value:  New values will be passed down stream
-    - Error: An error will terminate the stream with the error provided
+    - Error: An error will be passed down stream.  If you wish the error to terminate, add `onError` down stream and return a termination for it.
     - `nil`: Passing `nil` into will complete the handler but pass nothing down stream.
    
    - warning: The completion handler must _always_ be called, even if it's called with `nil`.  Failing to call the completion handler will block the stream, prevent it from being terminated, and will result in memory leakage.
@@ -117,7 +117,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func map<U>(_ mapper: @escaping (_ value: T, _ completion: (Result<U>?) -> Void) -> Void) -> Hot<U> {
+  @discardableResult public func map<U>(_ mapper: @escaping (_ value: T, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Hot<U> {
     return appendMap(stream: Hot<U>(), withMapper: mapper)
   }
   
@@ -131,7 +131,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func flatMap<U>(_ mapper: @escaping (_ value: T) -> [U]) -> Hot<U> {
+  @discardableResult public func flatMap<U>(_ mapper: @escaping (_ value: T) -> [U]) -> Hot<U> {
     return appendFlatMap(stream: Hot<U>(), withFlatMapper: mapper)
   }
   
@@ -150,7 +150,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func scan<U>(initial: U, scanner: @escaping (_ current: U, _ next: T) -> U) -> Hot<U> {
+  @discardableResult public func scan<U>(initial: U, scanner: @escaping (_ current: U, _ next: T) -> U) -> Hot<U> {
     return appendScan(stream: Hot<U>(), initial: initial, withScanner: scanner)
   }
   
@@ -164,7 +164,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func first(then: Termination = .cancelled) -> Hot<T> {
+  @discardableResult public func first(then: Termination = .cancelled) -> Hot<T> {
     return appendFirst(stream: Hot<T>(), then: then)
   }
   
@@ -179,7 +179,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func first(_ count: Int, then: Termination = .cancelled) -> Hot<T> {
+  @discardableResult public func first(_ count: Int, then: Termination = .cancelled) -> Hot<T> {
     return appendFirst(stream: Hot<T>(), count: count, then: then)
   }
   
@@ -190,7 +190,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func last() -> Hot<T> {
+  @discardableResult public func last() -> Hot<T> {
     return appendLast(stream: Hot<T>())
   }
   
@@ -205,7 +205,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func last(_ count: Int, partial: Bool = true) -> Hot<T> {
+  @discardableResult public func last(_ count: Int, partial: Bool = true) -> Hot<T> {
     return appendLast(stream: Hot<T>(), count: count, partial: partial)
   }
   
@@ -222,7 +222,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func reduce<U>(initial: U, reducer: @escaping (_ current: U, _ next: T) -> U) -> Hot<U> {
+  @discardableResult public func reduce<U>(initial: U, reducer: @escaping (_ current: U, _ next: T) -> U) -> Hot<U> {
     return scan(initial: initial, scanner: reducer).last()
   }
   
@@ -236,7 +236,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func buffer(size: Int, partial: Bool = true) -> Hot<[T]> {
+  @discardableResult public func buffer(size: Int, partial: Bool = true) -> Hot<[T]> {
     return appendBuffer(stream: Hot<[T]>(), bufferSize: size, partial: partial)
   }
   
@@ -251,7 +251,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func window(size: Int, partial: Bool = false) -> Hot<[T]> {
+  @discardableResult public func window(size: Int, partial: Bool = false) -> Hot<[T]> {
     return appendWindow(stream: Hot<[T]>(), windowSize: size, partial: partial)
   }
   
@@ -266,7 +266,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func window(size: TimeInterval, limit: Int? = nil) -> Hot<[T]> {
+  @discardableResult public func window(size: TimeInterval, limit: Int? = nil) -> Hot<[T]> {
     return appendWindow(stream: Hot<[T]>(), windowSize: size, limit: limit)
   }
   
@@ -280,7 +280,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func filter(include: @escaping (_ value: T) -> Bool) -> Hot<T> {
+  @discardableResult public func filter(include: @escaping (_ value: T) -> Bool) -> Hot<T> {
     return appendFilter(stream: Hot<T>(), include: include)
   }
   
@@ -294,7 +294,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func stride(_ stride: Int) -> Hot<T> {
+  @discardableResult public func stride(_ stride: Int) -> Hot<T> {
     return appendStride(stream: Hot<T>(), stride: stride)
   }
   
@@ -308,7 +308,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Hot<(T, U)> {
+  @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Hot<(T, U)> {
     return appendStamp(stream: Hot<(T, U)>(), stamper: stamper)
   }
   
@@ -319,7 +319,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func timeStamp() -> Hot<(T, Date)> {
+  @discardableResult public func timeStamp() -> Hot<(T, Date)> {
     return stamp{ _ in return Date() }
   }
   
@@ -338,7 +338,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func distinct(_ isDistinct: @escaping (_ prior: T, _ next: T) -> Bool) -> Hot<T> {
+  @discardableResult public func distinct(_ isDistinct: @escaping (_ prior: T, _ next: T) -> Bool) -> Hot<T> {
     return appendDistinct(stream: Hot<T>(), isDistinct: isDistinct)
   }
  
@@ -356,7 +356,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func min(lessThan: @escaping (_ isValue: T, _ lessThan: T) -> Bool) -> Hot<T> {
+  @discardableResult public func min(lessThan: @escaping (_ isValue: T, _ lessThan: T) -> Bool) -> Hot<T> {
     return appendMin(stream: Hot<T>(), lessThan: lessThan)
   }
   
@@ -374,7 +374,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func max(greaterThan: @escaping (_ isValue: T, _ greaterThan: T) -> Bool) -> Hot<T> {
+  @discardableResult public func max(greaterThan: @escaping (_ isValue: T, _ greaterThan: T) -> Bool) -> Hot<T> {
     return appendMax(stream: Hot<T>(), greaterThan: greaterThan)
   }
   
@@ -385,7 +385,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func count() -> Hot<UInt> {
+  @discardableResult public func count() -> Hot<UInt> {
     return appendCount(stream: Hot<UInt>())
   }
   
@@ -396,7 +396,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func countStamp() -> Hot<(T, UInt)> {
+  @discardableResult public func countStamp() -> Hot<(T, UInt)> {
     var count: UInt = 0
     return stamp{ _ in
       count += 1
@@ -415,7 +415,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func delay(_ delay: TimeInterval) -> Hot<T> {
+  @discardableResult public func delay(_ delay: TimeInterval) -> Hot<T> {
     return appendDelay(stream: Hot<T>(), delay: delay)
   }
   
@@ -428,7 +428,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func skip(_ count: Int) -> Hot<T> {
+  @discardableResult public func skip(_ count: Int) -> Hot<T> {
     return appendSkip(stream: Hot<T>(), count: count)
   }
   
@@ -442,7 +442,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func start(with: [T]) -> Hot<T> {
+  @discardableResult public func start(with: [T]) -> Hot<T> {
     return appendStart(stream: Hot<T>(), startWith: with)
   }
   
@@ -456,7 +456,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func concat(_ concat: [T]) -> Hot<T> {
+  @discardableResult public func concat(_ concat: [T]) -> Hot<T> {
     return appendConcat(stream: Hot<T>(), concat: concat)
   }
   
@@ -469,7 +469,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func defaultValue(_ value: T) -> Hot<T> {
+  @discardableResult public func defaultValue(_ value: T) -> Hot<T> {
     return appendDefault(stream: Hot<T>(), value: value)
   }
 }
@@ -486,7 +486,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func merge<U>(_ stream: Stream<U>) -> Hot<Either<T, U>> {
+  @discardableResult public func merge<U>(_ stream: Stream<U>) -> Hot<Either<T, U>> {
     return appendMerge(stream: stream, intoStream: Hot<Either<T, U>>())
   }
   
@@ -499,7 +499,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func merge(_ stream: Stream<T>) -> Hot<T> {
+  @discardableResult public func merge(_ stream: Stream<T>) -> Hot<T> {
     return appendMerge(stream: stream, intoStream: Hot<T>())
   }
   
@@ -518,7 +518,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Hot<(T, U)> {
+  @discardableResult public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Hot<(T, U)> {
     return appendZip(stream: stream, intoStream: Hot<(T, U)>(), buffer: buffer)
   }
   
@@ -540,7 +540,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func combine<U>(latest: Bool = true, stream: Stream<U>) -> Hot<(T, U)> {
+  @discardableResult public func combine<U>(latest: Bool = true, stream: Stream<U>) -> Hot<(T, U)> {
     return appendCombine(stream: stream, intoStream: Hot<(T, U)>(), latest: latest)
   }
   
@@ -562,7 +562,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func doWhile(then: Termination = .cancelled, handler: @escaping (_ value: T) -> Bool) -> Hot<T> {
+  @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ value: T) -> Bool) -> Hot<T> {
     return appendWhile(stream: Hot<T>(), handler: handler, then: then)
   }
   
@@ -581,7 +581,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func until(then: Termination = .cancelled, handler: @escaping (T) -> Bool) -> Hot<T> {
+  @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (T) -> Bool) -> Hot<T> {
     return appendUntil(stream: Hot<T>(), handler: handler, then: then)
   }
   
@@ -599,7 +599,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func doWhile(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Hot<T> {
+  @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Hot<T> {
     return appendWhile(stream: Hot<T>(), handler: handler, then: then)
   }
   
@@ -619,7 +619,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func until(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Hot<T> {
+  @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Hot<T> {
     return appendUntil(stream: Hot<T>(), handler: handler, then: then)
   }
   
@@ -636,7 +636,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Hot<(U, T)> {
+  @discardableResult public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Hot<(U, T)> {
     return appendUsing(stream: Hot<(U, T)>(), object: object, then: then)
   }
   
@@ -653,7 +653,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Hot<T> {
+  @discardableResult public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Hot<T> {
     return appendUsing(stream: Hot<(U, T)>(), object: object, then: then).map{ $0.1 }
   }
   
@@ -669,7 +669,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  public func next(_ count: UInt = 1, then: Termination = .cancelled) -> Hot<T> {
+  @discardableResult public func next(_ count: UInt = 1, then: Termination = .cancelled) -> Hot<T> {
     return appendNext(stream: Hot<T>(), count: count, then: then)
   }
   
@@ -685,7 +685,7 @@ extension Hot where T : Sequence {
    
    - returns: A new Hot Stream
    */
-  public func flatten() -> Hot<T.Iterator.Element> {
+  @discardableResult public func flatten() -> Hot<T.Iterator.Element> {
     return flatMap{ $0.map{ $0 } }
   }
   
@@ -700,7 +700,7 @@ extension Hot where T : Arithmetic {
    
    - returns: A new Hot Stream
    */
-  public func average() -> Hot<T> {
+  @discardableResult public func average() -> Hot<T> {
     return appendAverage(stream: Hot<T>())
   }
   
@@ -711,7 +711,7 @@ extension Hot where T : Arithmetic {
    
    - returns: A new Hot Stream
    */
-  public func sum() -> Hot<T> {
+  @discardableResult public func sum() -> Hot<T> {
     return appendSum(stream: Hot<T>())
   }
   
@@ -726,7 +726,7 @@ extension Hot where T : Comparable {
    
    - returns: A new Hot Stream
    */
-  public func min() -> Hot<T> {
+  @discardableResult public func min() -> Hot<T> {
     return appendMin(stream: Hot<T>()) { $0 < $1 }
   }
   
@@ -737,7 +737,7 @@ extension Hot where T : Comparable {
    
    - returns: A new Hot Stream
    */
-  public func max() -> Hot<T> {
+  @discardableResult public func max() -> Hot<T> {
     return appendMax(stream: Hot<T>()) { $0 > $1 }
   }
 }

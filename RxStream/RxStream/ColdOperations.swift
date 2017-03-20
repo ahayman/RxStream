@@ -24,7 +24,7 @@ extension Cold {
    
    - returns: a new Cold stream
    */
-  public func onError(_ handler: @escaping (_ error: Error) -> Termination?) -> Cold<Request, Response> {
+  @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Termination?) -> Cold<Request, Response> {
     return appendOnError(stream: newSubStream(), handler: handler)
   }
   
@@ -38,7 +38,7 @@ extension Cold {
    
    - returns: A new Cold stream
    */
-  public func on(_ handler: @escaping (_ value: Response) -> Void) -> Cold<Request, Response> {
+  @discardableResult public func on(_ handler: @escaping (_ value: Response) -> Void) -> Cold<Request, Response> {
     return appendOn(stream: newSubStream(), handler: handler)
   }
   
@@ -53,7 +53,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func onTransition(_ handler: @escaping (_ prior: Response?, _ next: Response) -> Void) -> Cold<Request, Response> {
+  @discardableResult public func onTransition(_ handler: @escaping (_ prior: Response?, _ next: Response) -> Void) -> Cold<Request, Response> {
     return appendTransition(stream: newSubStream(), handler: handler)
   }
   
@@ -66,7 +66,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func onTerminate(_ handler: @escaping (Termination) -> Void) -> Cold<Request, Response> {
+  @discardableResult public func onTerminate(_ handler: @escaping (Termination) -> Void) -> Cold<Request, Response> {
     return appendOnTerminate(stream: newSubStream(), handler: handler)
   }
   
@@ -82,7 +82,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func map<U>(_ mapper: @escaping (_ value: Response) -> U?) -> Cold<Request, U> {
+  @discardableResult public func map<U>(_ mapper: @escaping (_ value: Response) -> U?) -> Cold<Request, U> {
     let stream: Cold<Request, U> = newSubStream()
     return appendMap(stream: stream, withMapper: mapper)
   }
@@ -91,14 +91,14 @@ extension Cold {
    ## Branching
    
    Map values in the current stream to new values returned in a new stream. 
-   The mapper returns a result type that can return an error.  If an error is returned, the stream is terminated with that error.
+   The mapper returns a result type that can return an error or a mapped value.  
    
    - parameter mapper: The handler to map the current value either to a new value or an error.
    - parameter value: The current value in the stream
    
    - returns: A new Cold Stream
    */
-  public func map<U>(_ mapper: @escaping (_ value: Response) -> Result<U>) -> Cold<Request, U> {
+  @discardableResult public func map<U>(_ mapper: @escaping (_ value: Response) -> Result<U>) -> Cold<Request, U> {
     let stream: Cold<Request, U> = newSubStream()
     return appendMap(stream: stream, withMapper: mapper)
   }
@@ -111,7 +111,7 @@ extension Cold {
    Once ready, the completion handler should be called with:
    
     - New Value:  New values will be passed down stream
-    - Error: An error will terminate the stream with the error provided
+    - Error: An error will be passed down stream.  If you wish the error to terminate, add `onError` down stream and return a termination for it.
     - `nil`: Passing `nil` into will complete the handler but pass nothing down stream.
    
    - warning: The completion handler must _always_ be called, even if it's called with `nil`.  Failing to call the completion handler will block the stream, prevent it from being terminated, and will result in memory leakage.
@@ -122,7 +122,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func map<U>(_ mapper: @escaping (_ value: Response, _ completion: (Result<U>?) -> Void) -> Void) -> Cold<Request, U> {
+  @discardableResult public func map<U>(_ mapper: @escaping (_ value: Response, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Cold<Request, U> {
     let stream: Cold<Request, U> = newSubStream()
     return appendMap(stream: stream, withMapper: mapper)
   }
@@ -137,7 +137,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func flatMap<U>(_ mapper: @escaping (_ value: Response) -> [U]) -> Cold<Request, U> {
+  @discardableResult public func flatMap<U>(_ mapper: @escaping (_ value: Response) -> [U]) -> Cold<Request, U> {
     let stream: Cold<Request, U> = newSubStream()
     return appendFlatMap(stream: stream, withFlatMapper: mapper)
   }
@@ -157,7 +157,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func scan<U>(initial: U, scanner: @escaping (_ current: U, _ next: Response) -> U) -> Cold<Request, U> {
+  @discardableResult public func scan<U>(initial: U, scanner: @escaping (_ current: U, _ next: Response) -> U) -> Cold<Request, U> {
     let stream: Cold<Request, U> = newSubStream()
     return appendScan(stream: stream, initial: initial, withScanner: scanner)
   }
@@ -172,7 +172,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func first(then: Termination = .cancelled) -> Cold<Request, Response> {
+  @discardableResult public func first(then: Termination = .cancelled) -> Cold<Request, Response> {
     return appendFirst(stream: newSubStream(), then: then)
   }
   
@@ -187,7 +187,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func first(_ count: Int, then: Termination = .cancelled) -> Cold<Request, Response> {
+  @discardableResult public func first(_ count: Int, then: Termination = .cancelled) -> Cold<Request, Response> {
     return appendFirst(stream: newSubStream(), count: count, then: then)
   }
   
@@ -198,7 +198,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func last() -> Cold<Request, Response> {
+  @discardableResult public func last() -> Cold<Request, Response> {
     return appendLast(stream: newSubStream())
   }
   
@@ -213,7 +213,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func last(_ count: Int, partial: Bool = true) -> Cold<Request, Response> {
+  @discardableResult public func last(_ count: Int, partial: Bool = true) -> Cold<Request, Response> {
     return appendLast(stream: newSubStream(), count: count, partial: partial)
   }
   
@@ -230,7 +230,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func reduce<U>(initial: U, reducer: @escaping (_ current: U, _ next: Response) -> U) -> Cold<Request, U> {
+  @discardableResult public func reduce<U>(initial: U, reducer: @escaping (_ current: U, _ next: Response) -> U) -> Cold<Request, U> {
     return scan(initial: initial, scanner: reducer).last()
   }
   
@@ -244,7 +244,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func buffer(size: Int, partial: Bool = true) -> Cold<Request, [Response]> {
+  @discardableResult public func buffer(size: Int, partial: Bool = true) -> Cold<Request, [Response]> {
     return appendBuffer(stream: newSubStream(), bufferSize: size, partial: partial)
   }
   
@@ -259,7 +259,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func window(size: Int, partial: Bool = false) -> Cold<Request, [Response]> {
+  @discardableResult public func window(size: Int, partial: Bool = false) -> Cold<Request, [Response]> {
     return appendWindow(stream: newSubStream(), windowSize: size, partial: partial)
   }
   
@@ -274,7 +274,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func window(size: TimeInterval, limit: Int? = nil) -> Cold<Request, [Response]> {
+  @discardableResult public func window(size: TimeInterval, limit: Int? = nil) -> Cold<Request, [Response]> {
     return appendWindow(stream: newSubStream(), windowSize: size, limit: limit)
   }
   
@@ -288,7 +288,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func filter(include: @escaping (_ value: Response) -> Bool) -> Cold<Request, Response> {
+  @discardableResult public func filter(include: @escaping (_ value: Response) -> Bool) -> Cold<Request, Response> {
     return appendFilter(stream: newSubStream(), include: include)
   }
   
@@ -302,7 +302,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func stride(_ stride: Int) -> Cold<Request, Response> {
+  @discardableResult public func stride(_ stride: Int) -> Cold<Request, Response> {
     return appendStride(stream: newSubStream(), stride: stride)
   }
   
@@ -316,7 +316,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func stamp<U>(_ stamper: @escaping (_ value: Response) -> U) -> Cold<Request, (Response, U)> {
+  @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: Response) -> U) -> Cold<Request, (Response, U)> {
     let stream: Cold<Request, (Response, U)> = newSubStream()
     return appendStamp(stream: stream, stamper: stamper)
   }
@@ -328,7 +328,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func timeStamp() -> Cold<Request, (Response, Date)> {
+  @discardableResult public func timeStamp() -> Cold<Request, (Response, Date)> {
     return stamp{ _ in return Date() }
   }
   
@@ -347,7 +347,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func distinct(_ isDistinct: @escaping (_ prior: Response, _ next: Response) -> Bool) -> Cold<Request, Response> {
+  @discardableResult public func distinct(_ isDistinct: @escaping (_ prior: Response, _ next: Response) -> Bool) -> Cold<Request, Response> {
     return appendDistinct(stream: newSubStream(), isDistinct: isDistinct)
   }
  
@@ -365,7 +365,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func min(lessThan: @escaping (_ isValue: Response, _ lessThan: Response) -> Bool) -> Cold<Request, Response> {
+  @discardableResult public func min(lessThan: @escaping (_ isValue: Response, _ lessThan: Response) -> Bool) -> Cold<Request, Response> {
     return appendMin(stream: newSubStream(), lessThan: lessThan)
   }
   
@@ -383,7 +383,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func max(greaterThan: @escaping (_ isValue: Response, _ greaterThan: Response) -> Bool) -> Cold<Request, Response> {
+  @discardableResult public func max(greaterThan: @escaping (_ isValue: Response, _ greaterThan: Response) -> Bool) -> Cold<Request, Response> {
     return appendMax(stream: newSubStream(), greaterThan: greaterThan)
   }
   
@@ -394,7 +394,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func count() -> Cold<Request, UInt> {
+  @discardableResult public func count() -> Cold<Request, UInt> {
     return appendCount(stream: newSubStream())
   }
   
@@ -405,7 +405,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func countStamp() -> Cold<Request, (Response, UInt)> {
+  @discardableResult public func countStamp() -> Cold<Request, (Response, UInt)> {
     var count: UInt = 0
     return stamp{ _ in
       count += 1
@@ -424,7 +424,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func delay(_ delay: TimeInterval) -> Cold<Request, Response> {
+  @discardableResult public func delay(_ delay: TimeInterval) -> Cold<Request, Response> {
     return appendDelay(stream: newSubStream(), delay: delay)
   }
   
@@ -437,7 +437,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func skip(_ count: Int) -> Cold<Request, Response> {
+  @discardableResult public func skip(_ count: Int) -> Cold<Request, Response> {
     return appendSkip(stream: newSubStream(), count: count)
   }
   
@@ -451,7 +451,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func start(with: [Response]) -> Cold<Request, Response> {
+  @discardableResult public func start(with: [Response]) -> Cold<Request, Response> {
     return appendStart(stream: newSubStream(), startWith: with)
   }
   
@@ -465,7 +465,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func concat(_ concat: [Response]) -> Cold<Request, Response> {
+  @discardableResult public func concat(_ concat: [Response]) -> Cold<Request, Response> {
     return appendConcat(stream: newSubStream(), concat: concat)
   }
   
@@ -478,7 +478,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func defaultValue(_ value: Response) -> Cold<Request, Response> {
+  @discardableResult public func defaultValue(_ value: Response) -> Cold<Request, Response> {
     return appendDefault(stream: newSubStream(), value: value)
   }
 }
@@ -495,7 +495,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func merge<U>(_ stream: Stream<U>) -> Cold<Request, Either<Response, U>> {
+  @discardableResult public func merge<U>(_ stream: Stream<U>) -> Cold<Request, Either<Response, U>> {
     return appendMerge(stream: stream, intoStream: newSubStream())
   }
   
@@ -508,7 +508,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func merge(_ stream: Stream<Response>) -> Cold<Request, Response> {
+  @discardableResult public func merge(_ stream: Stream<Response>) -> Cold<Request, Response> {
     return appendMerge(stream: stream, intoStream: newSubStream())
   }
   
@@ -527,7 +527,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Cold<Request, (Response, U)> {
+  @discardableResult public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Cold<Request, (Response, U)> {
     return appendZip(stream: stream, intoStream: newSubStream(), buffer: buffer)
   }
   
@@ -549,7 +549,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func combine<U>(latest: Bool = true, stream: Stream<U>) -> Cold<Request, (Response, U)> {
+  @discardableResult public func combine<U>(latest: Bool = true, stream: Stream<U>) -> Cold<Request, (Response, U)> {
     return appendCombine(stream: stream, intoStream: newSubStream(), latest: latest)
   }
   
@@ -571,7 +571,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func doWhile(then: Termination = .cancelled, handler: @escaping (_ value: Response) -> Bool) -> Cold<Request, Response> {
+  @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ value: Response) -> Bool) -> Cold<Request, Response> {
     return appendWhile(stream: newSubStream(), handler: handler, then: then)
   }
   
@@ -590,7 +590,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func until(then: Termination = .cancelled, handler: @escaping (Response) -> Bool) -> Cold<Request, Response> {
+  @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (Response) -> Bool) -> Cold<Request, Response> {
     return appendUntil(stream: newSubStream(), handler: handler, then: then)
   }
   
@@ -608,7 +608,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func doWhile(then: Termination = .cancelled, handler: @escaping (_ prior: Response?, _ next: Response) -> Bool) -> Cold<Request, Response> {
+  @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ prior: Response?, _ next: Response) -> Bool) -> Cold<Request, Response> {
     return appendWhile(stream: newSubStream(), handler: handler, then: then)
   }
   
@@ -628,7 +628,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func until(then: Termination = .cancelled, handler: @escaping (_ prior: Response?, _ next: Response) -> Bool) -> Cold<Request, Response> {
+  @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (_ prior: Response?, _ next: Response) -> Bool) -> Cold<Request, Response> {
     return appendUntil(stream: newSubStream(), handler: handler, then: then)
   }
   
@@ -645,7 +645,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Cold<Request, (U, Response)> {
+  @discardableResult public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Cold<Request, (U, Response)> {
     return appendUsing(stream: newSubStream(), object: object, then: then)
   }
   
@@ -662,7 +662,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Cold<Request, Response> {
+  @discardableResult public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Cold<Request, Response> {
     return appendUsing(stream: newSubStream(), object: object, then: then).map{ $0.1 }
   }
   
@@ -678,7 +678,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  public func next(_ count: UInt = 1, then: Termination = .cancelled) -> Cold<Request, Response> {
+  @discardableResult public func next(_ count: UInt = 1, then: Termination = .cancelled) -> Cold<Request, Response> {
     return appendNext(stream: newSubStream(), count: count, then: then)
   }
   
@@ -694,7 +694,7 @@ extension Cold where Response : Sequence {
    
    - returns: A new Cold Stream
    */
-  public func flatten() -> Cold<Request, Response.Iterator.Element> {
+  @discardableResult public func flatten() -> Cold<Request, Response.Iterator.Element> {
     return flatMap{ $0.map{ $0 } }
   }
   
@@ -709,7 +709,7 @@ extension Cold where Response : Arithmetic {
    
    - returns: A new Cold Stream
    */
-  public func average() -> Cold<Request, Response> {
+  @discardableResult public func average() -> Cold<Request, Response> {
     return appendAverage(stream: newSubStream())
   }
   
@@ -720,7 +720,7 @@ extension Cold where Response : Arithmetic {
    
    - returns: A new Cold Stream
    */
-  public func sum() -> Cold<Request, Response> {
+  @discardableResult public func sum() -> Cold<Request, Response> {
     return appendSum(stream: newSubStream())
   }
   
@@ -735,7 +735,7 @@ extension Cold where Response : Comparable {
    
    - returns: A new Cold Stream
    */
-  public func min() -> Cold<Request, Response> {
+  @discardableResult public func min() -> Cold<Request, Response> {
     return appendMin(stream: newSubStream()) { $0 < $1 }
   }
   
@@ -746,7 +746,7 @@ extension Cold where Response : Comparable {
    
    - returns: A new Cold Stream
    */
-  public func max() -> Cold<Request, Response> {
+  @discardableResult public func max() -> Cold<Request, Response> {
     return appendMax(stream: newSubStream()) { $0 > $1 }
   }
 }

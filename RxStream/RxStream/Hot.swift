@@ -33,7 +33,7 @@ public class HotInput<T> : Hot<T> {
   }
   
   /// Terminate the Hot Stream with a reason.
-  public func terminateWith(reason: Termination) {
+  public func terminate(withReason reason: Termination) {
     self.push(event: .terminate(reason: reason))
   }
   

@@ -66,11 +66,21 @@ public class Promise<T> : Stream<T> {
   /// Parent, retriable stream.  Note: This creates a retain cycle.  The parent must release the child in order to unravel the cycle.  This is done with the `prune` command when the child is no longer viable.
   var retryParent: Retriable?
   
+  /// The promise needed to pass into the promise task.
+  lazy private var stateObservable: ObservableInput<StreamState> = ObservableInput(self.state)
+  
+  /// Override and observe didSet to update the observable
+  override public var state: StreamState {
+    didSet {
+      stateObservable.set(state)
+    }
+  }
+  
   /// Once completed, the promise shouldn't accept or process any more f
   private var complete: Bool = false
   
   private var isCancelled: Bool {
-    guard case .terminated(.cancelled) = state.value else { return false }
+    guard case .terminated(.cancelled) = state else { return false }
     return true
   }
   
@@ -124,7 +134,7 @@ public class Promise<T> : Stream<T> {
   private func run(task: @escaping PromiseTask<T>) {
     dispatch.execute {
       var complete = false
-      task(self.state) { [weak self] completion in
+      task(self.stateObservable) { [weak self] completion in
         guard let me = self, !complete, me.isActive else { return }
         complete = true
         completion

@@ -9,7 +9,7 @@
 import Foundation
 
 ///Termination reason: Defines the reasons a stream can terminate
-public enum Termination {
+public enum Termination : Equatable {
   
   /// The stream has completed without any problems.
   case completed
@@ -19,6 +19,15 @@ public enum Termination {
   
   /// An error has occurred and the stream is no longer viable.
   case error(Error)
+}
+
+public func ==(lhs: Termination, rhs: Termination) -> Bool {
+  switch (lhs, rhs) {
+  case (.completed, .completed),
+       (.cancelled, .cancelled),
+       (.error, .error): return true
+  default: return false
+  }
 }
 
 /// Defines the current state of the stream, which can be active (the stream is emitting data) or terminated with a reason.
@@ -32,17 +41,9 @@ public enum StreamState : Equatable {
 
 public func ==(lhs: StreamState, rhs: StreamState) -> Bool {
   switch (lhs, rhs) {
-  case (.active, .active):
-    return true
-  case let (.terminated(lReason), .terminated(rReason)):
-    switch (lReason, rReason){
-    case (.completed, .completed),
-         (.cancelled, .cancelled),
-         (.error, .error): return true
-    default: return false
-    }
-  default:
-    return false
+  case (.active, .active): return true
+  case let (.terminated(lReason), .terminated(rReason)): return lReason == rReason
+  default: return false
   }
 }
 
@@ -95,7 +96,7 @@ public class Stream<T> {
   
   /// When the stream is terminated, this will contain the Terminate reason.  It's primarily used to replay terminate events downstream when a stream is attached.
   private var termination: Termination? {
-    guard case let .terminated(terminate) = _state.value else { return nil }
+    guard case let .terminated(terminate) = state else { return nil }
     return terminate
   }
   
@@ -104,8 +105,7 @@ public class Stream<T> {
    If active, new events can be passed into the stream. Otherwise, the stream will reject all attempts to use it.
    Once a stream is terminated, it cannot be made active again.
    */
-  public var state: Observable<StreamState> { return _state }
-  private var _state = ObservableInput(StreamState.active)
+  internal(set) public var state: StreamState = .active
   
   /**
    All processing and stream operations will occur on this dispatch.  By default, processing is performed inline, but this can be changed.
@@ -123,7 +123,7 @@ public class Stream<T> {
   internal(set) public var dispatch = Dispatch.inline
   
   /// Convience variable returning whether the stream is currently active
-  public var isActive: Bool { return _state.value == .active }
+  public var isActive: Bool { return state == .active }
   
   /// A Throttle is used to restrict the flow of information that moves through the stream.
   internal(set) public var throttle: Throttle?
@@ -205,7 +205,7 @@ public class Stream<T> {
     dispatch.execute {
       self.downStreams = self.downStreams.filter{ $0.shouldPrune }
       guard !self.persist, self.isActive, self.downStreams.count == 0 else { return }
-      self._state.set(.terminated(reason: reason))
+      self.state = .terminated(reason: reason)
       self.onTerminate?(reason)
       self.parent?.prune(withReason: reason)
     }
@@ -273,6 +273,10 @@ public class Stream<T> {
       // Make sure we're receiving data, otherwise it's a termination event and we should set the terminateWork
       self.currentWork += 1
       
+      if case let .terminate(reason) = next {
+        self.pendingTermination = reason
+      }
+      
       // Abstract out the process work so it can be done inline or applied to a throttle
       let workProcessor: ThrottledWork = { completion in
           self.dispatch.execute {
@@ -282,14 +286,15 @@ public class Stream<T> {
               self.onTerminate = nil
             }
             op(prior, next) { result in
-              guard let events = result else { return }
-              for event in events {
-                // push each event
-                self.push(event: event, withKey: key)
-                // if the event is a termination, we break.  There's no point in pushing any more events.
-                if case .terminate = event {
-                  opTermination = true
-                  break
+              if let events = result {
+                for event in events {
+                  // push each event
+                  self.push(event: event, withKey: key)
+                  // if the event is a termination, we break.  There's no point in pushing any more events.
+                  if case .terminate = event {
+                    opTermination = true
+                    break
+                  }
                 }
               }
               

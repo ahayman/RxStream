@@ -82,14 +82,14 @@ extension Stream {
       case let .next(value):
         mapper(value)
           .onSuccess{ completion([.next($0)]) }
-          .onFailure{ completion([.terminate(reason: .error($0))]) }
+          .onFailure{ completion([.error($0)]) }
       case .error(let error): completion([.error(error)])
       case .terminate: completion(nil)
       }
     }
   }
   
-  func appendMap<U: BaseStream>(stream: U, withMapper mapper: @escaping (T, (Result<U.Data>?) -> Void) -> Void) -> U {
+  func appendMap<U: BaseStream>(stream: U, withMapper mapper: @escaping (T, @escaping (Result<U.Data>?) -> Void) -> Void) -> U {
     return append(stream: stream) { (_, next, completion) in
       switch next {
       case let .next(value):
@@ -97,7 +97,7 @@ extension Stream {
           if let result = $0 {
             result
               .onSuccess{ completion([.next($0)]) }
-              .onFailure{ completion([.terminate(reason: .error($0))]) }
+              .onFailure{ completion([.error($0)]) }
           } else {
             completion(nil)
           }
@@ -149,10 +149,10 @@ extension Stream {
       switch next {
       case let .next(value):
         count += 1
-        if count < first {
+        if count <= first {
           events.append(.next(value))
         }
-        if count >= first {
+        if count > first {
           events.append(.terminate(reason: then))
         }
         completion(events)
