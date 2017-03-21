@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "RxStream/StreamOperations.swift"
-            timestampString = "511733099.976434"
+            timestampString = "511814636.787047"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "174"
-            endingLineNumber = "174"
+            startingLineNumber = "182"
+            endingLineNumber = "182"
             landmarkName = "appendLast(stream:)"
             landmarkType = "7">
             <Locations>
@@ -58,11 +58,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "RxStream/StreamOperations.swift"
-            timestampString = "511733164.364401"
+            timestampString = "511814636.787047"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "168"
-            endingLineNumber = "168"
+            startingLineNumber = "176"
+            endingLineNumber = "176"
             landmarkName = "appendLast(stream:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -80,166 +80,6 @@
             startingLineNumber = "378"
             endingLineNumber = "378"
             landmarkName = "testReduce()"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "RxStream/Stream.swift"
-            timestampString = "511734342.162267"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "270"
-            endingLineNumber = "270"
-            landmarkName = "process(key:prior:next:withOp:)"
-            landmarkType = "7">
-            <Locations>
-               <Location
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "Rx.Stream.(process &lt;A&gt; (key : Swift.Optional&lt;Swift.String&gt;, prior : Swift.Optional&lt;A1&gt;, next : Rx.Event&lt;A1&gt;, withOp : (Swift.Optional&lt;A1&gt;, Rx.Event&lt;A1&gt;, (Swift.Optional&lt;Swift.Array&lt;Rx.Event&lt;A&gt;&gt;&gt;) -&gt; ()) -&gt; ()) -&gt; ()).(closure #1)"
-                  moduleName = "Rx"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/aaronhayman/Documents/RxStream/RxStream/RxStream/Stream.swift"
-                  timestampString = "511735853.509202"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "270"
-                  endingLineNumber = "270"
-                  offsetFromSymbolStart = "234">
-               </Location>
-               <Location
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "Rx.Stream.(process &lt;A&gt; (key : Swift.Optional&lt;Swift.String&gt;, prior : Swift.Optional&lt;A1&gt;, next : Rx.Event&lt;A1&gt;, withOp : (Swift.Optional&lt;A1&gt;, Rx.Event&lt;A1&gt;, (Swift.Optional&lt;Swift.Array&lt;Rx.Event&lt;A&gt;&gt;&gt;) -&gt; ()) -&gt; ()) -&gt; ()).(closure #1)"
-                  moduleName = "Rx"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/aaronhayman/Documents/RxStream/RxStream/RxStream/Stream.swift"
-                  timestampString = "511735853.510594"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "270"
-                  endingLineNumber = "270"
-                  offsetFromSymbolStart = "315">
-               </Location>
-            </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "RxStream/Stream.swift"
-            timestampString = "511734662.166181"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "283"
-            endingLineNumber = "283"
-            landmarkName = "process(key:prior:next:withOp:)"
-            landmarkType = "7">
-            <Locations>
-               <Location
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "Rx.Stream.(process &lt;A&gt; (key : Swift.Optional&lt;Swift.String&gt;, prior : Swift.Optional&lt;A1&gt;, next : Rx.Event&lt;A1&gt;, withOp : (Swift.Optional&lt;A1&gt;, Rx.Event&lt;A1&gt;, (Swift.Optional&lt;Swift.Array&lt;Rx.Event&lt;A&gt;&gt;&gt;) -&gt; ()) -&gt; ()) -&gt; ()).(closure #1).(closure #1).(closure #1)"
-                  moduleName = "Rx"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/aaronhayman/Documents/RxStream/RxStream/RxStream/Stream.swift"
-                  timestampString = "511735853.51304"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "283"
-                  endingLineNumber = "283"
-                  offsetFromSymbolStart = "393">
-               </Location>
-               <Location
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "Rx.Stream.(process &lt;A&gt; (key : Swift.Optional&lt;Swift.String&gt;, prior : Swift.Optional&lt;A1&gt;, next : Rx.Event&lt;A1&gt;, withOp : (Swift.Optional&lt;A1&gt;, Rx.Event&lt;A1&gt;, (Swift.Optional&lt;Swift.Array&lt;Rx.Event&lt;A&gt;&gt;&gt;) -&gt; ()) -&gt; ()) -&gt; ()).(closure #1).(closure #1).(closure #1).(closure #1)"
-                  moduleName = "Rx"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/aaronhayman/Documents/RxStream/RxStream/RxStream/Stream.swift"
-                  timestampString = "511735853.515099"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "283"
-                  endingLineNumber = "283"
-                  offsetFromSymbolStart = "81">
-               </Location>
-            </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "RxStream/Stream.swift"
-            timestampString = "511735959.865634"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "301"
-            endingLineNumber = "301"
-            landmarkName = "process(key:prior:next:withOp:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "RxStream/Stream.swift"
-            timestampString = "511734662.166181"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "292"
-            endingLineNumber = "292"
-            landmarkName = "process(key:prior:next:withOp:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "RxStream/Stream.swift"
-            timestampString = "511734498.419101"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "221"
-            endingLineNumber = "221"
-            landmarkName = "push(event:withKey:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "RxStream/Stream.swift"
-            timestampString = "511735801.823246"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "289"
-            endingLineNumber = "289"
-            landmarkName = "process(key:prior:next:withOp:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

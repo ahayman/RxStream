@@ -9,6 +9,14 @@
 import Foundation
 
 /**
+ Merge Errors are thrown when one of the inputs to a merged stream is terminated.  
+ */
+public enum MergeError : Error {
+  case left(Termination)
+  case right(Termination)
+}
+
+/**
  This file contains all the base stream operations that can be appended to another stream.
  */
 
@@ -221,7 +229,7 @@ extension Stream {
       switch next {
       case let .next(value):
         buffer.append(value)
-        if buffer.count < windowSize {
+        if buffer.count < windowSize && !partial {
           completion(nil)
         } else {
           let window = buffer.map{ $0 } as U.Data
@@ -443,35 +451,35 @@ extension Stream {
 extension Stream {
   
   func appendMerge<U: BaseStream, V>(stream: Stream<V>, intoStream: U) -> U where U.Data == Either<T, V> {
-    stream.append(stream: intoStream) { (_, next, completion) in
+    stream.append(stream: intoStream) { [weak self] (_, next, completion) in
       switch next {
       case let .next(value): completion([.next(.right(value))])
       case .error(let error): completion([.error(error)])
-      case .terminate: completion(nil)
+      case let .terminate(reason): completion(self?.isActive ?? false ? [.error(MergeError.right(reason))] : nil)
       }
     }
-    return append(stream: intoStream) { (_, next, completion) in
+    return append(stream: intoStream) { [weak stream] (_, next, completion) in
       switch next {
       case let .next(value): completion([.next(.left(value))])
       case .error(let error): completion([.error(error)])
-      case .terminate: completion(nil)
+      case let .terminate(reason): completion(stream?.isActive ?? false ? [.error(MergeError.left(reason))] : nil)
       }
     }
   }
   
   func appendMerge<U: BaseStream>(stream: Stream<T>, intoStream: U) -> U where U.Data == T {
-    stream.append(stream: intoStream) { (_, next, completion) in
+    stream.append(stream: intoStream) { [weak self] (_, next, completion) in
       switch next {
       case let .next(value): completion([.next(value)])
       case .error(let error): completion([.error(error)])
-      case .terminate: completion(nil)
+      case let .terminate(reason): completion(self?.isActive ?? false ? [.error(MergeError.right(reason))] : nil)
       }
     }
-    return append(stream: intoStream) { (_, next, completion) in
+    return append(stream: intoStream) { [weak stream] (_, next, completion) in
       switch next {
       case let .next(value): completion([.next(value)])
       case .error(let error): completion([.error(error)])
-      case .terminate: completion(nil)
+      case let .terminate(reason): completion(stream?.isActive ?? false ? [.error(MergeError.left(reason))] : nil)
       }
     }
   }
@@ -522,7 +530,7 @@ extension Stream {
     var right: V? = nil
     
     // Right Stream
-    stream.append(stream: intoStream) { (_, next, completion) in
+    stream.append(stream: intoStream) { [weak self] (_, next, completion) in
       switch next {
       case let .next(value):
         guard let leftValue = left else {
@@ -537,12 +545,18 @@ extension Stream {
         }
         completion([.next(leftValue, value)])
       case .error(let error): completion([.error(error)])
-      case .terminate: completion(nil)
+      case let .terminate(reason):
+        if latest && self?.isActive ?? false && left != nil {
+          // Even thought the right stream has terminated, we still have a left value that can be used to emit combinations. So the termination is converted into an error.
+          completion([.error(MergeError.right(reason))])
+        } else {
+          completion(nil)
+        }
       }
     }
     
     // Left Stream
-    return append(stream: intoStream) { (_, next, completion) in
+    return append(stream: intoStream) { [weak stream] (_, next, completion) in
       switch next {
       case let .next(value):
         guard let rightValue = right else {
@@ -557,7 +571,13 @@ extension Stream {
         }
         completion([.next(value, rightValue)])
       case .error(let error): completion([.error(error)])
-      case .terminate: completion(nil)
+      case let .terminate(reason):
+        if latest && stream?.isActive ?? false && right != nil {
+          // Even thought the left stream has terminated, we still have a right value that can be used to emit combinations. So the termination is converted into an error.
+          completion([.error(MergeError.left(reason))])
+        } else {
+          completion(nil)
+        }
       }
     }
   }

@@ -38,4 +38,3 @@ class DownstreamProcessor<T, U> : StreamProcessor<T> {
   }
   
 }
-

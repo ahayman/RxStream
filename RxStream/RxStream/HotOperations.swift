@@ -717,6 +717,21 @@ extension Hot where T : Arithmetic {
   
 }
 
+extension Hot where T : Equatable {
+  
+  /**
+   ## Branching
+   
+   Convenience function to only emit distinct equatable values.
+   This has the same effect as using `distinct { $0 != $1 }` function.
+   
+   - returns: A new Hot Stream
+   */
+  @discardableResult public func distinct() -> Hot<T> {
+    return appendDistinct(stream: Hot<T>(), isDistinct: { $0 != $1 })
+  }
+}
+
 extension Hot where T : Comparable {
   
   /**

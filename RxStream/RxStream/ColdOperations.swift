@@ -726,6 +726,21 @@ extension Cold where Response : Arithmetic {
   
 }
 
+extension Cold where Response : Equatable {
+  
+  /**
+   ## Branching
+   
+   Convenience function to only emit distinct equatable values.
+   This has the same effect as using `distinct { $0 != $1 }` function.
+   
+   - returns: A new Cold Stream
+   */
+  @discardableResult public func distinct() -> Cold<Request, Response> {
+    return appendDistinct(stream: newSubStream(), isDistinct: { $0 != $1 })
+  }
+}
+
 extension Cold where Response : Comparable {
   
   /**

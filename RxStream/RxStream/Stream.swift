@@ -256,6 +256,12 @@ public class Stream<T> {
    This is an internal function used to process event work. It's important that all processing work done for a stream use this function.
    The main point of this is to ensure that work is correctly dispatched and throttled.
    It also holds back any termination events until prior work has been completed, preventing a termination event from being processed before a data event is finished.
+   How events are processed will depend on what kind of events are called back in the Stream operation:
+   
+    - `.next(value)` : If the work passes back in next events, those will be processed like normal and pushed down stream like a normal event would. If the triggering event was a termination, it will be processed after the next events are processed.
+    - `nil`:  If `nil` is passed back in, no events will be processed, but if the triggering event was a termination, it will be processed like normal.
+    - `.termination(reason)` : If a termination event is passed back, it will take priority and _immediately_ be processed and no further events will be accepted.  The termination will progogate both up and down the stream chain.
+    - `.error(_)` : Errors will be processed like normal.  However, if the triggering event was a termination, that event will be ignored (the stream will not be terminated).  This effectively converts a termination into an error.  This is primarily used for merged streams, where a termination does not always terminate the stream (because an upstream may still be active).
    
    - parameter key: A key will restrict processing of the event to only those streams that have a matching key stored. If `nil` is passed, the event will be processed as normal.
    - parameter event: The event that should be processed.
@@ -287,13 +293,18 @@ public class Stream<T> {
             }
             op(prior, next) { result in
               if let events = result {
-                for event in events {
+                outer: for event in events {
                   // push each event
                   self.push(event: event, withKey: key)
                   // if the event is a termination, we break.  There's no point in pushing any more events.
-                  if case .terminate = event {
+                  switch event{
+                  case .terminate:
                     opTermination = true
-                    break
+                    break outer
+                  // A processor can take a termination event and turn it into an error. This will prevent the stream from terminating and instead pass an error down. The only reason to do this is for merged streams.
+                  case .error:
+                    self.pendingTermination = nil
+                  default: break
                   }
                 }
               }

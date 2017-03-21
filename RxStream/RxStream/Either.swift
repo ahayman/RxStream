@@ -22,6 +22,18 @@ public enum Either<Left, Right> {
     self = .right(value)
   }
   
+  /// Returns the left value, if the Either contains one
+  public var left: Left? {
+    guard case let .left(value) = self else { return nil }
+    return value
+  }
+  
+  /// Returns the right value, if the Either contains one
+  public var right: Right? {
+    guard case let .right(value) = self else { return nil }
+    return value
+  }
+  
   /// Use this to execute a handler that will only run if the enum is .success.  Returns `self` for chaining.
   @discardableResult public func onLeft(_ handler: (Left) -> Void) -> Either<Left, Right> {
     switch self {
