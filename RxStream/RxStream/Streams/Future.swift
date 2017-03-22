@@ -35,7 +35,7 @@ public class Future<T> : Stream<T> {
       guard let me = self, !complete else { return }
       complete = true
       completion
-        .onFailure{ me.push(value: .terminate(reason: .error($0))) }
+        .onFailure{ me.push(value: .error($0)) }
         .onSuccess{ me.push(value: .next($0)) }
       me.lock = nil
     }
@@ -47,15 +47,26 @@ public class Future<T> : Stream<T> {
   override func process<U>(key: String?, prior: U?, next: Event<U>, withOp op: @escaping (U?, Event<U>, @escaping ([Event<T>]?) -> Void) -> Void) {
     guard !complete else { return }
     complete = true
-    super.process(key: key, prior: prior, next: next, withOp: op)
-    if case .next = next {
-      self.terminate(reason: .completed)
+    var next = next
+    if case .error(let error) = next {
+      // All errors terminate in a future
+      next = .terminate(reason: .error(error))
+    }
+    super.process(key: key, prior: prior, next: next) { (prior, next, completion) in
+      op(prior, next) { events in
+        completion(events)
+        if case .next = next {
+          self.terminate(reason: .completed, andPrune: .none)
+        }
+      }
     }
   }
   
   /// Privately used to push new events down stream
   private func push(value: Event<T>) {
-    _ = self.process(key: nil, prior: nil, next: value) { (_, _, _) in }
+    self.process(key: nil, prior: nil, next: value) { (_, _, completion) in
+      completion([value])
+    }
   }
   
 }

@@ -1073,6 +1073,9 @@ class HotTests: XCTestCase {
     right.terminate(withReason: .completed)
     XCTAssertEqual(values.count, 5)
     
+    right.push("fourth")
+    XCTAssertEqual(values.count, 5)
+    
     XCTAssertEqual(term, .completed)
   }
   

@@ -8,7 +8,11 @@
 
 import Foundation
 
+/**
+ A simple wrapper to encapsulate a weak object.  Largely used when capturing a weak object in a closure or function.
+ */
 class WeakBox<T: AnyObject> {
+  
   weak var object: T?
   
   init(_ object: T) {

@@ -8,7 +8,7 @@
 
 import Foundation
 
-public typealias PromiseTask<T> = (_ terminated: Observable<StreamState>, _ completion: (Result<T>) -> Void) -> Void
+public typealias PromiseTask<T> = (_ terminated: Observable<StreamState>, _ completion: @escaping (Result<T>) -> Void) -> Void
 
 /// Internal protocol defines an object that can be canceled and/or pass the cancelation request on to the parent
 protocol Cancelable : class {
@@ -21,7 +21,14 @@ protocol Retriable : class {
   func retry()
 }
 
+/**
+ Type erasure base type to allow cast testing when checking down stream processors (see the `shouldPrune` for where this is used).
+ */
 class PromiseProcessor<T> : StreamProcessor<T> { }
+
+/**
+ Custom Processor for Promises.  In this case, `shouldPrune` logic is non-standard, in that it checks the kind of down stream processors and only allows pruning if down stream promises have completed successfully.
+ */
 class DownstreamPromiseProcessor<T, U> : PromiseProcessor<T> {
   var stream: Stream<U>
   var processor: StreamOp<T, U>
@@ -33,7 +40,10 @@ class DownstreamPromiseProcessor<T, U> : PromiseProcessor<T> {
   }
   
   override var shouldPrune: Bool {
-    guard stream.isActive else { return false }
+    guard stream.isActive else { return true }
+    if let promise = stream as? Promise<U> {
+      guard promise.complete else { return false }
+    }
     // We need to prune if there are no active down stream _promises_.  Since a promise emits only one value that can be retried, we can't prune until those streams complete.
     let active = stream.downStreams.reduce(0) { (count, processor) -> Int in
       guard !processor.shouldPrune else { return count }
@@ -43,10 +53,28 @@ class DownstreamPromiseProcessor<T, U> : PromiseProcessor<T> {
     return active < 1
   }
   
+  fileprivate var downStreamPromises: Int {
+    return stream.downStreams.reduce(0) { (count, processor) -> Int in
+      guard processor is PromiseProcessor<U> else { return count }
+      return count + 1
+    }
+  }
+  
+  /// Override `process` to initiate pruning.  This should cause Promise chains to "unwrap" or compelete themselves from the last promise back up the chain (ensuring no retries are left to trigger).
   override func process(prior: T?, next: Event<T>, withKey key: String?) {
-    stream.process(key: key, prior: prior, next: next, withOp: processor)
-    if case .next = next, self.shouldPrune {
-      stream.prune(withReason: .completed)
+    stream.process(key: key, prior: prior, next: next) { (prior, next, completion) in
+      self.processor(prior, next) { procCompletion in
+        completion(procCompletion)
+        // Only attempt to prune if there are no downstream promises. Only the last promise should trigger a prune
+        guard self.downStreamPromises == 0 else { return }
+        switch next {
+        case .next where self.shouldPrune:
+          self.stream.prune(.upStream, withReason: .completed)
+        case .error(let error) where self.shouldPrune:
+          self.stream.prune(.upStream, withReason: .error(error))
+        default: break
+        }
+      }
     }
   }
   
@@ -58,7 +86,7 @@ extension Promise : Retriable { }
 public class Promise<T> : Stream<T> {
   
   /// The current task for the promise.  If there's no task, there should be a parent with a task.
-  var task: PromiseTask<T>?
+  let task: PromiseTask<T>?
   
   /// The parent to handle cancelations
   weak var cancelParent: Cancelable?
@@ -71,13 +99,11 @@ public class Promise<T> : Stream<T> {
   
   /// Override and observe didSet to update the observable
   override public var state: StreamState {
-    didSet {
-      stateObservable.set(state)
-    }
+    didSet { stateObservable.set(state) }
   }
   
   /// Once completed, the promise shouldn't accept or process any more f
-  private var complete: Bool = false
+  private(set) fileprivate var complete: Bool = false
   
   private var isCancelled: Bool {
     guard case .terminated(.cancelled) = state else { return false }
@@ -99,6 +125,7 @@ public class Promise<T> : Stream<T> {
    - returns: A new Future
    */
   public init(task: @escaping PromiseTask<T>) {
+    self.task = task
     super.init()
     persist()
     run(task: task)
@@ -106,6 +133,7 @@ public class Promise<T> : Stream<T> {
   
   /// Internal init for creating down stream promises
   override init() {
+    task = nil
     super.init()
   }
   
@@ -127,7 +155,9 @@ public class Promise<T> : Stream<T> {
   
   /// Privately used to push new events down stream
   private func push(value: Event<T>) {
-    _ = self.process(key: nil, prior: nil, next: value) { (_, _, _) in }
+    self.process(key: nil, prior: nil, next: value) { (_, _, completion) in
+      completion([value])
+    }
   }
   
   /// Used to run the task
@@ -138,7 +168,7 @@ public class Promise<T> : Stream<T> {
         guard let me = self, !complete, me.isActive else { return }
         complete = true
         completion
-          .onFailure{ me.push(value: .terminate(reason: .error($0))) }
+          .onFailure{ me.push(value: .error($0)) }
           .onSuccess{ me.push(value: .next($0)) }
       }
     }

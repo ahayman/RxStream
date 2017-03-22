@@ -22,10 +22,10 @@ extension Promise {
    */
   @discardableResult public func retryOn(_ handler: @escaping (_ value: Error) -> Bool) -> Promise<T> {
     let promise = Promise<T>()
-    return append(stream: promise) { [weak self] (_, next, completion) in
-      guard case let .terminate(.error(error)) = next else { return completion([next]) }
+    return append(stream: promise) { [weak promise] (_, next, completion) in
+      guard case let .error(error) = next else { return completion([next]) }
       if handler(error) {
-        self?.retry()
+        promise?.retry()
         completion(nil)
       } else {
         completion([next])
@@ -42,13 +42,13 @@ extension Promise {
    
    - returns: a new Promise
    */
-  @discardableResult public func retryOn(_ handler: @escaping (_ value: Error, _ retry: (Bool) -> Void) -> Void) -> Promise<T> {
+  @discardableResult public func retryOn(_ handler: @escaping (_ value: Error, _ retry: @escaping (Bool) -> Void) -> Void) -> Promise<T> {
     let promise = Promise<T>()
-    return append(stream: promise) { [weak self] (_, next, completion) in
-      guard case let .terminate(.error(error)) = next else { return completion([next]) }
+    return append(stream: promise) { [weak promise] (_, next, completion) in
+      guard case let .error(error) = next else { return completion([next]) }
       handler(error) { retry in
         if retry {
-          self?.retry()
+          promise?.retry()
           completion(nil)
         } else {
           completion([next])
@@ -71,15 +71,15 @@ extension Promise {
   @discardableResult public func retry(_ limit: UInt, delay: TimeInterval? = nil) -> Promise<T> {
     let promise = Promise<T>()
     var count: UInt = 0
-    return append(stream: promise) { [weak self] (_, next, completion) in
-      guard case .terminate(.error) = next, count < limit else { return completion([next]) }
+    return append(stream: promise) { [weak promise] (_, next, completion) in
+      guard case .error = next, count < limit else { return completion([next]) }
       count += 1
       if let delay = delay {
         Dispatch.after(delay: delay, on: .main).execute {
-          self?.retry()
+          promise?.retry()
         }
       } else {
-        self?.retry()
+        promise?.retry()
       }
     }
   }

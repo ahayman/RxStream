@@ -47,6 +47,12 @@ public func ==(lhs: StreamState, rhs: StreamState) -> Bool {
   }
 }
 
+public enum Prune : Int {
+  case upStream
+  case downStream
+  case none
+}
+
 /// Events are passed down streams for processing
 public enum Event<T> {
   /// Next data to be passed down the streams
@@ -68,7 +74,7 @@ internal protocol BaseStream : class {
 extension Stream : BaseStream { }
 
 protocol ParentStream : class {
-  func prune(withReason reason: Termination)
+  func prune(_ prune: Prune, withReason reason: Termination)
 }
 extension Stream : ParentStream { }
 
@@ -208,13 +214,14 @@ public class Stream<T> {
    Current behavior is for a stream to terminate itself if there are no active down streams unless the `persist` option is set.
    This will cause a chain to unravel itself if one of the elements terminates itself.
    */
-  func prune(withReason reason: Termination) {
+  func prune(_ prune: Prune, withReason reason: Termination) {
     dispatch.execute {
-      self.downStreams = self.downStreams.filter{ $0.shouldPrune }
-      guard !self.persist, self.isActive, self.downStreams.count == 0 else { return }
-      self.state = .terminated(reason: reason)
-      self.onTerminate?(reason)
-      self.parent?.prune(withReason: reason)
+      guard prune != .none else { return }
+      self.downStreams = self.downStreams.filter{ !$0.shouldPrune }
+      if case .upStream = prune {
+        self.terminate(reason: reason, andPrune: .none)
+        self.parent?.prune(prune, withReason: reason)
+      }
     }
   }
   
@@ -233,12 +240,8 @@ public class Stream<T> {
       }
       
       // update internal state
-      switch event {
-      case let .next(value) where self.canReplay:
+      if case let .next(value) = event, self.canReplay {
         self.queue = (self.queue?.current, value)
-      case .error, .next: break
-      case let .terminate(reason):
-        self.prune(withReason: reason)
       }
     }
   }
@@ -247,14 +250,14 @@ public class Stream<T> {
    This will terminate the stream. It will only push the termination down stream if there is no work currently in progress.
    Otherwise, the termination will be pushed when the work is complete in the `process` function.
    */
-  func terminate(reason: Termination) {
+  func terminate(reason: Termination, andPrune prune: Prune) {
     dispatch.execute {
-      guard self.isActive else { return }
-      if self.currentWork > 0 {
-        self.push(event: .terminate(reason: reason), withKey: nil)
-      } else {
-        self.pendingTermination = reason
+      if self.isActive {
+        self.state = .terminated(reason: reason)
       }
+      self.onTerminate?(reason)
+      self.onTerminate = nil
+      self.prune(prune, withReason: reason)
     }
   }
   
@@ -305,8 +308,9 @@ public class Stream<T> {
                   self.push(event: event, withKey: key)
                   // if the event is a termination, we break.  There's no point in pushing any more events.
                   switch event{
-                  case .terminate:
+                  case .terminate(let reason):
                     opTermination = true
+                    self.terminate(reason: reason, andPrune: .upStream)
                     break outer
                   // A processor can take a termination event and turn it into an error. This will prevent the stream from terminating and instead pass an error down. The only reason to do this is for merged streams.
                   case .error:
@@ -322,6 +326,7 @@ public class Stream<T> {
               if self.currentWork == 0, let reason = self.pendingTermination {
                 if !opTermination {
                   self.push(event: .terminate(reason: reason), withKey: key)
+                  self.terminate(reason: reason, andPrune: .downStream)
                 }
               }
               completion()
@@ -382,6 +387,5 @@ extension Stream {
     self.persist = persist
     return self
   }
-  
   
 }
