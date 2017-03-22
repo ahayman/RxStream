@@ -55,9 +55,12 @@ typealias ParentProcessor = (Request, String) -> Void
     super.push(event: event, withKey: shared ? nil : key)
   }
   
-  private func process(event: Event<Response>, withKey key: String) {
+  private func process(event: Event<Response>, withKey key: String?) {
     self.process(key: shared ? nil : key, prior: nil, next: event) { (_, event, completion) in
-      completion([event])
+      switch event {
+      case .next, .error: completion([event])
+      case .terminate: completion(nil)
+      }
     }
   }
   
@@ -67,12 +70,13 @@ typealias ParentProcessor = (Request, String) -> Void
       guard let requestKey = key else { return }
       key = nil
       $0
-        .onFailure{ self.push(event: .error($0), withKey: requestKey) }
-        .onSuccess{ self.push(event: .next($0), withKey: requestKey) }
+        .onFailure{ self.process(event: .error($0), withKey: requestKey) }
+        .onSuccess{ self.process(event: .next($0), withKey: requestKey) }
     }
   }
   
   private func process(request: Request, withKey key: String) {
+    guard isActive else { return }
     keys.insert(key)
     
     requestProcessor
@@ -94,6 +98,11 @@ typealias ParentProcessor = (Request, String) -> Void
   public func share(_ share: Bool = true) -> Self {
     self.shared = share
     return self
+  }
+  
+  /// Terminate the Cold Stream with a reason.
+  public func terminate(withReason reason: Termination) {
+    self.process(event: .terminate(reason: reason), withKey: nil)
   }
   
 }
