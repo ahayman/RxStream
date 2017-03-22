@@ -88,6 +88,11 @@ public class Stream<T> {
   /// If this is set `true`, the next stream attached will have the current values replayed into it, if any.
   var replay: Bool = false
   
+  /// If this is set `true`, the stream can replay values.  Otherwise, it cannot.  If a stream cannot replay values, then setting `replay == true` will do nothing.
+  fileprivate(set) public var canReplay: Bool = true {
+    didSet { if !canReplay { queue = nil } }
+  }
+  
   /// Defines the parent stream to which this stream is attached.  Currently used for pruning when a child is terminated.
   weak var parent: ParentStream? = nil
   
@@ -157,7 +162,8 @@ public class Stream<T> {
     
     child.dispatch = dispatch
     child.replay = replay
-    child.parent = parent
+    child.canReplay = canReplay
+    child.parent = self
     
     appendDownStream(processor: newDownstreamProcessor(forStream: child, withProcessor: op))
     
@@ -180,6 +186,7 @@ public class Stream<T> {
       
       // If replay is specified, and there are items in the queue, pass those into the processor
       if
+        self.canReplay,
         replay,
         let queue = self.queue
       {
@@ -227,9 +234,9 @@ public class Stream<T> {
       
       // update internal state
       switch event {
-      case let .next(value):
+      case let .next(value) where self.canReplay:
         self.queue = (self.queue?.current, value)
-      case .error: break
+      case .error, .next: break
       case let .terminate(reason):
         self.prune(withReason: reason)
       }
@@ -354,11 +361,27 @@ extension Stream {
   }
   
   /**
+   This will cause the stream to be unable to replay values. This can be useful (and necessary) if you don't want the stream to retain the values passed down.
+   This option will propogate to all new downstreams added.  It does not propogate to existing streams already added before the parameter is set. 
+   
+   - warning: This can directly impact some operations.  For example, transition observations rely on replayable streams.  If you set `canReplay` to false, then transitions will never provide the `prior` value.
+   
+   - parameter canReplay: If `true`, then the stream can replay values, otherwise it cannot.
+   
+   - returns: Self, for chaining
+   */
+  public func canReplay(_ canReplay: Bool) -> Self {
+    self.canReplay = canReplay
+    return self
+  }
+  
+  /**
    Setting this to `true` will cause this stream to persist even if all down streams are removed.  By default, if a stream no longer has any down streams attached to it, it will automatically close itself.
    */
   @discardableResult public func persist(_ persist: Bool = true) -> Self {
     self.persist = persist
     return self
   }
+  
   
 }

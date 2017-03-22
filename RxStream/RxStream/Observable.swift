@@ -9,7 +9,7 @@
 import Foundation
 
 /**
- An Observable is a Hot stream that retains and gives access to it's current value.
+ An Observable is a kind of Hot stream that retains and gives access to it's current value.
  
  - note: All operations of an observable will resolve to a Hot Stream, except for an extra `map` operation that returns a non-optional type, allowing you to map observables.
  - note: Observables will automatically persist themselves.

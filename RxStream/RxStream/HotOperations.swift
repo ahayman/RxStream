@@ -633,11 +633,12 @@ extension Hot {
    - parameter then: The termination to apply after the reference has been found `nil`.
    
    - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
+   - warning: This stream will return a stream that _cannot_ be replayed.  This prevents the stream of retaining the object and extending its lifetime.
    
    - returns: A new Hot Stream
    */
   @discardableResult public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Hot<(U, T)> {
-    return appendUsing(stream: Hot<(U, T)>(), object: object, then: then)
+    return appendUsing(stream: Hot<(U, T)>(), object: object, then: then).canReplay(false)
   }
   
   /**
@@ -654,7 +655,7 @@ extension Hot {
    - returns: A new Hot Stream
    */
   @discardableResult public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Hot<T> {
-    return appendUsing(stream: Hot<(U, T)>(), object: object, then: then).map{ $0.1 }
+    return appendLifeOf(stream: Hot<T>(), object: object, then: then)
   }
   
   /**

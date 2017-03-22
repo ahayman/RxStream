@@ -7,9 +7,11 @@
 //
 
 import XCTest
-import Rx
+@testable import Rx
 
 struct TestError : Error { }
+
+class TestClass { }
 
 class HotTests: XCTestCase {
   
@@ -1394,4 +1396,241 @@ class HotTests: XCTestCase {
     XCTAssertNil(error)
   }
   
+  func testAverage() {
+    var values = [Double]()
+    let stream = HotInput<Double>()
+    
+    stream.average().on{ values.append($0) }
+    
+    stream.push(2.0) // 2 / 1
+    XCTAssertEqual(values, [2.0])
+    
+    stream.push(2.0) // 4 / 2
+    XCTAssertEqual(values, [2.0, 2.0])
+    
+    stream.push(5.0) // 9 / 3
+    XCTAssertEqual(values, [2.0, 2.0, 3.0])
+    
+    stream.push(7.0) // 16 / 4
+    XCTAssertEqual(values, [2.0, 2.0, 3.0, 4.0])
+    
+    stream.terminate(withReason: .completed)
+    XCTAssertEqual(values, [2.0, 2.0, 3.0, 4.0])
+  }
+  
+  func testSum() {
+    var values = [Double]()
+    let stream = HotInput<Double>()
+    
+    stream.sum().on{ values.append($0) }
+    
+    stream.push(2.0)
+    XCTAssertEqual(values, [2.0])
+    
+    stream.push(3.0)
+    XCTAssertEqual(values, [2.0, 5.0])
+    
+    stream.push(3.0)
+    XCTAssertEqual(values, [2.0, 5.0, 8.0])
+    
+    stream.push(2.5)
+    XCTAssertEqual(values, [2.0, 5.0, 8.0, 10.5])
+    
+    stream.push(-10.5)
+    XCTAssertEqual(values, [2.0, 5.0, 8.0, 10.5, 0])
+    
+    stream.terminate(withReason: .completed)
+    XCTAssertEqual(values, [2.0, 5.0, 8.0, 10.5, 0])
+  }
+  
+  func testWhile() {
+    var values = [Int]()
+    let stream = HotInput<Int>()
+    var term: Termination? = nil
+    
+    stream
+      .doWhile{ $0 < 10 }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+    
+    stream.push(1)
+    XCTAssertEqual(values, [1])
+    
+    stream.push(3)
+    XCTAssertEqual(values, [1, 3])
+    
+    stream.push(7)
+    XCTAssertEqual(values, [1, 3, 7])
+    
+    stream.push(10)
+    XCTAssertEqual(values, [1, 3, 7])
+    XCTAssertEqual(term, .cancelled)
+  }
+  
+  func testWhileTransition() {
+    var values = [Int]()
+    let stream = HotInput<Int>()
+    var term: Termination? = nil
+    
+    stream
+      .doWhile{ (prior, next) -> Bool in
+        guard let prior = prior else { return true }
+        return prior < next
+      }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+    
+    
+    stream.push(1)
+    XCTAssertEqual(values, [1])
+    
+    stream.push(3)
+    XCTAssertEqual(values, [1, 3])
+    
+    stream.push(7)
+    XCTAssertEqual(values, [1, 3, 7])
+    
+    stream.push(1)
+    XCTAssertEqual(values, [1, 3, 7])
+    XCTAssertEqual(term, .cancelled)
+  }
+  
+  func testUntil() {
+    var values = [Int]()
+    let stream = HotInput<Int>()
+    var term: Termination? = nil
+    
+    stream
+      .until{ $0 == 10 }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+    
+    stream.push(1)
+    XCTAssertEqual(values, [1])
+    
+    stream.push(3)
+    XCTAssertEqual(values, [1, 3])
+    
+    stream.push(7)
+    XCTAssertEqual(values, [1, 3, 7])
+    
+    stream.push(11)
+    XCTAssertEqual(values, [1, 3, 7, 11])
+    
+    stream.push(10)
+    XCTAssertEqual(values, [1, 3, 7, 11])
+    XCTAssertEqual(term, .cancelled)
+  }
+  
+  func testUntilTransition() {
+    var values = [Int]()
+    let stream = HotInput<Int>()
+    var term: Termination? = nil
+    
+    stream
+      .until{ (prior, next) -> Bool in
+        guard let prior = prior else { return false }
+        return prior == next
+      }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+    
+    stream.push(1)
+    XCTAssertEqual(values, [1])
+    
+    stream.push(3)
+    XCTAssertEqual(values, [1, 3])
+    
+    stream.push(7)
+    XCTAssertEqual(values, [1, 3, 7])
+    
+    stream.push(7)
+    XCTAssertEqual(values, [1, 3, 7])
+    XCTAssertEqual(term, .cancelled)
+  }
+  
+  func testNext() {
+    var values = [Int]()
+    let stream = HotInput<Int>()
+    var term: Termination? = nil
+    
+    stream.push(1)
+    stream.push(2)
+    
+    stream
+      .next(3, then: .completed)
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+    
+    stream.push(3)
+    XCTAssertEqual(values, [3])
+    
+    stream.push(4)
+    XCTAssertEqual(values, [3, 4])
+    
+    stream.push(5)
+    XCTAssertEqual(values, [3, 4, 5])
+    XCTAssertEqual(term, .completed)
+    
+    stream.push(6)
+    XCTAssertEqual(values, [3, 4, 5])
+  }
+  
+  func testUsing() {
+    var values = [Int]()
+    let stream = HotInput<Int>()
+    var term: Termination? = nil
+    var object: TestClass? = TestClass()
+    
+    stream
+      .using(object!)
+      .on{ values.append($0.1) }
+      .onTerminate{ term = $0 }
+    
+    stream.push(1)
+    XCTAssertEqual(values, [1])
+    
+    stream.push(2)
+    XCTAssertEqual(values, [1, 2])
+    
+    stream.push(3)
+    XCTAssertEqual(values, [1, 2, 3])
+    
+    object = nil
+   
+    wait(for: 0.1) // Allow the object to deinit
+    
+    stream.push(4)
+    XCTAssertEqual(values, [1, 2, 3])
+    XCTAssertEqual(term, .cancelled)
+  }
+  
+  func testLifeOf() {
+    var values = [Int]()
+    let stream = HotInput<Int>()
+    var term: Termination? = nil
+    var object: TestClass? = TestClass()
+    
+    stream
+      .lifeOf(object!)
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+    
+    stream.push(1)
+    XCTAssertEqual(values, [1])
+    
+    stream.push(2)
+    XCTAssertEqual(values, [1, 2])
+    
+    stream.push(3)
+    XCTAssertEqual(values, [1, 2, 3])
+    
+    object = nil
+   
+    wait(for: 0.1) // Allow the object to deinit
+    
+    stream.push(4)
+    XCTAssertEqual(values, [1, 2, 3])
+    XCTAssertEqual(term, .cancelled)
+  }
 }

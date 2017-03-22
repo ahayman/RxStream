@@ -663,6 +663,22 @@ extension Stream {
     }
   }
   
+  func appendLifeOf<U: BaseStream, V: AnyObject>(stream: U, object: V, then: Termination) -> U where U.Data == T {
+    let box = WeakBox(object)
+    return append(stream: stream) { (_, next, completion) in
+      switch next {
+      case let .next(value):
+        if let _ = box.object {
+          completion([.next(value)])
+        } else {
+          completion([.terminate(reason: then)])
+        }
+      case .error(let error): completion([.error(error)])
+      case .terminate: completion(nil)
+      }
+    }
+  }
+  
 }
 
 extension Stream where T: Arithmetic {
