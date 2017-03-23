@@ -91,25 +91,6 @@ public final class TimedThrottle : Throttle {
   
 }
 
-public final class StrideThrottle : Throttle {
-  private let stride: UInt
-  private var index: UInt = 1
-  
-  public init(stride: UInt) {
-    self.stride = stride
-  }
-  
-  public func process(work: @escaping ThrottledWork) {
-    guard stride > 1 else { return work{ } }
-    if index >= stride {
-      work{ }
-      index = 1
-    } else {
-      index += 1
-    }
-  }
-}
-
 /**
  A Pressure Throttle limits the amount of work that can be processed by defining a limit of current work that can be run and using a buffer to store extra work. As work is finished, new work is pulled from the buffer. All incoming work will be dropped if both the buffer and working queue limits are reached.
  
