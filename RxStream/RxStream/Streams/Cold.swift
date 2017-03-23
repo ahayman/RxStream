@@ -97,4 +97,9 @@ typealias ParentProcessor = (Request, String) -> Void
     self.process(event: .terminate(reason: reason), withKey: nil)
   }
   
+  deinit {
+    if self.isActive {
+      self.process(event: .terminate(reason: .completed))
+    }
+  }
 }

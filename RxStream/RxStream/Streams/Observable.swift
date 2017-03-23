@@ -29,11 +29,17 @@ public class Observable<T> : Stream<T> {
   init(_ value: T) {
     self.value = value
     super.init()
+    self.queue = (nil, value)
     persist()
   }
   
 }
 
+/**
+ Is a producer for Observables.  This is the only class where an observable can have it's value set and pushed down stream.
+  
+ - note: When the ObservableInput is deinit, it will send a .complete termination event if the observable isn't already terminated.
+ */
 public class ObservableInput<T> : Observable<T> {
   
   /**
@@ -58,6 +64,16 @@ public class ObservableInput<T> : Observable<T> {
    */
   public override init(_ value: T) {
     super.init(value)
+  }
+  
+  public func terminate(withReason reason: Termination) {
+    self.process(event: .terminate(reason: reason))
+  }
+  
+  deinit {
+    if self.isActive {
+      self.process(event: .terminate(reason: .completed))
+    }
   }
   
 }

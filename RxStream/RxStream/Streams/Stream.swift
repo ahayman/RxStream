@@ -100,7 +100,7 @@ public class Stream<T> {
   private var currentWork: UInt = 0
   
   /// The queue contains the prior value, if any, and the current value.  The queue will be `nil` when the stream is first created.
-  private var queue: (prior: T?, current: T)?
+  var queue: (prior: T?, current: T)?
   
   /// If this is set `true`, the next stream attached will have the current values replayed into it, if any.
   var replay: Bool = false

@@ -36,8 +36,9 @@
 		65ACFD5C1E82CFD000641BB2 /* PromiseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ACFD5B1E82CFD000641BB2 /* PromiseTests.swift */; };
 		65CDD9591E8402D700FF5C06 /* ObservableOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CDD9581E8402D700FF5C06 /* ObservableOperations.swift */; };
 		65CDD95B1E842D4900FF5C06 /* ArrayExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CDD95A1E842D4900FF5C06 /* ArrayExtensions.swift */; };
+		65CDD95D1E84361000FF5C06 /* ObservableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CDD95C1E84361000FF5C06 /* ObservableTests.swift */; };
 		65DC98321E8039B60045BFA3 /* HotOperationsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65DC98311E8039B60045BFA3 /* HotOperationsTests.swift */; };
-		65DC98341E816A830045BFA3 /* TextExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65DC98331E816A830045BFA3 /* TextExtensions.swift */; };
+		65DC98341E816A830045BFA3 /* TestExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65DC98331E816A830045BFA3 /* TestExtensions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -83,8 +84,9 @@
 		65ACFD5B1E82CFD000641BB2 /* PromiseTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PromiseTests.swift; sourceTree = "<group>"; };
 		65CDD9581E8402D700FF5C06 /* ObservableOperations.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ObservableOperations.swift; path = "Stream Operations/ObservableOperations.swift"; sourceTree = "<group>"; };
 		65CDD95A1E842D4900FF5C06 /* ArrayExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ArrayExtensions.swift; sourceTree = "<group>"; };
+		65CDD95C1E84361000FF5C06 /* ObservableTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ObservableTests.swift; sourceTree = "<group>"; };
 		65DC98311E8039B60045BFA3 /* HotOperationsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HotOperationsTests.swift; sourceTree = "<group>"; };
-		65DC98331E816A830045BFA3 /* TextExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextExtensions.swift; sourceTree = "<group>"; };
+		65DC98331E816A830045BFA3 /* TestExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestExtensions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -139,13 +141,14 @@
 			isa = PBXGroup;
 			children = (
 				653271B91E5F2BA300E3DE9C /* Info.plist */,
-				65DC98331E816A830045BFA3 /* TextExtensions.swift */,
+				65DC98331E816A830045BFA3 /* TestExtensions.swift */,
 				65ACFD5B1E82CFD000641BB2 /* PromiseTests.swift */,
 				65ACFD591E82C39500641BB2 /* CircularBufferTests.swift */,
 				651477D71E6E17A800190A44 /* DispatchTests.swift */,
 				65DC98311E8039B60045BFA3 /* HotOperationsTests.swift */,
 				659432E01E83187800B71335 /* FutureTests.swift */,
 				659432E21E831B3100B71335 /* ColdTests.swift */,
+				65CDD95C1E84361000FF5C06 /* ObservableTests.swift */,
 			);
 			path = RxStreamTests;
 			sourceTree = "<group>";
@@ -344,10 +347,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				65CDD95D1E84361000FF5C06 /* ObservableTests.swift in Sources */,
 				651477D81E6E17A800190A44 /* DispatchTests.swift in Sources */,
 				65ACFD5C1E82CFD000641BB2 /* PromiseTests.swift in Sources */,
 				659432E11E83187800B71335 /* FutureTests.swift in Sources */,
-				65DC98341E816A830045BFA3 /* TextExtensions.swift in Sources */,
+				65DC98341E816A830045BFA3 /* TestExtensions.swift in Sources */,
 				659432E31E831B3100B71335 /* ColdTests.swift in Sources */,
 				65ACFD5A1E82C39500641BB2 /* CircularBufferTests.swift in Sources */,
 				65DC98321E8039B60045BFA3 /* HotOperationsTests.swift in Sources */,

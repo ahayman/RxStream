@@ -38,6 +38,12 @@ public class HotInput<T> : Hot<T> {
     self.process(event: .error(error))
   }
   
+  deinit {
+    if self.isActive {
+      self.process(event: .terminate(reason: .completed))
+    }
+  }
+  
 }
 
 public typealias HotTask<T> = ((Event<T>) -> Void) -> Void
@@ -61,6 +67,12 @@ public class HotProducer<T> : Hot<T> {
     super.init()
     self.task { [weak self] event in
       self?.process(event: event)
+    }
+  }
+  
+  deinit {
+    if self.isActive {
+      self.process(event: .terminate(reason: .completed))
     }
   }
   
