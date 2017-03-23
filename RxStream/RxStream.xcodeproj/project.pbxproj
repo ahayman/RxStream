@@ -35,8 +35,8 @@
 		65ACFD5A1E82C39500641BB2 /* CircularBufferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ACFD591E82C39500641BB2 /* CircularBufferTests.swift */; };
 		65ACFD5C1E82CFD000641BB2 /* PromiseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ACFD5B1E82CFD000641BB2 /* PromiseTests.swift */; };
 		65CDD9591E8402D700FF5C06 /* ObservableOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CDD9581E8402D700FF5C06 /* ObservableOperations.swift */; };
-		65CDD95B1E842D4900FF5C06 /* ArrayExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CDD95A1E842D4900FF5C06 /* ArrayExtensions.swift */; };
 		65CDD95D1E84361000FF5C06 /* ObservableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CDD95C1E84361000FF5C06 /* ObservableTests.swift */; };
+		65CDD9621E8461D200FF5C06 /* ArrayExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CDD9611E8461D200FF5C06 /* ArrayExtensions.swift */; };
 		65DC98321E8039B60045BFA3 /* HotOperationsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65DC98311E8039B60045BFA3 /* HotOperationsTests.swift */; };
 		65DC98341E816A830045BFA3 /* TestExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65DC98331E816A830045BFA3 /* TestExtensions.swift */; };
 /* End PBXBuildFile section */
@@ -83,9 +83,9 @@
 		65ACFD591E82C39500641BB2 /* CircularBufferTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CircularBufferTests.swift; sourceTree = "<group>"; };
 		65ACFD5B1E82CFD000641BB2 /* PromiseTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PromiseTests.swift; sourceTree = "<group>"; };
 		65CDD9581E8402D700FF5C06 /* ObservableOperations.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ObservableOperations.swift; path = "Stream Operations/ObservableOperations.swift"; sourceTree = "<group>"; };
-		65CDD95A1E842D4900FF5C06 /* ArrayExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ArrayExtensions.swift; sourceTree = "<group>"; };
 		65CDD95C1E84361000FF5C06 /* ObservableTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ObservableTests.swift; sourceTree = "<group>"; };
 		65CDD95F1E8460E700FF5C06 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../../README.md; sourceTree = "<group>"; };
+		65CDD9611E8461D200FF5C06 /* ArrayExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ArrayExtensions.swift; path = Utilities/ArrayExtensions.swift; sourceTree = "<group>"; };
 		65DC98311E8039B60045BFA3 /* HotOperationsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HotOperationsTests.swift; sourceTree = "<group>"; };
 		65DC98331E816A830045BFA3 /* TestExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestExtensions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -166,6 +166,7 @@
 		65ACFD261E82BAFE00641BB2 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				65CDD9611E8461D200FF5C06 /* ArrayExtensions.swift */,
 				65ACFD411E82BB3300641BB2 /* Arithmetic.swift */,
 				65ACFD421E82BB3300641BB2 /* CircularBuffer.swift */,
 				65ACFD431E82BB3300641BB2 /* Dispatch.swift */,
@@ -175,7 +176,6 @@
 				65ACFD471E82BB3300641BB2 /* StringExtensions.swift */,
 				65ACFD481E82BB3300641BB2 /* Throttle.swift */,
 				65ACFD491E82BB3300641BB2 /* WeakBox.swift */,
-				65CDD95A1E842D4900FF5C06 /* ArrayExtensions.swift */,
 			);
 			name = Utilities;
 			sourceTree = "<group>";
@@ -331,7 +331,7 @@
 				65ACFD331E82BB1C00641BB2 /* Observable.swift in Sources */,
 				65ACFD4A1E82BB3300641BB2 /* Arithmetic.swift in Sources */,
 				65ACFD511E82BB3300641BB2 /* Throttle.swift in Sources */,
-				65CDD95B1E842D4900FF5C06 /* ArrayExtensions.swift in Sources */,
+				65CDD9621E8461D200FF5C06 /* ArrayExtensions.swift in Sources */,
 				65ACFD3E1E82BB2700641BB2 /* HotOperations.swift in Sources */,
 				65ACFD351E82BB1C00641BB2 /* Stream.swift in Sources */,
 				65ACFD311E82BB1C00641BB2 /* Future.swift in Sources */,
