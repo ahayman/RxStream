@@ -35,38 +35,27 @@ public class Future<T> : Stream<T> {
       guard let me = self, !complete else { return }
       complete = true
       completion
-        .onFailure{ me.push(value: .error($0)) }
-        .onSuccess{ me.push(value: .next($0)) }
+        .onFailure{ me.process(event: .error($0)) }
+        .onSuccess{ me.process(event: .next($0)) }
       me.lock = nil
     }
   }
   
   override init() { }
   
-  /// Override the process function to ensure it can only be alled once
-  override func process<U>(key: String?, prior: U?, next: Event<U>, withOp op: @escaping (U?, Event<U>, @escaping ([Event<T>]?) -> Void) -> Void) {
-    guard !complete else { return }
+  override func preProcess<U>(event: Event<U>, withKey key: String?) -> (key: String?, event: Event<U>)? {
+    guard !complete else { return nil }
     complete = true
-    var next = next
-    if case .error(let error) = next {
+    if case .error(let error) = event {
       // All errors terminate in a future
-      next = .terminate(reason: .error(error))
+      return (key, .terminate(reason: .error(error)))
     }
-    super.process(key: key, prior: prior, next: next) { (prior, next, completion) in
-      op(prior, next) { events in
-        completion(events)
-        if case .next = next {
-          self.terminate(reason: .completed, andPrune: .none)
-        }
-      }
-    }
+    return (key, event)
   }
   
-  /// Privately used to push new events down stream
-  private func push(value: Event<T>) {
-    self.process(key: nil, prior: nil, next: value) { (_, _, completion) in
-      completion([value])
-    }
+  override func postProcess<U>(event: Event<U>, producedEvents events: [Event<T>], withTermination termination: Termination?) {
+    guard termination == nil else { return }
+    self.terminate(reason: .completed, andPrune: .none)
   }
   
 }

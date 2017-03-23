@@ -16,18 +16,14 @@ import Foundation
  */
 public class Observable<T> : Stream<T> {
   
-  /// Privately used to push new events down stream
-  func push(event: Event<T>) {
-    self.process(key: nil, prior: nil, next: event) { (_, event, completion) in
-      if case .next(let value) = event {
-        self.value = value
-      }
-      completion([event])
+  override func postProcess<U>(event: Event<U>, producedEvents events: [Event<T>], withTermination termination: Termination?) {
+    if let value = events.lastEventValue {
+      self.value = value
     }
   }
   
   /// The current value of the observable
-  fileprivate(set) public var value: T
+  private(set) public var value: T
   
   /// Private initilization.  An Observable is not intended to be initialized directly, except by it's subclass.
   init(_ value: T) {
@@ -49,7 +45,7 @@ public class ObservableInput<T> : Observable<T> {
    */
   @discardableResult public func set(_ value: T) -> Self {
     guard isActive else { return self }
-    self.push(event: .next(value))
+    self.process(event: .next(value))
     return self
   }
   

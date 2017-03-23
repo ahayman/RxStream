@@ -27,7 +27,7 @@ protocol Retriable : class {
 class PromiseProcessor<T> : StreamProcessor<T> { }
 
 /**
- Custom Processor for Promises.  In this case, `shouldPrune` logic is non-standard, in that it checks the kind of down stream processors and only allows pruning if down stream promises have completed successfully.
+ Custom Processor for Promises. It's primarily used for type casting so a Promise can check the down stream type and prune if none of them are a Promise
  */
 class DownstreamPromiseProcessor<T, U> : PromiseProcessor<T> {
   var stream: Stream<U>
@@ -39,43 +39,10 @@ class DownstreamPromiseProcessor<T, U> : PromiseProcessor<T> {
     stream.onTerminate = { processor(nil, .terminate(reason: $0), { _ in }) }
   }
   
-  override var shouldPrune: Bool {
-    guard stream.isActive else { return true }
-    if let promise = stream as? Promise<U> {
-      guard promise.complete else { return false }
-    }
-    // We need to prune if there are no active down stream _promises_.  Since a promise emits only one value that can be retried, we can't prune until those streams complete.
-    let active = stream.downStreams.reduce(0) { (count, processor) -> Int in
-      guard !processor.shouldPrune else { return count }
-      guard processor is PromiseProcessor<U> else { return count }
-      return count + 1
-    }
-    return active < 1
-  }
+  override var shouldPrune: Bool { return stream.shouldPrune }
   
-  fileprivate var downStreamPromises: Int {
-    return stream.downStreams.reduce(0) { (count, processor) -> Int in
-      guard processor is PromiseProcessor<U> else { return count }
-      return count + 1
-    }
-  }
-  
-  /// Override `process` to initiate pruning.  This should cause Promise chains to "unwrap" or compelete themselves from the last promise back up the chain (ensuring no retries are left to trigger).
   override func process(prior: T?, next: Event<T>, withKey key: String?) {
-    stream.process(key: key, prior: prior, next: next) { (prior, next, completion) in
-      self.processor(prior, next) { procCompletion in
-        completion(procCompletion)
-        // Only attempt to prune if there are no downstream promises. Only the last promise should trigger a prune
-        guard self.downStreamPromises == 0 else { return }
-        switch next {
-        case .next where self.shouldPrune:
-          self.stream.prune(.upStream, withReason: .completed)
-        case .error(let error) where self.shouldPrune:
-          self.stream.prune(.upStream, withReason: .error(error))
-        default: break
-        }
-      }
-    }
+    stream.process(key: key, prior: prior, next: next, withOp: processor)
   }
   
 }
@@ -113,6 +80,28 @@ public class Promise<T> : Stream<T> {
   /// If true, then a retry will be filled with the last completed value from this stream if it's available
   private var fillsRetry: Bool = false
   
+  /// We should only prune if the stream is complete (or no longer active), and has no down stream promises.
+  override var shouldPrune: Bool {
+    guard isActive else { return true }
+    guard complete else { return false }
+    
+    // We need to prune if there are no active down stream _promises_.  Since a promise emits only one value that can be retried, we can't prune until those streams complete.
+    let active = downStreams.reduce(0) { (count, processor) -> Int in
+      guard !processor.shouldPrune else { return count }
+      guard processor is PromiseProcessor<T> else { return count }
+      return count + 1
+    }
+    return active < 1
+  }
+  
+  /// The number of downStreams that are promises. Used to determine if the stream should terminate after a value has been pushed.
+  private var downStreamPromises: Int {
+    return downStreams.reduce(0) { (count, processor) -> Int in
+      guard processor is PromiseProcessor<T> else { return count }
+      return count + 1
+    }
+  }
+  
   /**
    A Promise is initialized with the task.
    The task should call the completions handler with the result when it's done.
@@ -137,30 +126,41 @@ public class Promise<T> : Stream<T> {
     super.init()
   }
   
-  /// Override the process function to ensure it can only be alled once
-  override func process<U>(key: String?, prior: U?, next: Event<U>, withOp op: @escaping (U?, Event<U>, @escaping ([Event<T>]?) -> Void) -> Void) {
-    guard !complete else { return }
+  /// Overriden to update the complete variable
+  override func preProcess<U>(event: Event<U>, withKey key: String?) -> (key: String?, event: Event<U>)? {
+    guard !complete else { return nil }
     complete = true
-    super.process(key: key, prior: prior, next: next, withOp: op)
-    return 
+    return (key, event)
   }
   
+  /// Added logic will terminate the stream if it's not already terminated and we've received a value the stream is complete
+  override func postProcess<U>(event: Event<U>, producedEvents events: [Event<T>], withTermination termination: Termination?) {
+    guard termination == nil else { return }
+    guard self.downStreamPromises == 0 else { return }
+    
+    switch event {
+    case .next where self.shouldPrune:
+      terminate(reason: .completed, andPrune: .upStream)
+    case .error(let error) where self.shouldPrune:
+      terminate(reason: .error(error), andPrune: .upStream)
+    case .terminate(let reason):
+      terminate(reason: reason, andPrune: .upStream)
+    default: break
+    }
+  }
+  
+  /// Create a promise down stream processor if the stream is a Promise, so the termination logic works out.
   override func newDownstreamProcessor<U>(forStream stream: Stream<U>, withProcessor processor: @escaping (T?, Event<T>, @escaping ([Event<U>]?) -> Void) -> Void) -> StreamProcessor<T> {
     if let child = stream as? Promise<U> {
       child.cancelParent = self
       child.retryParent = self
-    }
-    return DownstreamPromiseProcessor(stream: stream, processor: processor)
-  }
-  
-  /// Privately used to push new events down stream
-  private func push(value: Event<T>) {
-    self.process(key: nil, prior: nil, next: value) { (_, _, completion) in
-      completion([value])
+      return DownstreamPromiseProcessor(stream: stream, processor: processor)
+    } else {
+      return super.newDownstreamProcessor(forStream: stream, withProcessor: processor)
     }
   }
   
-  /// Used to run the task
+  /// Used to run the task and process the value the task returns.
   private func run(task: @escaping PromiseTask<T>) {
     dispatch.execute {
       var complete = false
@@ -168,8 +168,8 @@ public class Promise<T> : Stream<T> {
         guard let me = self, !complete, me.isActive else { return }
         complete = true
         completion
-          .onFailure{ me.push(value: .error($0)) }
-          .onSuccess{ me.push(value: .next($0)) }
+          .onFailure{ me.process(event: .error($0)) }
+          .onSuccess{ me.process(event: .next($0)) }
       }
     }
   }
@@ -178,7 +178,7 @@ public class Promise<T> : Stream<T> {
   func cancelTask() {
     guard isActive else { return }
     guard task == nil else {
-      push(value: .terminate(reason: .cancelled))
+      process(event: .terminate(reason: .cancelled))
       return
     }
     cancelParent?.cancelTask()
@@ -193,7 +193,7 @@ public class Promise<T> : Stream<T> {
     self.complete = false
     
     if fillsRetry, let value = self.last {
-      self.push(value: .next(value))
+      self.process(event: .next(value))
     } else if let task = self.task {
       self.run(task: task)
     } else {

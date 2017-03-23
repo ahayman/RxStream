@@ -51,17 +51,9 @@ typealias ParentProcessor = (Request, String) -> Void
     self.requestProcessor = Either(processor)
   }
   
-  override func push(event: Event<Response>, withKey key: String?) {
-    super.push(event: event, withKey: shared ? nil : key)
-  }
-  
-  private func process(event: Event<Response>, withKey key: String?) {
-    self.process(key: shared ? nil : key, prior: nil, next: event) { (_, event, completion) in
-      switch event {
-      case .next, .error: completion([event])
-      case .terminate: completion(nil)
-      }
-    }
+  /// Override the preprocessor to convert a key to nil if the cold stream has sharing enabled.
+  override func preProcess<U>(event: Event<U>, withKey key: String?) -> (key: String?, event: Event<U>)? {
+    return (shared ? nil : key, event)
   }
   
   private func make(request: Request, withKey key: String, withTask task: ColdTask) {

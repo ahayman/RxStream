@@ -25,7 +25,7 @@ class DownstreamProcessor<T, U> : StreamProcessor<T> {
   var stream: Stream<U>
   var processor: StreamOp<T, U>
   
-  override var shouldPrune: Bool { return !stream.isActive }
+  override var shouldPrune: Bool { return stream.shouldPrune }
   
   override func process(prior: T?, next: Event<T>, withKey key: String?) {
     stream.process(key: key, prior: prior, next: next, withOp: processor)

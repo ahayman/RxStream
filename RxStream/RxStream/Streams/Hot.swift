@@ -11,16 +11,7 @@ import Foundation
 /**
  A Hot stream is a type of stream that will continually push events without regard to who is subscribing.
  */
-public class Hot<T> : Stream<T> {
-  
-  /// Conveniene function for pushing into the stream.
-  fileprivate func push(event: Event<T>) {
-    self.process(key: nil, prior: nil, next: event) { (_, event, completion) in
-      completion([event])
-    }
-  }
-  
-}
+public class Hot<T> : Stream<T> { }
 
 /**
  A HotInput allows inputs to be pushed into the hot stream.
@@ -34,17 +25,17 @@ public class HotInput<T> : Hot<T> {
   
   /// Terminate the Hot Stream with a reason.
   public func terminate(withReason reason: Termination) {
-    self.push(event: .terminate(reason: reason))
+    self.process(event: .terminate(reason: reason))
   }
   
   /// Push a new event into the hot stream.
   public func push(_ value: T) {
-    self.push(event: .next(value))
+    self.process(event: .next(value))
   }
   
   /// Push a non-terminating error into the hot stream.
   public func push(_ error: Error) {
-    self.push(event: .error(error))
+    self.process(event: .error(error))
   }
   
 }
@@ -69,7 +60,7 @@ public class HotProducer<T> : Hot<T> {
     self.task = task
     super.init()
     self.task { [weak self] event in
-      self?.push(event: event)
+      self?.process(event: event)
     }
   }
   

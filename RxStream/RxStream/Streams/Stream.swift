@@ -53,8 +53,14 @@ public enum Prune : Int {
   case none
 }
 
+protocol EventValue {
+  associatedtype Value
+  var eventValue: Value? { get }
+}
+
 /// Events are passed down streams for processing
-public enum Event<T> {
+public enum Event<T> : EventValue {
+  typealias Value = T
   /// Next data to be passed down the streams
   case next(T)
   
@@ -63,6 +69,11 @@ public enum Event<T> {
   
   /// A non-terminating error event
   case error(Error)
+  
+  var eventValue: T? {
+    if case .next(let value) = self { return value }
+    return nil
+  }
 }
 
 /// Defines work that should be done for an event.  The event is passed in, and the completion handler is called when the work has completed.
@@ -135,6 +146,12 @@ public class Stream<T> {
   
   /// Convience variable returning whether the stream is currently active
   public var isActive: Bool { return state == .active }
+  
+  /** 
+   By default, a stream should be pruned if it's not marked persist, and the state is no longer active.
+   However, this may be overridden by subclasses to create custom conditions.
+   */
+  var shouldPrune: Bool { return !persist && state != .active }
   
   /// A Throttle is used to restrict the flow of information that moves through the stream.
   internal(set) public var throttle: Throttle?
@@ -230,19 +247,17 @@ public class Stream<T> {
    Provide a key to pass down stream if one was provided.
    - warning: if the stream is not active, the event will be ignored.
   */
-  func push(event: Event<T>, withKey key: String?) {
-    dispatch.execute {
-      guard self.isActive else { return }
-      
-      // Push the event down stream.  If the stream is reusable, we don't want to filter downstreams.  
-      for processor in self.downStreams {
-        processor.process(prior: self.queue?.current, next: event, withKey: key) 
-      }
-      
-      // update internal state
-      if case let .next(value) = event, self.canReplay {
-        self.queue = (self.queue?.current, value)
-      }
+  private func push(event: Event<T>, withKey key: String?) {
+    guard self.isActive else { return }
+    
+    // Push the event down stream.  If the stream is reusable, we don't want to filter downstreams.  
+    for processor in self.downStreams {
+      processor.process(prior: self.queue?.current, next: event, withKey: key) 
+    }
+    
+    // update internal state
+    if case let .next(value) = event, self.canReplay {
+      self.queue = (self.queue?.current, value)
     }
   }
   
@@ -259,6 +274,39 @@ public class Stream<T> {
       self.onTerminate = nil
       self.prune(prune, withReason: reason)
     }
+  }
+  
+  /**
+   Should be used by producing subclass to process a new event.  
+   This should only be used by subclasses that are generating new events to push these events into the stream.
+   
+   - parameter event: The event to push into the stream
+   - parameter key: _(Optional)_, the key to restrict the event.
+   */
+  func process(event: Event<T>, withKey key: String? = nil) {
+    self.process(key: key, prior: queue?.current, next: event) { (_, event, completion) in
+      switch event {
+      case .next, .error: completion([event])
+      case .terminate: completion(nil)
+      }
+    }
+  }
+  
+  /**
+   Preprocessing override function for subclasses. 
+   Many subclasses need to access and sometime override or otherwise process incoming events & keys.
+   This function allows them to do this. Whatever values are returned from this function will be used to processes.
+   The function is called before the processing is occurred or events are passed into the stream op.
+   
+   - note: The Stream base class does not do any preprocessing, so there's no need to call `super` when overriding this function.
+   
+   - parameter event: the incoming event
+   - parameter key: _Optional_.  The key for the incoming event.
+   
+   - returns: tuple<key: String?, event: Event<U>> : The key and event returned will be used for processing. If no event is returned, nothing will be processed.
+   */
+  func preProcess<U>(event: Event<U>, withKey key: String?) -> (key: String?, event: Event<U>)? {
+    return (key, event)
   }
   
   var pendingTermination: Termination? = nil
@@ -282,6 +330,8 @@ public class Stream<T> {
   func process<U>(key: String?, prior: U?, next: Event<U>, withOp op: @escaping StreamOp<U, T>) {
     guard isActive && pendingTermination == nil else { return }
     dispatch.execute {
+      guard let (key, event) = self.preProcess(event: next, withKey: key) else { return }
+      
       // If a key is provided, we can only process the request if we have that key.
       if let key = key {
         guard let _ = self.keys.remove(key) else { return }
@@ -289,27 +339,28 @@ public class Stream<T> {
       // Make sure we're receiving data, otherwise it's a termination event and we should set the terminateWork
       self.currentWork += 1
       
-      if case let .terminate(reason) = next {
+      if case let .terminate(reason) = event {
         self.pendingTermination = reason
       }
       
       // Abstract out the process work so it can be done inline or applied to a throttle
       let workProcessor: ThrottledWork = { completion in
           self.dispatch.execute {
-            var opTermination = false
+            var termination: Termination? = nil
             // If this is a termination event, we need to `nil` out the `onTerminate` so it's not called when the termination is pushed.  Otherwise, we'll end up with two termination events processed.
-            if case .terminate = next {
+            if case .terminate = event {
               self.onTerminate = nil
             }
-            op(prior, next) { result in
-              if let events = result {
+            op(prior, event) { result in
+              self.dispatch.execute {
+                let events = result ?? []
                 outer: for event in events {
                   // push each event
                   self.push(event: event, withKey: key)
                   // if the event is a termination, we break.  There's no point in pushing any more events.
                   switch event{
                   case .terminate(let reason):
-                    opTermination = true
+                    termination  = reason
                     self.terminate(reason: reason, andPrune: .upStream)
                     break outer
                   // A processor can take a termination event and turn it into an error. This will prevent the stream from terminating and instead pass an error down. The only reason to do this is for merged streams.
@@ -318,18 +369,22 @@ public class Stream<T> {
                   default: break
                   }
                 }
-              }
-              
-              self.currentWork -= 1
-            
-              // If all current work is done and the stream is terminated and it hasn't been pushed, we need to push that termination downstream
-              if self.currentWork == 0, let reason = self.pendingTermination {
-                if !opTermination {
-                  self.push(event: .terminate(reason: reason), withKey: key)
-                  self.terminate(reason: reason, andPrune: .downStream)
+                
+                self.currentWork -= 1
+                
+                // If all current work is done and the stream is terminated and it hasn't been pushed, we need to push that termination downstream
+                if self.currentWork == 0, let reason = self.pendingTermination {
+                  if termination == nil {
+                    termination = reason
+                    self.push(event: .terminate(reason: reason), withKey: key)
+                    self.terminate(reason: reason, andPrune: .downStream)
+                  }
+                  self.pendingTermination = nil
                 }
+                
+                self.postProcess(event: event, producedEvents: events, withTermination: termination)
+                completion()
               }
-              completion()
           }
         }
       }
@@ -341,6 +396,18 @@ public class Stream<T> {
       }
     }
   }
+  
+  /**
+   Post-processing override function for subclassing.
+   Many subclasses need access to the post-processed values that are returned from the stream's processor work.
+   This function is called _after_ all values have been processed, pushed downstream and termination (if any) are processed.
+   Override this class to gain access to these values.
+   
+   - parameter event: The initial event that was processed.
+   - parameter events: All events returned from the stream processor.
+   - parameter termination: _Optional_,  if a termination was processed, it will be returned here.  Note: If this is non-nil, then the stream has been terminated.
+   */
+  func postProcess<U>(event: Event<U>, producedEvents events: [Event<T>], withTermination termination: Termination?) { }
   
 }
 
