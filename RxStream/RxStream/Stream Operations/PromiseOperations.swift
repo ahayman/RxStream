@@ -462,6 +462,7 @@ extension Promise {
    - parameter then: The termination to apply after the reference has been found `nil`.
    
    - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
+   - warning: This stream will return a stream that _cannot_ be replayed.  This prevents the stream of retaining the object and extending its lifetime.
    
    - returns: A new Promise Stream
    */

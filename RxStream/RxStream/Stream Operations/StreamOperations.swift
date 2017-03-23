@@ -23,6 +23,15 @@ public enum MergeError : Error {
 // Mark: Operations
 extension Stream {
   
+  func appendNewStream<U: BaseStream>(stream: U) -> U where U.Data == T {
+    return append(stream: stream) { (_, next, completion) in
+      switch next {
+      case .next, .error: completion([next])
+      case .terminate: completion(nil)
+      }
+    }
+  }
+  
   func appendOnError<U: BaseStream>(stream: U, handler: @escaping (Error) -> Termination?) -> U where U.Data == T {
     return append(stream: stream) { (_, next, completion) in
       switch next {
