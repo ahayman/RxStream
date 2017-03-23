@@ -85,6 +85,7 @@
 		65CDD9581E8402D700FF5C06 /* ObservableOperations.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ObservableOperations.swift; path = "Stream Operations/ObservableOperations.swift"; sourceTree = "<group>"; };
 		65CDD95A1E842D4900FF5C06 /* ArrayExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ArrayExtensions.swift; sourceTree = "<group>"; };
 		65CDD95C1E84361000FF5C06 /* ObservableTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ObservableTests.swift; sourceTree = "<group>"; };
+		65CDD95F1E8460E700FF5C06 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../../README.md; sourceTree = "<group>"; };
 		65DC98311E8039B60045BFA3 /* HotOperationsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HotOperationsTests.swift; sourceTree = "<group>"; };
 		65DC98331E816A830045BFA3 /* TestExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestExtensions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -129,6 +130,7 @@
 		653271AB1E5F2BA300E3DE9C /* RxStream */ = {
 			isa = PBXGroup;
 			children = (
+				65CDD95E1E8460D400FF5C06 /* Docs */,
 				65ACFD281E82BB0E00641BB2 /* Streams */,
 				65ACFD271E82BB0600641BB2 /* Stream Operations */,
 				65ACFD261E82BAFE00641BB2 /* Utilities */,
@@ -203,6 +205,14 @@
 				65ACFD2F1E82BB1C00641BB2 /* StreamProcessor.swift */,
 			);
 			name = Streams;
+			sourceTree = "<group>";
+		};
+		65CDD95E1E8460D400FF5C06 /* Docs */ = {
+			isa = PBXGroup;
+			children = (
+				65CDD95F1E8460E700FF5C06 /* README.md */,
+			);
+			name = Docs;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
