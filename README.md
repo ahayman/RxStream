@@ -2,7 +2,7 @@
 
 RxStream is a simpler kind of Reactive framework for Swift that seeks to integrate well into existing language and architectural paradigms instead of replacing them.
 
-If you’re looking for a full Reactive framework, you’d probably be best taking a look at [RxSwift](%20https://github.com/ReactiveX/RxSwift) or [ReactiveCocoa](https://github.com/ReactiveCocoa/ReactiveCocoa).  In contrast to these, RxStream is a much pared down version of React.  The motivation for this is several fold:
+If you’re looking for a full Reactive framework, you’d probably be best taking a look at [RxSwift](https://github.com/ReactiveX/RxSwift) or [ReactiveCocoa](https://github.com/ReactiveCocoa/ReactiveCocoa).  In contrast to these, RxStream is a much pared down version of React.  The motivation for this is several fold:
 
 - With a simpler paradigm, the learning curve is a lot shorter. It’s easier to get other developers to invest into using it.
 - RxStream tries hard to divest itself of some of the more obscure syntax and complications that seem inherent in most Reactive frameworks.  This can help create more readable and maintainable code.
