@@ -61,6 +61,7 @@
 		658692B21E85AC76000C9413 /* hot.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = hot.md; path = Docs/hot.md; sourceTree = "<group>"; };
 		658692B31E85AC76000C9413 /* observable.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = observable.md; path = Docs/observable.md; sourceTree = "<group>"; };
 		658692B41E85AC76000C9413 /* promise.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = promise.md; path = Docs/promise.md; sourceTree = "<group>"; };
+		658692BA1E85ADCF000C9413 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
 		659432E01E83187800B71335 /* FutureTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FutureTests.swift; sourceTree = "<group>"; };
 		659432E21E831B3100B71335 /* ColdTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ColdTests.swift; sourceTree = "<group>"; };
 		65ACFD291E82BB1C00641BB2 /* Cold.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Cold.swift; path = Streams/Cold.swift; sourceTree = "<group>"; };
@@ -89,7 +90,6 @@
 		65ACFD5B1E82CFD000641BB2 /* PromiseTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PromiseTests.swift; sourceTree = "<group>"; };
 		65CDD9581E8402D700FF5C06 /* ObservableOperations.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ObservableOperations.swift; path = "Stream Operations/ObservableOperations.swift"; sourceTree = "<group>"; };
 		65CDD95C1E84361000FF5C06 /* ObservableTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ObservableTests.swift; sourceTree = "<group>"; };
-		65CDD95F1E8460E700FF5C06 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../../README.md; sourceTree = "<group>"; };
 		65CDD9611E8461D200FF5C06 /* ArrayExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ArrayExtensions.swift; path = Utilities/ArrayExtensions.swift; sourceTree = "<group>"; };
 		65DC98311E8039B60045BFA3 /* HotOperationsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HotOperationsTests.swift; sourceTree = "<group>"; };
 		65DC98331E816A830045BFA3 /* TestExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestExtensions.swift; sourceTree = "<group>"; };
@@ -215,7 +215,7 @@
 		65CDD95E1E8460D400FF5C06 /* Docs */ = {
 			isa = PBXGroup;
 			children = (
-				65CDD95F1E8460E700FF5C06 /* README.md */,
+				658692BA1E85ADCF000C9413 /* README.md */,
 				658692B01E85AC76000C9413 /* cold.md */,
 				658692B11E85AC76000C9413 /* future.md */,
 				658692B21E85AC76000C9413 /* hot.md */,
