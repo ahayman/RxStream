@@ -146,8 +146,8 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Future<(T, U)> {
-    return appendStamp(stream: Future<(T, U)>(), stamper: stamper)
+  @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Future<(value: T, stamp: U)> {
+    return appendStamp(stream: Future<(value: T, stamp: U)>(), stamper: stamper)
   }
   
   /**
@@ -157,7 +157,7 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func timeStamp() -> Future<(T, Date)> {
+  @discardableResult public func timeStamp() -> Future<(value: T, stamp: Date)> {
     return stamp{ _ in return Date() }
   }
   

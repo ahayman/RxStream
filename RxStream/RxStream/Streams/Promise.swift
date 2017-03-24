@@ -41,7 +41,7 @@ class DownstreamPromiseProcessor<T, U> : PromiseProcessor<T> {
   
   override var shouldPrune: Bool { return stream.shouldPrune }
   
-  override func process(prior: T?, next: Event<T>, withKey key: String?) {
+  override func process(prior: T?, next: Event<T>, withKey key: EventKey) {
     stream.process(key: key, prior: prior, next: next, withOp: processor)
   }
   
@@ -127,7 +127,7 @@ public class Promise<T> : Stream<T> {
   }
   
   /// Overriden to update the complete variable
-  override func preProcess<U>(event: Event<U>, withKey key: String?) -> (key: String?, event: Event<U>)? {
+  override func preProcess<U>(event: Event<U>, withKey key: EventKey) -> (key: EventKey, event: Event<U>)? {
     guard !complete else { return nil }
     complete = true
     return (key, event)

@@ -370,8 +370,8 @@ extension Observable {
    
    - returns: A new Observable Stream
    */
-  @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Observable<(T, U)> {
-    return appendStamp(stream: Observable<(T, U)>(self.value, stamper(self.value)), stamper: stamper)
+  @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Observable<(value: T, stamp: U)> {
+    return appendStamp(stream: Observable<(value: T, stamp: U)>(value: self.value, stamp: stamper(self.value)), stamper: stamper)
   }
   
   /**
@@ -381,7 +381,7 @@ extension Observable {
    
    - returns: A new Observable Stream
    */
-  @discardableResult public func timeStamp() -> Observable<(T, Date)> {
+  @discardableResult public func timeStamp() -> Observable<(value: T, stamp: Date)> {
     return stamp{ _ in return Date() }
   }
   
@@ -467,7 +467,7 @@ extension Observable {
    
    - returns: A new Observable Stream
    */
-  @discardableResult public func countStamp() -> Observable<(T, UInt)> {
+  @discardableResult public func countStamp() -> Observable<(value: T, stamp: UInt)> {
     var count: UInt = 0
     return stamp{ _ in
       count += 1

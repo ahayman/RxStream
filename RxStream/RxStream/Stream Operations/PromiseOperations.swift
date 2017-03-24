@@ -226,8 +226,8 @@ extension Promise {
    
    - returns: A new Promise Stream
    */
-  @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Promise<(T, U)> {
-    return appendStamp(stream: Promise<(T, U)>(), stamper: stamper)
+  @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Promise<(value: T, stamp: U)> {
+    return appendStamp(stream: Promise<(value: T, stamp: U)>(), stamper: stamper)
   }
   
   /**
@@ -237,7 +237,7 @@ extension Promise {
    
    - returns: A new Promise Stream
    */
-  @discardableResult public func timeStamp() -> Promise<(T, Date)> {
+  @discardableResult public func timeStamp() -> Promise<(value: T, stamp: Date)> {
     return stamp{ _ in return Date() }
   }
   

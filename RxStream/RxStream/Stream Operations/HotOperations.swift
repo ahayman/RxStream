@@ -308,8 +308,8 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Hot<(T, U)> {
-    return appendStamp(stream: Hot<(T, U)>(), stamper: stamper)
+  @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Hot<(value: T, stamp: U)> {
+    return appendStamp(stream: Hot<(value: T, stamp: U)>(), stamper: stamper)
   }
   
   /**
@@ -319,7 +319,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  @discardableResult public func timeStamp() -> Hot<(T, Date)> {
+  @discardableResult public func timeStamp() -> Hot<(value: T, stamp: Date)> {
     return stamp{ _ in return Date() }
   }
   
@@ -396,7 +396,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  @discardableResult public func countStamp() -> Hot<(T, UInt)> {
+  @discardableResult public func countStamp() -> Hot<(value: T, stamp: UInt)> {
     var count: UInt = 0
     return stamp{ _ in
       count += 1

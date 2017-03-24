@@ -813,6 +813,23 @@ class HotTests: XCTestCase {
     XCTAssertEqualWithAccuracy(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
   }
   
+  func testCountStamp() {
+    var values = [(String, UInt)]()
+    let stream = HotInput<String>()
+    
+    stream.countStamp().on{ values.append($0) }
+    
+    stream.push("Hello")
+    XCTAssertEqual(values.count, 1)
+    XCTAssertEqual(values.last?.0, "Hello")
+    XCTAssertEqual(values.last?.1, 1)
+    
+    stream.push("World")
+    XCTAssertEqual(values.count, 2)
+    XCTAssertEqual(values.last?.0, "World")
+    XCTAssertEqual(values.last?.1, 2)
+  }
+  
   func testMin() {
     var minValues = [Int]()
     var minComparable = [Int]()

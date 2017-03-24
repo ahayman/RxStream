@@ -303,10 +303,10 @@ extension Stream {
     }
   }
   
-  func appendStamp<U: BaseStream, V>(stream: U, stamper: @escaping (T) -> V) -> U where U.Data == (T, V) {
+  func appendStamp<U: BaseStream, V>(stream: U, stamper: @escaping (T) -> V) -> U where U.Data == (value: T, stamp: V) {
     return append(stream: stream) { (_, next, completion) in
       switch next {
-      case let .next(value): completion([.next(value, stamper(value))])
+      case let .next(value): completion([.next(value: value, stamp: stamper(value))])
       case .error(let error): completion([.error(error)])
       case .terminate: completion(nil)
       }

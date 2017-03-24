@@ -47,12 +47,21 @@ public func ==(lhs: StreamState, rhs: StreamState) -> Bool {
   }
 }
 
-public enum Prune : Int {
+/// Determines how events travel down their branches.
+enum EventKey {
+  case keyed(String) /// The event is keyed and should only travel down branches with that key
+  case shared(String) /// The event is keyed, but should travel down all branches.
+  case none /// The event is not keyed and should travel down all branches.
+}
+
+/// Defines how and if a stream should prune. 
+enum Prune : Int {
   case upStream
   case downStream
   case none
 }
 
+/// Protocol used for extracting an event value from the Event.  Mostly used for Array Extensions.  May be removed when future versions of Swift support more robust extensions.
 protocol EventValue {
   associatedtype Value
   var eventValue: Value? { get }
@@ -213,12 +222,12 @@ public class Stream<T> {
         replay,
         let queue = self.queue
       {
-        processor.process(prior: queue.prior, next: .next(queue.current), withKey: nil)
+        processor.process(prior: queue.prior, next: .next(queue.current), withKey: .none)
       }
       
       // If this stream is terminated, pass that into the processor, else append the processor
       if let termination = self.termination {
-        processor.process(prior: self.queue?.current, next: .terminate(reason: termination), withKey: nil)
+        processor.process(prior: self.queue?.current, next: .terminate(reason: termination), withKey: .none)
       } else {
         self.downStreams.append(processor)
       }
@@ -247,7 +256,7 @@ public class Stream<T> {
    Provide a key to pass down stream if one was provided.
    - warning: if the stream is not active, the event will be ignored.
   */
-  private func push(event: Event<T>, withKey key: String?) {
+  private func push(event: Event<T>, withKey key: EventKey) {
     guard self.isActive else { return }
     
     // Push the event down stream.  If the stream is reusable, we don't want to filter downstreams.  
@@ -283,7 +292,7 @@ public class Stream<T> {
    - parameter event: The event to push into the stream
    - parameter key: _(Optional)_, the key to restrict the event.
    */
-  func process(event: Event<T>, withKey key: String? = nil) {
+  func process(event: Event<T>, withKey key: EventKey = .none) {
     self.process(key: key, prior: queue?.current, next: event) { (_, event, completion) in
       switch event {
       case .next, .error: completion([event])
@@ -305,7 +314,7 @@ public class Stream<T> {
    
    - returns: tuple<key: String?, event: Event<U>> : The key and event returned will be used for processing. If no event is returned, nothing will be processed.
    */
-  func preProcess<U>(event: Event<U>, withKey key: String?) -> (key: String?, event: Event<U>)? {
+  func preProcess<U>(event: Event<U>, withKey key: EventKey) -> (key: EventKey, event: Event<U>)? {
     return (key, event)
   }
   
@@ -327,14 +336,18 @@ public class Stream<T> {
    
    - warning: All work for a stream should use this function to process events.
    */
-  func process<U>(key: String?, prior: U?, next: Event<U>, withOp op: @escaping StreamOp<U, T>) {
+  func process<U>(key: EventKey, prior: U?, next: Event<U>, withOp op: @escaping StreamOp<U, T>) {
     guard isActive && pendingTermination == nil else { return }
     dispatch.execute {
       guard let (key, event) = self.preProcess(event: next, withKey: key) else { return }
       
-      // If a key is provided, we can only process the request if we have that key.
-      if let key = key {
+      // If a key is provided, we can only process the request if we have that key.  If it's shared, we can process, but still need to remove the key
+      switch key {
+      case .keyed(let key): 
         guard let _ = self.keys.remove(key) else { return }
+      case .shared(let key):
+        self.keys.remove(key)
+      default: break
       }
       // Make sure we're receiving data, otherwise it's a termination event and we should set the terminateWork
       self.currentWork += 1

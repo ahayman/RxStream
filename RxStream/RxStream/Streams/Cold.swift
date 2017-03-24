@@ -8,6 +8,12 @@
 
 import Foundation
 
+private enum Share {
+  case shared
+  case keyed
+  case inherit
+}
+
 /**
  A Cold stream is a kind of stream that only produces values when it is asked to.
  A cold stream can be asked to produce a value by making a `request` anywhere down stream.
@@ -17,15 +23,15 @@ import Foundation
  */
 public class Cold<Request, Response> : Stream<Response> {
   
-public typealias ColdTask = (_ state: Observable<StreamState>, _ request: Request, _ response: (Result<Response>) -> Void) -> Void
-  
-typealias ParentProcessor = (Request, String) -> Void
+  public typealias ColdTask = (_ state: Observable<StreamState>, _ request: Request, _ response: (Result<Response>) -> Void) -> Void
+
+  typealias ParentProcessor = (Request, String) -> Void
   
   /// The processor responsible for filling a request.  It can either be a ColdTask or a ParentProcessor (a Parent stream that can handle fill the request).
   private var requestProcessor: Either<ColdTask, ParentProcessor>
   
   /// If this is set true, responses will be passed down to _all_ substreams
-  private var shared: Bool = false
+  private var shared: Share
   
   /// The promise needed to pass into the promise task.
   lazy private var stateObservable: ObservableInput<StreamState> = ObservableInput(self.state)
@@ -45,15 +51,24 @@ typealias ParentProcessor = (Request, String) -> Void
   
   public init(task: @escaping ColdTask) {
     self.requestProcessor = Either(task)
+    self.shared = .keyed
   }
   
   init(processor: @escaping ParentProcessor) {
     self.requestProcessor = Either(processor)
+    self.shared = .inherit
   }
   
-  /// Override the preprocessor to convert a key to nil if the cold stream has sharing enabled.
-  override func preProcess<U>(event: Event<U>, withKey key: String?) -> (key: String?, event: Event<U>)? {
-    return (shared ? nil : key, event)
+  /// Override the preprocessor to convert a key to properly respect whether or not this stream should share
+  override func preProcess<U>(event: Event<U>, withKey key: EventKey) -> (key: EventKey, event: Event<U>)? {
+    switch (shared, key) {
+    case (.keyed, .shared(let key)):
+      return (.keyed(key), event)
+    case (.shared, .keyed(let key)):
+      return (.shared(key), event)
+    default:
+      return (key, event)
+    }
   }
   
   private func make(request: Request, withKey key: String, withTask task: ColdTask) {
@@ -62,8 +77,8 @@ typealias ParentProcessor = (Request, String) -> Void
       guard let requestKey = key else { return }
       key = nil
       $0
-        .onFailure{ self.process(event: .error($0), withKey: requestKey) }
-        .onSuccess{ self.process(event: .next($0), withKey: requestKey) }
+        .onFailure{ self.process(event: .error($0), withKey: .keyed(requestKey)) }
+        .onSuccess{ self.process(event: .next($0), withKey: .keyed(requestKey)) }
     }
   }
   
@@ -88,13 +103,13 @@ typealias ParentProcessor = (Request, String) -> Void
    - returns: Self
    */
   public func share(_ share: Bool = true) -> Self {
-    self.shared = share
+    self.shared = share ? .shared : .keyed
     return self
   }
   
   /// Terminate the Cold Stream with a reason.
   public func terminate(withReason reason: Termination) {
-    self.process(event: .terminate(reason: reason), withKey: nil)
+    self.process(event: .terminate(reason: reason), withKey: .none)
   }
   
   deinit {

@@ -43,7 +43,7 @@ public class Future<T> : Stream<T> {
   
   override init() { }
   
-  override func preProcess<U>(event: Event<U>, withKey key: String?) -> (key: String?, event: Event<U>)? {
+  override func preProcess<U>(event: Event<U>, withKey key: EventKey) -> (key: EventKey, event: Event<U>)? {
     guard !complete else { return nil }
     complete = true
     if case .error(let error) = event {

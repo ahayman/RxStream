@@ -316,8 +316,8 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: Response) -> U) -> Cold<Request, (Response, U)> {
-    let stream: Cold<Request, (Response, U)> = newSubStream()
+  @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: Response) -> U) -> Cold<Request, (value: Response, stamp: U)> {
+    let stream: Cold<Request, (value: Response, stamp: U)> = newSubStream()
     return appendStamp(stream: stream, stamper: stamper)
   }
   
@@ -328,7 +328,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  @discardableResult public func timeStamp() -> Cold<Request, (Response, Date)> {
+  @discardableResult public func timeStamp() -> Cold<Request, (value: Response, stamp: Date)> {
     return stamp{ _ in return Date() }
   }
   
@@ -405,7 +405,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  @discardableResult public func countStamp() -> Cold<Request, (Response, UInt)> {
+  @discardableResult public func countStamp() -> Cold<Request, (value: Response, stamp: UInt)> {
     var count: UInt = 0
     return stamp{ _ in
       count += 1
