@@ -13,21 +13,46 @@ extension Cold {
   /**
    ## Branching
    
+   This will map an upstream Request to a new Request type so that down stream client can use a different Request.  
+   Because Requests travel upstream, the mapper must map the from the new Type to the original Request type.
+   
+   - parameter mapper: Maps the new Type to the upstreamd Request type.
+   
+   - returns: A new Cold stream
+   */
+  public func mapRequest<U>(_ mapper: @escaping (U) -> Request) -> Cold<U, Response> {
+    return appendNewStream(stream: newMappedRequestStream(mapper: mapper))
+  }
+  
+  /**
+   ## Branching
+   
+   This will call the handler when the stream receives a _non-terminating_ error.
+   
+   - parameter handler: Handler will be called when an error is received.
+   - parameter error: The error thrown by the stream
+   
+   - returns: a new Cold stream
+   */
+  @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Void) -> Cold<Request, Response> {
+    return appendOnError(stream: newSubStream(), handler: handler)
+  }
+  
+  /**
+   ## Branching
+   
    This will call the handler when the stream receives a _non-terminating_ error.
    The handler can optionally return a Termination, which will cause the stream to terminate.
-   
-   - note: Cold streams can throw non-terminating errors if an error is thrown by a request.  
-   Since more requests can be made, the stream is not terminated.  
    
    - parameter handler: Receives an error and can optionally return a Termination.  If `nil` is returned, the stream will continue to be active.
    - parameter error: The error thrown by the stream
    
    - returns: a new Cold stream
    */
-  @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Termination?) -> Cold<Request, Response> {
-    return appendOnError(stream: newSubStream(), handler: handler)
+  @discardableResult public func mapError(_ handler: @escaping (_ error: Error) -> Termination?) -> Cold<Request, Response> {
+    return appendMapError(stream: newSubStream(), handler: handler)
   }
-  
+
   /**
    ## Branching
    

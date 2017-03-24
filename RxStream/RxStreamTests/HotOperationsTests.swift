@@ -202,10 +202,7 @@ class HotTests: XCTestCase {
         onCount += 1
         mapped = $0
       }
-      .onError {
-        error = $0
-        return nil
-      }
+      .onError{ error = $0 }
     
     stream.push(0)
     XCTAssertEqual(mapped, "0")
@@ -244,10 +241,7 @@ class HotTests: XCTestCase {
         mapped = $0
         onCount += 1
       }
-      .onError{
-        error = $0
-        return nil
-      }
+      .onError{ error = $0 }
     
     stream.push(0)
     XCTAssertEqual(mapCount, 1)
@@ -1051,10 +1045,7 @@ class HotTests: XCTestCase {
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-      .onError{
-        error = $0
-        return nil
-      }
+      .onError{ error = $0 }
     
     left.push(1)
     XCTAssertEqual(values.count, 1)
@@ -1107,7 +1098,7 @@ class HotTests: XCTestCase {
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-      .onError{ error = $0; return nil }
+      .onError{ error = $0 }
     
     left.push(1)
     XCTAssertEqual(values.count, 1)
@@ -1305,7 +1296,7 @@ class HotTests: XCTestCase {
     left
       .combine(latest: true, stream: right)
       .on{ values.append($0) }
-      .onError{ error = $0; return nil }
+      .onError{ error = $0 }
       .onTerminate{ term = $0 }
     
     left.push(1)
@@ -1369,7 +1360,7 @@ class HotTests: XCTestCase {
     left
       .combine(latest: false, stream: right)
       .on{ values.append($0) }
-      .onError{ error = $0; return nil }
+      .onError{ error = $0 }
       .onTerminate{ term = $0 }
     
     left.push(1)

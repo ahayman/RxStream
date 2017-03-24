@@ -177,12 +177,6 @@ public class Stream<T> {
    */
   var onTerminate: ((Termination) -> Void)?
   
-  /** 
-   Keys are stored until a appropriate event is received with the provided key, at which point it's removed.
-   If a key is passed down with an event, that key must be present here in order to process.  Otherwise, the event should be ignored.
-  */
-  var keys = Set<String>()
-  
   /// By default, this returns a DownstreamProcessor, but it's primarily so that subclasses can override and provide their own custom processors.
   func newDownstreamProcessor<U>(forStream stream: Stream<U>, withProcessor processor: @escaping StreamOp<T, U>) -> StreamProcessor<T> {
     return DownstreamProcessor(stream: stream, processor: processor)
@@ -341,14 +335,6 @@ public class Stream<T> {
     dispatch.execute {
       guard let (key, event) = self.preProcess(event: next, withKey: key) else { return }
       
-      // If a key is provided, we can only process the request if we have that key.  If it's shared, we can process, but still need to remove the key
-      switch key {
-      case .keyed(let key): 
-        guard let _ = self.keys.remove(key) else { return }
-      case .shared(let key):
-        self.keys.remove(key)
-      default: break
-      }
       // Make sure we're receiving data, otherwise it's a termination event and we should set the terminateWork
       self.currentWork += 1
       

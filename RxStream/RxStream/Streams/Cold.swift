@@ -33,6 +33,12 @@ public class Cold<Request, Response> : Stream<Response> {
   /// If this is set true, responses will be passed down to _all_ substreams
   private var shared: Share
   
+  /** 
+   Keys are stored until a appropriate event is received with the provided key, at which point it's removed.
+   If a key is passed down with an event, that key must be present here in order to process.  Otherwise, the event should be ignored.
+  */
+  private var keys = Set<String>()
+  
   /// The promise needed to pass into the promise task.
   lazy private var stateObservable: ObservableInput<StreamState> = ObservableInput(self.state)
   
@@ -49,6 +55,12 @@ public class Cold<Request, Response> : Stream<Response> {
     }
   }
   
+  func newMappedRequestStream<U>(mapper: @escaping (U) -> Request) -> Cold<U, Response> {
+    return Cold<U, Response>{ [weak self] (request: U, key: String) in
+      self?.process(request: mapper(request), withKey: key)
+    }
+  }
+  
   public init(task: @escaping ColdTask) {
     self.requestProcessor = Either(task)
     self.shared = .keyed
@@ -62,11 +74,25 @@ public class Cold<Request, Response> : Stream<Response> {
   /// Override the preprocessor to convert a key to properly respect whether or not this stream should share
   override func preProcess<U>(event: Event<U>, withKey key: EventKey) -> (key: EventKey, event: Event<U>)? {
     switch (shared, key) {
-    case (.keyed, .shared(let key)):
-      return (.keyed(key), event)
-    case (.shared, .keyed(let key)):
-      return (.shared(key), event)
-    default:
+    case (.keyed, .shared(let id)):
+      guard let _ = keys.remove(id) else { return nil }
+      return (.keyed(id), event)
+    case (.keyed, .keyed(let id)):
+      guard let _ = keys.remove(id) else { return nil }
+      return (key, event)
+    case (.shared, .shared(let id)):
+      keys.remove(id)
+      return (key, event)
+    case (.shared, .keyed(let id)):
+      keys.remove(id)
+      return (.shared(id), event)
+    case (.inherit, .shared(let id)):
+      keys.remove(id)
+      return (key, event)
+    case (.inherit, .keyed(let id)):
+      guard let _ = keys.remove(id) else { return nil }
+      return (key, event)
+    case (_, .none):
       return (key, event)
     }
   }

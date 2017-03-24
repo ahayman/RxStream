@@ -29,6 +29,20 @@ extension Observable {
    ## Branching
    
    This will call the handler when the stream receives a _non-terminating_ error.
+   
+   - parameter handler: Handler will be called when an error is received.
+   - parameter error: The error thrown by the stream
+   
+   - returns: a new Observable stream
+   */
+  @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Void) -> Observable<T> {
+    return appendOnError(stream: Observable<T>(self.value), handler: handler)
+  }
+  
+  /**
+   ## Branching
+   
+   This will call the handler when the stream receives a _non-terminating_ error.
    The handler can optionally return a Termination, which will cause the stream to terminate.
    
    - parameter handler: Receives an error and can optionally return a Termination.  If `nil` is returned, the stream will continue to be active.
@@ -36,8 +50,8 @@ extension Observable {
    
    - returns: a new Observable stream
    */
-  @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Termination?) -> Observable<T> {
-    return appendOnError(stream: Observable<T>(self.value), handler: handler)
+  @discardableResult public func mapError(_ handler: @escaping (_ error: Error) -> Termination?) -> Observable<T> {
+    return appendMapError(stream: Observable<T>(self.value), handler: handler)
   }
   
   /**

@@ -32,7 +32,19 @@ extension Stream {
     }
   }
   
-  func appendOnError<U: BaseStream>(stream: U, handler: @escaping (Error) -> Termination?) -> U where U.Data == T {
+  func appendOnError<U: BaseStream>(stream: U, handler: @escaping (Error) -> Void) -> U where U.Data == T {
+    return append(stream: stream) { (_, next, completion) in
+      switch next {
+      case .next: completion([next])
+      case .error(let error):
+        handler(error)
+        completion([next])
+      case .terminate: completion(nil)
+      }
+    }
+  }
+  
+  func appendMapError<U: BaseStream>(stream: U, handler: @escaping (Error) -> Termination?) -> U where U.Data == T {
     return append(stream: stream) { (_, next, completion) in
       switch next {
       case .next: completion([next])

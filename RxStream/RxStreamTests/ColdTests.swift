@@ -22,7 +22,7 @@ class ColdTests: XCTestCase {
     let cold = coldTask
       .map{ "\($0)" }
       .on{ responses.append($0) }
-      .onError{ errors.append($0); return nil }
+      .onError{ errors.append($0) }
       .onTerminate{ terms.append($0) }
     
     cold.request(1)
@@ -68,7 +68,7 @@ class ColdTests: XCTestCase {
     let cold = coldTask
       .map{ "\($0)" }
       .on{ responses.append($0) }
-      .onError{ errors.append($0); return nil }
+      .onError{ errors.append($0) }
       .onTerminate{ terms.append($0) }
     
     cold.request(1)
@@ -119,7 +119,7 @@ class ColdTests: XCTestCase {
     let branchA = coldTask
       .map{ "\($0)" }
       .on{ branchAResponses.append($0) }
-      .onError{ branchAErrors.append($0); return nil }
+      .onError{ branchAErrors.append($0) }
       .onTerminate{ branchATerms.append($0) }
     
     var branchBResponses = [String]()
@@ -128,7 +128,7 @@ class ColdTests: XCTestCase {
     let branchB = coldTask
       .map{ "\($0)" }
       .on{ branchBResponses.append($0) }
-      .onError{ branchBErrors.append($0); return nil }
+      .onError{ branchBErrors.append($0) }
       .onTerminate{ branchBTerms.append($0) }
     
     branchA.request(2)
@@ -187,7 +187,7 @@ class ColdTests: XCTestCase {
     let branchA = coldTask
       .map{ "\($0)" }
       .on{ branchAResponses.append($0) }
-      .onError{ branchAErrors.append($0); return nil }
+      .onError{ branchAErrors.append($0) }
       .onTerminate{ branchATerms.append($0) }
     
     var branchBResponses = [String]()
@@ -196,7 +196,7 @@ class ColdTests: XCTestCase {
     let branchB = coldTask
       .map{ "\($0)" }
       .on{ branchBResponses.append($0) }
-      .onError{ branchBErrors.append($0); return nil }
+      .onError{ branchBErrors.append($0) }
       .onTerminate{ branchBTerms.append($0) }
     
     branchA.request(2)
@@ -238,5 +238,43 @@ class ColdTests: XCTestCase {
     XCTAssertEqual(branchBResponses, ["3", "3"])
     XCTAssertEqual(branchBErrors.count, 2)
     XCTAssertEqual(branchBTerms, [.completed])
+  }
+  
+  func testRequestMapping() {
+    var responses = [String]()
+    var terms = [Termination]()
+    var errors = [Error]()
+    let coldTask = Cold<Double, Double> { _, request, respond in
+      respond(.success(request + 0.5))
+    }
+    
+    let branch = coldTask
+      .mapRequest{ (request: Int) in
+        return Double(request)
+      }
+      .map{ "\($0)" }
+      .on{ responses.append($0) }
+      .onError{ errors.append($0) }
+      .onTerminate{ terms.append($0) }
+    
+    branch.request(1)
+    XCTAssertEqual(responses, ["1.5"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    branch.request(3)
+    XCTAssertEqual(responses, ["1.5", "3.5"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    branch.request(10)
+    XCTAssertEqual(responses, ["1.5", "3.5", "10.5"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    coldTask.terminate(withReason: .completed)
+    XCTAssertEqual(responses, ["1.5", "3.5", "10.5"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [.completed])
   }
 }
