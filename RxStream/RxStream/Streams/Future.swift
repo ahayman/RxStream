@@ -29,6 +29,7 @@ public class Future<T> : Stream<T> {
   public init(task: @escaping FutureTask<T>) {
     super.init()
     persist()
+    self.replay = true
     self.lock = self
     var complete = false
     task { [weak self] completion in
@@ -41,7 +42,10 @@ public class Future<T> : Stream<T> {
     }
   }
   
-  override init() { }
+  override init() {
+    super.init()
+    self.replay = true
+  }
   
   override func preProcess<U>(event: Event<U>, withKey key: EventKey) -> (key: EventKey, event: Event<U>)? {
     guard !complete else { return nil }

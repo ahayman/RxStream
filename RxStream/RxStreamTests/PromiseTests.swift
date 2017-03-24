@@ -142,7 +142,7 @@ class PromiseTests: XCTestCase {
     }
       .onTerminate{ preTerms.append($0) }
       .on{ results.append($0) }
-      .retryOn{ error -> Bool in
+      .retryOn{ _, error -> Bool in
         guard
           let error = error as? RetryError,
           case .retry = error
@@ -184,7 +184,7 @@ class PromiseTests: XCTestCase {
     }
       .onTerminate{ preTerms.append($0) }
       .on{ results.append($0) }
-      .retryOn{ error -> Bool in
+      .retryOn{ _, error -> Bool in
         guard
           let error = error as? RetryError,
           case .retry = error
@@ -227,7 +227,7 @@ class PromiseTests: XCTestCase {
     }
       .onTerminate{ preTerms.append($0) }
       .on{ results.append($0) }
-      .retryOn{ _, retry in
+      .retryOn{ _, _, retry in
         onRetry = retry
       }
       .onTerminate{ terminations.append($0) }
@@ -267,7 +267,7 @@ class PromiseTests: XCTestCase {
     }
       .onTerminate{ preTerms.append($0) }
       .on{ results.append($0) }
-      .retryOn{ _, retry in
+      .retryOn{ _, _, retry in
         onRetry = retry
       }
       .onTerminate{ terminations.append($0) }

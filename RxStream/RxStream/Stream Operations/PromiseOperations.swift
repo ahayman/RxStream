@@ -11,6 +11,11 @@ import Foundation
 // MARK: Retry Operations
 extension Promise {
   
+  /// Converts the promise into a Future and returns that.
+  public func future() -> Future<T> {
+    return appendNewStream(stream: Future<T>())
+  }
+  
   /**
    ## Branching
    
@@ -20,11 +25,13 @@ extension Promise {
    
    - returns: a new Promise
    */
-  @discardableResult public func retryOn(_ handler: @escaping (_ value: Error) -> Bool) -> Promise<T> {
+  @discardableResult public func retryOn(_ handler: @escaping (_ attempt: UInt, _ value: Error) -> Bool) -> Promise<T> {
     let promise = Promise<T>()
+    var attempt: UInt = 0
     return append(stream: promise) { [weak promise] (_, next, completion) in
       guard case let .error(error) = next else { return completion([next]) }
-      if handler(error) {
+      attempt += 1
+      if handler(attempt, error) {
         promise?.retry()
         completion(nil)
       } else {
@@ -42,11 +49,13 @@ extension Promise {
    
    - returns: a new Promise
    */
-  @discardableResult public func retryOn(_ handler: @escaping (_ value: Error, _ retry: @escaping (Bool) -> Void) -> Void) -> Promise<T> {
+  @discardableResult public func retryOn(_ handler: @escaping (_ attempt: UInt, _ value: Error, _ retry: @escaping (Bool) -> Void) -> Void) -> Promise<T> {
     let promise = Promise<T>()
+    var attempt: UInt = 0
     return append(stream: promise) { [weak promise] (_, next, completion) in
       guard case let .error(error) = next else { return completion([next]) }
-      handler(error) { retry in
+      attempt += 1
+      handler(attempt, error) { retry in
         if retry {
           promise?.retry()
           completion(nil)

@@ -149,9 +149,10 @@ public class Stream<T> {
    - Changing this to a concurrent queue: Each _chain_ will still be processed serially within itself, but multiple chains will be processed concurrently.  Only use this if you don't care in what order the chains are processed.
    
    - note: This discussion really only applies when you care how multiple chains are processed.  99% of the time you don't need to worry abou it since an individual chain will always process in order and that covers the majority use cases.
-   - warning: A dispatch will not forcefully propogate downstream, but it will propogate into newly attached streams. So any existing downsteams won't be affected by changing the dispatch, but any streams attached to this stream after the dispatch is set will.
    */
   internal(set) public var dispatch = Dispatch.inline
+  
+  fileprivate var nextDispatch: Dispatch?
   
   /// Convience variable returning whether the stream is currently active
   public var isActive: Bool { return state == .active }
@@ -185,13 +186,18 @@ public class Stream<T> {
   /// The main function used to attach a stream to a parent stream along with the child's stream work
   @discardableResult func append<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
     guard let child = stream as? Stream<U.Data> else { fatalError("Error attaching streams: All Streams must descencend from Stream.") }
-    
-    child.dispatch = dispatch
-    child.replay = replay
-    child.canReplay = canReplay
-    child.parent = self
-    
-    appendDownStream(processor: newDownstreamProcessor(forStream: child, withProcessor: op))
+    dispatch.execute {
+      
+      if let dispatch = self.nextDispatch {
+        child.dispatch = dispatch
+        self.nextDispatch = nil
+      }
+      child.replay = self.replay
+      child.canReplay = self.canReplay
+      child.parent = self
+      
+      self.appendDownStream(processor: self.newDownstreamProcessor(forStream: child, withProcessor: op))
+    }
     
     return stream
   }
@@ -206,25 +212,23 @@ public class Stream<T> {
    - note: Termination will always replay. We don't want an active downstream that's attached to an inactive one.
    */
   private func appendDownStream(processor: StreamProcessor<T>) {
-    dispatch.execute {
-      let replay = self.replay
-      self.replay = false
-      
-      // If replay is specified, and there are items in the queue, pass those into the processor
-      if
-        self.canReplay,
-        replay,
-        let queue = self.queue
-      {
-        processor.process(prior: queue.prior, next: .next(queue.current), withKey: .none)
-      }
-      
-      // If this stream is terminated, pass that into the processor, else append the processor
-      if let termination = self.termination {
-        processor.process(prior: self.queue?.current, next: .terminate(reason: termination), withKey: .none)
-      } else {
-        self.downStreams.append(processor)
-      }
+    let replay = self.replay
+    self.replay = false
+    
+    // If replay is specified, and there are items in the queue, pass those into the processor
+    if
+      self.canReplay,
+      replay,
+      let queue = self.queue
+    {
+      processor.process(prior: queue.prior, next: .next(queue.current), withKey: .none)
+    }
+    
+    // If this stream is terminated, pass that into the processor, else append the processor
+    if let termination = self.termination {
+      processor.process(prior: self.queue?.current, next: .terminate(reason: termination), withKey: .none)
+    } else {
+      self.downStreams.append(processor)
     }
   }
   
@@ -414,10 +418,30 @@ public class Stream<T> {
 extension Stream {
   
   /** 
-   Allows you to set the dispatch as part of a chain operation. Returns `self` to continue the chain.
-   Dispatches are propogated down _new_ streams, but any existing stream won't be affected by the dispatch.
+   Allows you to set the dispatch as part of a chain operation to set the dispatch of the _next_ stream attached to this one.
+   This is used so that whatever operation you chain _after_ this one, will be dispatched on the Dispatch you provide.
+   This does not affect the _current_ stream.
+   
+   - parameter dispatch: The dispatch you wish the _next_ stream operation added to this one to operate on.
+   
+   - warning: The return `self` is not optional. A stream operation should be added after this.
+   
+   - returns: self
    */
-  @discardableResult public func dispatchOn(_ dispatch: Dispatch) -> Self {
+  public func dispatch(_ dispatch: Dispatch) -> Self {
+    self.nextDispatch = dispatch
+    return self
+  }
+  
+  /**
+   This allows you to set dispatch on the _current_ stream.
+   It does not affect any further operations added.
+   
+   - parameter dispatch: The dispatch you wish the _current_ stream to operate on.
+   
+   - returns: self
+   */
+  @discardableResult func dispatched(_ dispatch: Dispatch) -> Self {
     self.dispatch = dispatch
     return self
   }

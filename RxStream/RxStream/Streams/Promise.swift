@@ -78,7 +78,7 @@ public class Promise<T> : Stream<T> {
   }
   
   /// If true, then a retry will be filled with the last completed value from this stream if it's available
-  private var fillsRetry: Bool = false
+  private var reuse: Bool = false
   
   /// We should only prune if the stream is complete (or no longer active), and has no down stream promises.
   override var shouldPrune: Bool {
@@ -192,7 +192,7 @@ public class Promise<T> : Stream<T> {
     guard complete else { return }
     self.complete = false
     
-    if fillsRetry, let value = self.last {
+    if reuse, let value = self.last {
       self.process(event: .next(value))
     } else if let task = self.task {
       self.run(task: task)
@@ -207,17 +207,17 @@ public class Promise<T> : Stream<T> {
   }
   
   /**
-   This will cause the promise to automatically fill a retry with a completed value, if any, instead of re-running the task or pushing the retry further up the chain.
+   This will cause the promise to automatically reuse a valid value when retrying, if any, instead of re-running the task or pushing the retry further up the chain.
    This allows you to prevent a retry from re-running the task for an error that might have been generated down stream.
    
    - note: If there is no completed value, then the Promise's task will be re-run or, if there's no task, the retry pushed up the chain.
    
-   - parameter fillRetry: If `true`, completed values are used to fill a retry request instead of re-running the Promise's task (or it's parent).
+   - parameter reuse: If `true`, completed values are used to fill a retry request instead of re-running the Promise's task (or it's parent).
    
    - returns: Self, for chaining
    */
-  public func fillsRetry(_ fillsRetry: Bool = true) -> Self {
-    self.fillsRetry = fillsRetry
+  public func reuse(_ reuse: Bool = true) -> Self {
+    self.reuse = reuse
     return self
   }
   

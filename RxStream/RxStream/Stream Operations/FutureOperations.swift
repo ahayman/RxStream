@@ -27,6 +27,33 @@ extension Future {
   /**
    ## Branching
    
+   This will call the handler when the stream receives any error.
+   
+   - parameter handler: Handler will be called when an error is received.
+   - parameter error: The error thrown by the stream
+   
+   - note: The behavior of this operation is slightly different from other streams in that an error is _always_ reported, whether it is terminating or not.  Other streams only report non-terminating errors.
+   
+   - returns: a new Hot stream
+   */
+  @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Void) -> Future<T> {
+    return append(stream: Future<T>()) { (_, next, completion) in
+      switch next {
+      case .next: completion([next])
+      case .error(let error):
+        handler(error)
+        completion([next])
+      case .terminate(.error(let error)):
+        handler(error)
+        completion(nil)
+      case .terminate: completion(nil)
+      }
+    }
+  }
+  
+  /**
+   ## Branching
+   
    Attach an observation handler to the stream to observe transitions to new values. The handler includes the old value (if any) along with the new one.
    
    - parameter handler: The handler used to observe transitions between values.
