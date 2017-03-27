@@ -122,7 +122,7 @@ public final class PressureThrottle : Throttle {
   private func queue(work: @escaping ThrottledWork) {
     let key = String.newUUID()
     self.working[key] = work
-    Dispatch.async(on: .main).execute {
+    Dispatch.sync(on: .main).execute {
       work{
         self.lockQueue.execute {
           self.working[key] = nil
