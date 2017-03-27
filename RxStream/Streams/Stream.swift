@@ -166,6 +166,9 @@ public class Stream<T> {
   /// A Throttle is used to restrict the flow of information that moves through the stream.
   internal(set) public var throttle: Throttle?
   
+  /// If set, the next stream added will have their throttle set to this.
+  fileprivate var nextThrottle: Throttle?
+  
   /// Returns the last value to be emitted from the stream
   var last: T? {
     return queue?.current
@@ -191,6 +194,10 @@ public class Stream<T> {
       if let dispatch = self.nextDispatch {
         child.dispatch = dispatch
         self.nextDispatch = nil
+      }
+      if let throttle = self.nextThrottle {
+        child.throttle = throttle
+        self.nextThrottle = nil
       }
       child.replay = self.replay
       child.canReplay = self.canReplay
@@ -443,6 +450,31 @@ extension Stream {
    */
   @discardableResult func dispatched(_ dispatch: Dispatch) -> Self {
     self.dispatch = dispatch
+    return self
+  }
+  
+  /**
+   This will set a Throttle on the next stream/operation appended to this one.  
+   It does not affect the _current_ stream.
+   
+   - parameter throttle: The throttle you wish to apply to the next stream.
+   
+   - returns: Self, for chaining
+   */
+  public func throttle(_ throttle: Throttle) -> Self {
+    self.nextThrottle = throttle
+    return self
+  }
+  
+  /**
+   This will apply a throttle to the _current_ stream.
+   
+   - parameter throttle: The throttle to apply to this stream
+   
+   - returns: self, for chaining
+   */
+  @discardableResult public func throttled(_ throttle: Throttle) -> Self {
+    self.throttle = throttle
     return self
   }
   
