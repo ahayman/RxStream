@@ -2,7 +2,7 @@
 
 RxStream is a simpler kind of Reactive framework for Swift that seeks to integrate well into existing language and architectural paradigms instead of replacing them.
 
-If you’re looking for a full Reactive framework, you’d probably be best taking a look at [RxSwift](%20https://github.com/ReactiveX/RxSwift) or [ReactiveCocoa](https://github.com/ReactiveCocoa/ReactiveCocoa).  In contrast to these, RxStream is a much pared down version of React.  The motivation for this is several fold:
+If you’re looking for a full Reactive framework, you’d probably be best taking a look at [RxSwift](https://github.com/ReactiveX/RxSwift) or [ReactiveCocoa](https://github.com/ReactiveCocoa/ReactiveCocoa).  In contrast to these, RxStream is a much pared down version of React.  The motivation for this is several fold:
 
 - With a simpler paradigm, the learning curve is a lot shorter. It’s easier to get other developers to invest into using it.
 - RxStream tries hard to divest itself of some of the more obscure syntax and complications that seem inherent in most Reactive frameworks.  This can help create more readable and maintainable code.
@@ -11,7 +11,7 @@ If you’re looking for a full Reactive framework, you’d probably be best taki
 
 ## Overview
 
-_Note: If you’re new to React, you may want take a look at the introduction to Reactive at [ReactiveX](http://reactivex.io/intro.html).  This will help you get a good grasp on some of the core principles of React._
+_Note: If you’re new to React, you may want take a look at the introduction to Reactive at [ReactiveX](http://reactivex.io/intro.html).  This will help you get a good grasp on some of the core principles of React. However, some terms they use may be different than what RxStream uses._
 
 RxStream operates around the idea of a transforming stream of values.  If you’re familiar with ReactiveX, their `Observable<T>` would be the closest comparable to RxStream’s `Stream<T>`.  All streams have a variety of relevant operations that observe and transform the stream’s values.  However, with RxStream, there is a very clear distinction between the _types_ of streams created and returned.  This removes any uncertainty about what the stream is, how it operates, and what the client can expect from it:
 
@@ -33,8 +33,8 @@ RxStream has several features that help you manage and use them easily.
 -  **Replay**: Streams can optionally be replayed, which will push down the last value of a stream (if any) when creating a processing chain from an existing stream.
 - **Operators**: Each stream features a wide range of operators you can use to process your data.  However, we have avoided more complex operators, specifically those operators that produce or work on streams that contain other streams.  This is the primary area that RxStream differs from other Reactive frameworks.  
 - **Clear Terminators**: Each stream terminates with clear language, defined by an enum:
-- `case .cancelled`: The stream has been cancelled.
-- `case .completed`: The stream has been completed.
-- `case .error(Error)`: The stream has terminated with an error.
+	- `case .cancelled`: The stream has been cancelled.
+	- `case .completed`: The stream has been completed.
+	- `case .error(Error)`: The stream has terminated with an error.
 - **Non-terminating Errors**: In addition to the normal values, non-terminating errors can also be pushed into the stream and observed.  These errors can be turned into terminating errors down stream.
 - **Construction**: Constructing processing chains on a stream is the process of subscribing.  There’s no need manually call `subscribe` to start receiving values.  It’s rare for a developer to need to construct a chain without actually using it, so instead of forcing you to call `subscribe`, if you _don’t_ want to receive values, instead use `filter` to filter them out until you are ready.
