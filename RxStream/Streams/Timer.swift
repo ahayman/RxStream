@@ -8,20 +8,6 @@
 
 import Foundation
 
-private class WeakTimer {
-  var timer: Foundation.Timer?
-  var handler: (Foundation.Timer) -> Void
-  
-  init(handler: @escaping (Foundation.Timer) -> Void){
-    self.handler = handler
-  }
-  
-  dynamic func fire() {
-    guard let timer = timer else { return }
-    self.handler(timer)
-  }
-}
-
 /**
  A Simple Stream that will emit events every `X` seconds according to the specified interval.
  A Timer stream may either be active or not, without affecting the stream state.
@@ -67,6 +53,8 @@ public class Timer : Hot<Void> {
    */
   public init(interval: TimeInterval) {
     self.interval = interval
+    super.init()
+    self.persist()
   }
   
   /// Called when the timer fires. Push the fire into the stream so long as the stream is active.

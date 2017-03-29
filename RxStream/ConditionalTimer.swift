@@ -80,7 +80,7 @@ class ConditionalTimer {
   
   /// If the timer hasn't already started, this will start it.  Otherwise, it does nothing. returns `self` for chaining.
   @discardableResult public func start() -> Self {
-    guard isActive else { return self }
+    guard !isActive else { return self }
     timer = newTimer(interval, #selector(ConditionalTimer.fire), true)
     return self
   }
