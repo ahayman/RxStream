@@ -53,8 +53,6 @@ public class Timer : Hot<Void> {
    */
   public init(interval: TimeInterval) {
     self.interval = interval
-    super.init()
-    self.persist()
   }
   
   /// Called when the timer fires. Push the fire into the stream so long as the stream is active.
