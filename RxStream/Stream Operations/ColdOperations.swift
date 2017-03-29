@@ -622,6 +622,22 @@ extension Cold {
   /**
    ## Branching
    
+   Emit values from stream until the handler returns a `Termination`, at which the point the stream will Terminate.
+   
+   - parameter handler: Takes the next value and returns a `Termination` to terminate the stream or `nil` to continue as normal.
+   - parameter value: The current value being passed down the stream.
+   
+   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
+   
+   - returns: A new Cold Stream
+   */
+  @discardableResult public func until(_ handler: @escaping (_ value: Response) -> Termination?) -> Cold<Request, Response> {
+    return appendUntil(stream: newSubStream(), handler: handler)
+  }
+  
+  /**
+   ## Branching
+   
    Emit values from stream until the handler returns `false`, and then terminate the stream with the provided termination.
    
    - parameter then: **Default:** `.cancelled`. When the handler returns `false`, then terminate the stream with this termination.
@@ -655,6 +671,23 @@ extension Cold {
    */
   @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (_ prior: Response?, _ next: Response) -> Bool) -> Cold<Request, Response> {
     return appendUntil(stream: newSubStream(), handler: handler, then: then)
+  }
+  
+  /**
+   ## Branching
+   
+   Emit values from stream until the handler returns a `Termination`, and then terminate the stream with the provided termination.
+   
+   - parameter handler: Takes the next value and returns `true` to terminate the stream or `false` to remain active.
+   - parameter prior: The prior value, if any.
+   - parameter next: The current value being passed down the stream.
+   
+   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
+   
+   - returns: A new Cold Stream
+   */
+  @discardableResult public func until(handler: @escaping (_ prior: Response?, _ next: Response) -> Termination?) -> Cold<Request, Response> {
+    return appendUntil(stream: newSubStream(), handler: handler)
   }
   
   /**

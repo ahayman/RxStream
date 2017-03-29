@@ -95,6 +95,21 @@ extension Stream {
     }
   }
   
+  func appendTerminateOn<U: BaseStream>(stream: U, handler: @escaping (T) -> Termination?) -> U where U.Data == T {
+    return append(stream: stream) { (_, next, completion) in
+      switch next {
+      case .next(let value):
+        if let termination = handler(value) {
+          completion([.terminate(reason: termination)])
+        } else {
+          completion([next])
+        }
+      case .error: completion([next])
+      case .terminate: completion(nil)
+      }
+    }
+  }
+  
   func appendMap<U: BaseStream>(stream: U, withMapper mapper: @escaping (T) -> U.Data?) -> U {
     return append(stream: stream) { (_, next, completion) in
       switch next {
@@ -612,11 +627,11 @@ extension Stream {
     return append(stream: stream) { (_, next, completion) in
       switch next {
       case let .next(value):
-        var events = [next]
         if !handler(value) {
-          events = [.terminate(reason: then)]
+           completion([.terminate(reason: then)])
+        } else {
+          completion([next])
         }
-        completion(events)
       case .error(let error): completion([.error(error)])
       case .terminate: completion(nil)
       }
@@ -627,11 +642,26 @@ extension Stream {
     return append(stream: stream) { (_, next, completion) in
       switch next {
       case let .next(value):
-        var events = [next]
         if handler(value) {
-          events = [.terminate(reason: then)]
+          completion([.terminate(reason: then)])
+        } else {
+          completion([next])
         }
-        completion(events)
+      case .error(let error): completion([.error(error)])
+      case .terminate: completion(nil)
+      }
+    }
+  }
+  
+  func appendUntil<U: BaseStream>(stream: U, handler: @escaping (T) -> Termination?) -> U where U.Data == T {
+    return append(stream: stream) { (_, next, completion) in
+      switch next {
+      case let .next(value):
+        if let termination = handler(value) {
+          completion([.terminate(reason: termination)])
+        } else {
+          completion([next])
+        }
       case .error(let error): completion([.error(error)])
       case .terminate: completion(nil)
       }
@@ -642,11 +672,11 @@ extension Stream {
     return append(stream: stream) { (prior, next, completion) in
       switch next {
       case let .next(value):
-        var events = [next]
         if !handler(prior, value) {
-          events = [.terminate(reason: then)]
+           completion([.terminate(reason: then)])
+        } else {
+          completion([next])
         }
-        completion(events)
       case .error(let error): completion([.error(error)])
       case .terminate: completion(nil)
       }
@@ -657,11 +687,26 @@ extension Stream {
     return append(stream: stream) { (prior, next, completion) in
       switch next {
       case let .next(value):
-        var events = [next]
         if handler(prior, value) {
-          events = [.terminate(reason: then)]
+          completion([.terminate(reason: then)])
+        } else {
+          completion([next])
         }
-        completion(events)
+      case .error(let error): completion([.error(error)])
+      case .terminate: completion(nil)
+      }
+    }
+  }
+  
+  func appendUntil<U: BaseStream>(stream: U, handler: @escaping (T?, T) -> Termination?) -> U where U.Data == T {
+    return append(stream: stream) { (prior, next, completion) in
+      switch next {
+      case let .next(value):
+        if let termination = handler(prior, value) {
+          completion([.terminate(reason: termination)])
+        } else {
+          completion([next])
+        }
       case .error(let error): completion([.error(error)])
       case .terminate: completion(nil)
       }
