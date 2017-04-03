@@ -123,7 +123,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  @discardableResult public func map<U>(_ mapper: @escaping (_ value: Response) -> Result<U>) -> Cold<Request, U> {
+  @discardableResult public func resultMap<U>(_ mapper: @escaping (_ value: Response) -> Result<U>) -> Cold<Request, U> {
     let stream: Cold<Request, U> = newSubStream()
     return appendMap(stream: stream, withMapper: mapper)
   }
@@ -147,7 +147,7 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  @discardableResult public func map<U>(_ mapper: @escaping (_ value: Response, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Cold<Request, U> {
+  @discardableResult public func asyncMap<U>(_ mapper: @escaping (_ value: Response, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Cold<Request, U> {
     let stream: Cold<Request, U> = newSubStream()
     return appendMap(stream: stream, withMapper: mapper)
   }
@@ -190,20 +190,6 @@ extension Cold {
   /**
    ## Branching
    
-   Returns the first value emitted from the stream and terminates the stream.
-   By default the stream is `.cancelled`, but this can be overriden by specifying the termination.
-   
-   - parameter then: **Default**: `.cancelled`. After the value has emitted, the stream will be terminated with this reason.
-   
-   - returns: A new Cold Stream
-   */
-  @discardableResult public func first(then: Termination = .cancelled) -> Cold<Request, Response> {
-    return appendFirst(stream: newSubStream(), then: then)
-  }
-  
-  /**
-   ## Branching
-   
    Returns the first "n" values emitted and then terminate the stream.
    By default the stream is `.cancelled`, but this can be overriden by specifying the termination.
    
@@ -212,19 +198,8 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  @discardableResult public func first(_ count: Int, then: Termination = .cancelled) -> Cold<Request, Response> {
+  @discardableResult public func first(_ count: Int = 1, then: Termination = .cancelled) -> Cold<Request, Response> {
     return appendFirst(stream: newSubStream(), count: count, then: then)
-  }
-  
-  /**
-   ## Branching
-   
-   Emits only the last value of the stream when it terminates.
-   
-   - returns: A new Cold Stream
-   */
-  @discardableResult public func last() -> Cold<Request, Response> {
-    return appendLast(stream: newSubStream())
   }
   
   /**
@@ -238,7 +213,10 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  @discardableResult public func last(_ count: Int, partial: Bool = true) -> Cold<Request, Response> {
+  @discardableResult public func last(_ count: Int = 1, partial: Bool = true) -> Cold<Request, Response> {
+    if count < 2 {
+      return appendLast(stream: newSubStream())
+    }
     return appendLast(stream: newSubStream(), count: count, partial: partial)
   }
   

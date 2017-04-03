@@ -108,7 +108,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  @discardableResult public func map<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Hot<U> {
+  @discardableResult public func resultMap<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Hot<U> {
     return appendMap(stream: Hot<U>(), withMapper: mapper)
   }
   
@@ -131,7 +131,7 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  @discardableResult public func map<U>(_ mapper: @escaping (_ value: T, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Hot<U> {
+  @discardableResult public func asyncMap<U>(_ mapper: @escaping (_ value: T, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Hot<U> {
     return appendMap(stream: Hot<U>(), withMapper: mapper)
   }
   
@@ -171,20 +171,6 @@ extension Hot {
   /**
    ## Branching
    
-   Returns the first value emitted from the stream and terminates the stream.
-   By default the stream is `.cancelled`, but this can be overriden by specifying the termination.
-   
-   - parameter then: **Default**: `.cancelled`. After the value has emitted, the stream will be terminated with this reason.
-   
-   - returns: A new Hot Stream
-   */
-  @discardableResult public func first(then: Termination = .cancelled) -> Hot<T> {
-    return appendFirst(stream: Hot<T>(), then: then)
-  }
-  
-  /**
-   ## Branching
-   
    Returns the first "n" values emitted and then terminate the stream.
    By default the stream is `.cancelled`, but this can be overriden by specifying the termination.
    
@@ -193,19 +179,8 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  @discardableResult public func first(_ count: Int, then: Termination = .cancelled) -> Hot<T> {
+  @discardableResult public func first(_ count: Int = 1, then: Termination = .cancelled) -> Hot<T> {
     return appendFirst(stream: Hot<T>(), count: count, then: then)
-  }
-  
-  /**
-   ## Branching
-   
-   Emits only the last value of the stream when it terminates.
-   
-   - returns: A new Hot Stream
-   */
-  @discardableResult public func last() -> Hot<T> {
-    return appendLast(stream: Hot<T>())
   }
   
   /**
@@ -219,7 +194,10 @@ extension Hot {
    
    - returns: A new Hot Stream
    */
-  @discardableResult public func last(_ count: Int, partial: Bool = true) -> Hot<T> {
+  @discardableResult public func last(_ count: Int = 1, partial: Bool = true) -> Hot<T> {
+    if count < 2 {
+      return appendLast(stream: Hot<T>())
+    }
     return appendLast(stream: Hot<T>(), count: count, partial: partial)
   }
   

@@ -191,7 +191,7 @@ class HotTests: XCTestCase {
     let stream = HotInput<Int>()
     
     stream
-      .map{ value -> Result<String> in
+      .resultMap{ value -> Result<String> in
         mapCount += 1
         if value == 2 {
           return .failure(TestError())
@@ -233,7 +233,7 @@ class HotTests: XCTestCase {
     let stream = HotInput<Int>()
     
     stream
-      .map { (value: Int, completion: @escaping (Result<String>) -> Void) in
+      .asyncMap { (value: Int, completion: @escaping (Result<String>) -> Void) in
         mapCount += 1
         nextMap = (value, completion)
       }
@@ -417,6 +417,7 @@ class HotTests: XCTestCase {
     stream.push(3)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last, 3)
+    XCTAssertEqual(term, .cancelled)
     
     stream.push(4)
     XCTAssertEqual(values.count, 3)

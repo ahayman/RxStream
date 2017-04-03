@@ -168,7 +168,7 @@ extension Promise {
    
    - returns: A new Promise Stream
    */
-  @discardableResult public func map<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Promise<U> {
+  @discardableResult public func resultMap<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Promise<U> {
     return appendMap(stream: Promise<U>(), withMapper: mapper)
   }
   
@@ -191,7 +191,7 @@ extension Promise {
    
    - returns: A new Promise Stream
    */
-  @discardableResult public func map<U>(_ mapper: @escaping (_ value: T, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Promise<U> {
+  @discardableResult public func asyncMap<U>(_ mapper: @escaping (_ value: T, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Promise<U> {
     return appendMap(stream: Promise<U>(), withMapper: mapper)
   }
   

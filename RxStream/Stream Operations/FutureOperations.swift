@@ -106,7 +106,7 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func map<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Future<U> {
+  @discardableResult public func resultMap<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Future<U> {
     return appendMap(stream: Future<U>(), withMapper: mapper)
   }
   
@@ -129,7 +129,7 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func map<U>(_ mapper: @escaping (_ value: T, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Future<U> {
+  @discardableResult public func asyncMap<U>(_ mapper: @escaping (_ value: T, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Future<U> {
     return appendMap(stream: Future<U>(), withMapper: mapper)
   }
   
