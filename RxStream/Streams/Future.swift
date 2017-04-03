@@ -70,7 +70,7 @@ public class Future<T> : Stream<T> {
     return (key, event)
   }
   
-  override func postProcess<U>(event: Event<U>, producedEvents events: [Event<T>], withTermination termination: Termination?) {
+  override func postProcess<U>(event: Event<U>, withKey: EventKey, producedEvents events: [Event<T>], withTermination termination: Termination?) {
     guard termination == nil else { return }
     self.terminate(reason: .completed, andPrune: .none)
   }
@@ -94,7 +94,7 @@ public class FutureInput<T> : Future<T> {
   }
   
   /**
-   This will complete the future with the provided value. 
+   This will complete the future with the provided value.
    After passing this value, no other values or errors can be passed in.
    
    - parameter value: The value to complete the future with.
@@ -104,7 +104,7 @@ public class FutureInput<T> : Future<T> {
   }
   
   /**
-   This will complete the future with the provided error. 
+   This will complete the future with the provided error.
    After passing this error, no other values or errors can be passed in.
    
    - parameter error: The error to complete the future with.

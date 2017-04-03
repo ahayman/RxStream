@@ -16,7 +16,7 @@ import Foundation
  */
 public class Observable<T> : Stream<T> {
   
-  override func postProcess<U>(event: Event<U>, producedEvents events: [Event<T>], withTermination termination: Termination?) {
+  override func postProcess<U>(event: Event<U>, withKey: EventKey, producedEvents events: [Event<T>], withTermination termination: Termination?) {
     if let value = events.lastEventValue {
       self.value = value
     }

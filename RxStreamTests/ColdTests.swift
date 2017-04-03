@@ -277,4 +277,174 @@ class ColdTests: XCTestCase {
     XCTAssertEqual(errors.count, 0)
     XCTAssertEqual(terms, [.completed])
   }
+  
+  func testMultipleEventsFromFlatten() {
+    var responses = [String]()
+    var terms = [Termination]()
+    var errors = [Error]()
+    let coldTask = Cold<Int, [String]> { _, request, respond in
+      let responses = (0..<request).map{ "\($0)" }
+      respond(.success(responses))
+    }
+    
+    let branch = coldTask
+      .flatten()
+      .on{ responses.append($0) }
+      .onError{ errors.append($0) }
+      .onTerminate{ terms.append($0) }
+    
+    branch.request(1)
+    XCTAssertEqual(responses, ["0"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    responses = []
+    branch.request(3)
+    XCTAssertEqual(responses, ["0", "1", "2"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    responses = []
+    branch.request(10)
+    XCTAssertEqual(responses, ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    responses = []
+    coldTask.terminate(withReason: .completed)
+    XCTAssertEqual(responses, [])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [.completed])
+  }
+  
+  func testTieredMultiEventsUsingFlatten() {
+    var responses = [String]()
+    var tier2 = [String]()
+    var terms = [Termination]()
+    var errors = [Error]()
+    let coldTask = Cold<Int, [String]> { _, request, respond in
+      let responses = (0..<request).map{ "\($0)" }
+      respond(.success(responses))
+    }
+    
+    let branch = coldTask
+      .flatten()
+      .on{ responses.append($0) }
+      .flatMap{ return [$0, $0] }
+      .on{ tier2.append($0) }
+      .onError{ errors.append($0) }
+      .onTerminate{ terms.append($0) }
+    
+    branch.request(1)
+    XCTAssertEqual(responses, ["0"])
+    XCTAssertEqual(tier2, ["0", "0"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    responses = []
+    tier2 = []
+    branch.request(3)
+    XCTAssertEqual(responses, ["0", "1", "2"])
+    XCTAssertEqual(tier2, ["0", "0", "1", "1", "2", "2"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    responses = []
+    tier2 = []
+    branch.request(10)
+    XCTAssertEqual(responses, ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"])
+    XCTAssertEqual(tier2, ["0", "0", "1", "1", "2", "2", "3", "3", "4", "4", "5", "5", "6", "6", "7", "7", "8", "8", "9", "9"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    responses = []
+    tier2 = []
+    coldTask.terminate(withReason: .completed)
+    XCTAssertEqual(responses, [])
+    XCTAssertEqual(tier2, [])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [.completed])
+  }
+  
+  func testTaskMultipleResponseBlock() {
+    var responses = [String]()
+    var terms = [Termination]()
+    var errors = [Error]()
+    let coldTask = Cold<Double, Double> { _, request, respond in
+      respond(.success(request + 0.5))
+      respond(.success(request + 100)) // Secondary response should be ignored
+    }
+    
+    let branch = coldTask
+      .mapRequest{ (request: Int) in
+        return Double(request)
+      }
+      .map{ "\($0)" }
+      .on{ responses.append($0) }
+      .onError{ errors.append($0) }
+      .onTerminate{ terms.append($0) }
+    
+    branch.request(1)
+    XCTAssertEqual(responses, ["1.5"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    branch.request(3)
+    XCTAssertEqual(responses, ["1.5", "3.5"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    branch.request(10)
+    XCTAssertEqual(responses, ["1.5", "3.5", "10.5"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    coldTask.terminate(withReason: .completed)
+    XCTAssertEqual(responses, ["1.5", "3.5", "10.5"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [.completed])
+  }
+  
+  func testTaskMultipleResponseAsyncBlock() {
+    var responses = [String]()
+    var terms = [Termination]()
+    var errors = [Error]()
+    let coldTask = Cold<Double, Double> { _, request, respond in
+      respond(.success(request + 0.5))
+      respond(.success(request + 100)) // Secondary response should be ignored
+    }.dispatch(.async(on: .main))
+    
+    let branch = coldTask
+      .mapRequest{ (request: Int) in
+        return Double(request)
+      }
+      .map{ "\($0)" }
+      .on{ responses.append($0) }
+      .onError{ errors.append($0) }
+      .onTerminate{ terms.append($0) }
+    
+    branch.request(1)
+    wait(for: 0.01)
+    XCTAssertEqual(responses, ["1.5"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    branch.request(3)
+    wait(for: 0.01)
+    XCTAssertEqual(responses, ["1.5", "3.5"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    branch.request(10)
+    wait(for: 0.01)
+    XCTAssertEqual(responses, ["1.5", "3.5", "10.5"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+    
+    coldTask.terminate(withReason: .completed)
+    wait(for: 0.01)
+    XCTAssertEqual(responses, ["1.5", "3.5", "10.5"])
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [.completed])
+  }
 }

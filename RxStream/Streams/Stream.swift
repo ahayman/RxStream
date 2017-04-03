@@ -52,6 +52,14 @@ enum EventKey {
   case keyed(String) /// The event is keyed and should only travel down branches with that key
   case shared(String) /// The event is keyed, but should travel down all branches.
   case none /// The event is not keyed and should travel down all branches.
+  
+  var key: String? {
+    switch self {
+    case let .keyed(key): return key
+    case let .shared(key): return key
+    default: return nil
+    }
+  }
 }
 
 /// Defines how and if a stream should prune. 
@@ -369,9 +377,9 @@ public class Stream<T> {
               self.push(event: .terminate(reason: reason), withKey: key)
               self.terminate(reason: reason, andPrune: .downStream)
               self.pendingTermination = nil
-              self.postProcess(event: event, producedEvents: [], withTermination: reason)
+              self.postProcess(event: event, withKey: key, producedEvents: [], withTermination: reason)
             } else {
-              self.postProcess(event: event, producedEvents: [], withTermination: nil)
+              self.postProcess(event: event, withKey: key, producedEvents: [], withTermination: nil)
             }
             return
           }
@@ -411,7 +419,7 @@ public class Stream<T> {
                 self.pendingTermination = nil
               }
               
-              self.postProcess(event: event, producedEvents: events, withTermination: termination)
+              self.postProcess(event: event, withKey: key, producedEvents: events, withTermination: termination)
               completion()
             }
           }
@@ -436,7 +444,7 @@ public class Stream<T> {
    - parameter events: All events returned from the stream processor.
    - parameter termination: _Optional_,  if a termination was processed, it will be returned here.  Note: If this is non-nil, then the stream has been terminated.
    */
-  func postProcess<U>(event: Event<U>, producedEvents events: [Event<T>], withTermination termination: Termination?) { }
+  func postProcess<U>(event: Event<U>, withKey key: EventKey, producedEvents events: [Event<T>], withTermination termination: Termination?) { }
   
 }
 

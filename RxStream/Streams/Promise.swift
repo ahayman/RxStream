@@ -134,7 +134,7 @@ public class Promise<T> : Stream<T> {
   }
   
   /// Added logic will terminate the stream if it's not already terminated and we've received a value the stream is complete
-  override func postProcess<U>(event: Event<U>, producedEvents events: [Event<T>], withTermination termination: Termination?) {
+  override func postProcess<U>(event: Event<U>, withKey: EventKey, producedEvents events: [Event<T>], withTermination termination: Termination?) {
     guard termination == nil else { return }
     guard self.downStreamPromises == 0 else { return }
     

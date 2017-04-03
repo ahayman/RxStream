@@ -14,6 +14,25 @@ private enum Share {
   case inherit
 }
 
+/// Type erasure protocol to make it easy to detect down stream ColdProcessors and increment/decrement their load.
+protocol ColdLoadHandler {
+  func incrementLoad(forKey key: String?)
+  func decrementLoad(forKey key: String?)
+}
+
+/// Using this primarily to clean up event keys after the processing is down.  The down stream cold processors need to know that we've finished sending them streams for a key, so they can remove the key.
+private class ColdProcessor<Request, Response, U> : DownstreamProcessor<Response, U>, ColdLoadHandler {
+  
+  func incrementLoad(forKey key: String?) {
+    (stream as? Cold<Request, U>)?.incrementLoad(forKey: key)
+  }
+
+  func decrementLoad(forKey key: String?) {
+    (stream as? Cold<Request, U>)?.decrementLoad(forKey: key)
+  }
+  
+}
+
 /**
  A Cold stream is a kind of stream that only produces values when it is asked to.
  A cold stream can be asked to produce a value by making a `request` anywhere down stream.
@@ -39,6 +58,12 @@ public class Cold<Request, Response> : Stream<Response> {
   */
   private var keys = Set<String>()
   
+  /**
+   Key pruning should only occur when the parent says it's done _and_ when this processor is done.
+   This keeps track of the current processing level.
+  */
+  private var processing = [String:Int]()
+  
   /// The promise needed to pass into the promise task.
   lazy private var stateObservable: ObservableInput<StreamState> = ObservableInput(self.state)
   
@@ -61,6 +86,10 @@ public class Cold<Request, Response> : Stream<Response> {
     }
   }
   
+  /**
+   A cold stream must be initialized with a Task that takes a request and returns a response. 
+   A task should return only 1 response for each request.  All other responses will be ignored.
+   */
   public init(task: @escaping ColdTask) {
     self.requestProcessor = Either(task)
     self.shared = .keyed
@@ -71,30 +100,76 @@ public class Cold<Request, Response> : Stream<Response> {
     self.shared = .inherit
   }
   
+  /**
+   This will increment the current processing load for the provided key.
+   If no prior load is set, we call all children in increment the load for the key.
+   This prevents children from removing their keys until we are done processing, just as our parent, if any, will have done for us with the same code.
+   */
+  fileprivate func incrementLoad(forKey key: String?) {
+    guard let key = key else { return }
+    guard let current = processing[key] else {
+      processing[key] = 1
+      for case let processor as ColdLoadHandler in downStreams {
+        processor.incrementLoad(forKey: key)
+      }
+      return
+    }
+    processing[key] = current + 1
+  }
+  
+  /**
+   Decrements the processing load for a key.
+   This is called internally, when a keyed event is being processed, and it called by the parent when it's finished with all it's processing.
+   Once the load reaches 0, this will decrement the load on all it's children.  
+   */
+  fileprivate func decrementLoad(forKey key: String?) {
+    guard let key = key else { return }
+    let current = (processing[key] ?? 1) - 1
+    if current == 0 {
+      processing[key] = nil
+      keys.remove(key)
+      for case let processor as ColdLoadHandler in downStreams {
+        processor.decrementLoad(forKey: key)
+      }
+    } else {
+      processing[key] = current
+    }
+  }
+  
+  /// We return a ColdProcessor to ensure proper load handling for keys
+  override func newDownstreamProcessor<U>(forStream stream: Stream<U>, withProcessor processor: @escaping (Response?, Event<Response>, @escaping ([Event<U>]?) -> Void) -> Void) -> StreamProcessor<Response> {
+    return ColdProcessor<Request, Response, U>(stream: stream, processor: processor)
+  }
+  
   /// Override the preprocessor to convert a key to properly respect whether or not this stream should share
   override func preProcess<U>(event: Event<U>, withKey key: EventKey) -> (key: EventKey, event: Event<U>)? {
+    var eventToProcess: (key: EventKey, event: Event<U>)? = nil
     switch (shared, key) {
     case (.keyed, .shared(let id)):
-      guard let _ = keys.remove(id) else { return nil }
-      return (.keyed(id), event)
+      guard keys.contains(id) else { return nil }
+      eventToProcess = (.keyed(id), event)
     case (.keyed, .keyed(let id)):
-      guard let _ = keys.remove(id) else { return nil }
-      return (key, event)
-    case (.shared, .shared(let id)):
-      keys.remove(id)
-      return (key, event)
+      guard keys.contains(id) else { return nil }
+      eventToProcess = (key, event)
+    case (.shared, .shared):
+      eventToProcess = (key, event)
     case (.shared, .keyed(let id)):
-      keys.remove(id)
-      return (.shared(id), event)
-    case (.inherit, .shared(let id)):
-      keys.remove(id)
-      return (key, event)
+      eventToProcess = (.shared(id), event)
+    case (.inherit, .shared):
+      eventToProcess = (key, event)
     case (.inherit, .keyed(let id)):
-      guard let _ = keys.remove(id) else { return nil }
-      return (key, event)
+      guard keys.contains(id) else { return nil }
+      eventToProcess = (key, event)
     case (_, .none):
-      return (key, event)
+      eventToProcess = (key, event)
     }
+    
+    incrementLoad(forKey: eventToProcess?.key.key)
+    return eventToProcess
+  }
+  
+  override func postProcess<U>(event: Event<U>, withKey key: EventKey, producedEvents events: [Event<Response>], withTermination termination: Termination?) {
+    decrementLoad(forKey: key.key)
   }
   
   private func make(request: Request, withKey key: String, withTask task: ColdTask) {
