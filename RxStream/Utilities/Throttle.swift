@@ -11,8 +11,20 @@ import Foundation
 /// Handler that should be called when a piece of throttled work is complete
 public typealias WorkCompletion = () -> Void
 
-/// Throttled work is a simple closure that passes in a completion handler that should be called when the work is complete.  Failing to call the completion handler may result in a Throttle becoming locked up.
-public typealias ThrottledWork = (@escaping WorkCompletion) -> Void
+/** 
+ Throttled work is a simple closure that takes a WorkSignal to indicate whether the work should be performed or cancelled.
+ If the work is to be performed, a completion handler is passed in to be called when the work is complete. 
+ Failing to call the completion handler may result in a Throttle becoming locked up.
+*/
+public typealias ThrottledWork = (WorkSignal) -> Void
+
+/// Defines the signal whether work should execute or be cancelled.
+public enum WorkSignal {
+  /// A signal that work should be executed.  When the work is complete, the provided completion handler should be called.
+  case perform(WorkCompletion)
+  /// A signal that work should be cancelled.  Any relevant cleanup should be done.
+  case cancel
+}
 
 /**
   A throttle is a simple protocol that defines a function to take a piece of work and process it according the specific throttle's internal rules.
@@ -23,7 +35,7 @@ public typealias ThrottledWork = (@escaping WorkCompletion) -> Void
  */
 public protocol Throttle {
   /// A throttle should take the work provided and process it according to it's internal rules.  The work closure should call the completion handler when it's finished.
-  func process(work: @escaping ThrottledWork)
+  func process(work: @escaping (WorkSignal) -> Void)
 }
 
 /**
@@ -72,18 +84,19 @@ public final class TimedThrottle : Throttle {
     guard remaining > 0.0 else {
       last = Date.timeIntervalSinceReferenceDate
       Dispatch.sync(on: .main).execute{
-        work {}
+        work(.perform{ })
       }
       return
     }
     
+    self.work?(.cancel) //If pending work, cancel it.
     self.work = work
     
     guard !dispatched else { return }
     dispatched = true
     Dispatch.after(delay: remaining, on: .main).execute {
       self.last = Date.timeIntervalSinceReferenceDate
-      self.work?{ }
+      self.work?(.perform{ })
       self.work = nil
       self.dispatched = false
     }
@@ -123,14 +136,14 @@ public final class PressureThrottle : Throttle {
     let key = String.newUUID()
     self.working[key] = work
     Dispatch.sync(on: .main).execute {
-      work{
+      work(.perform{
         self.lockQueue.execute {
           self.working[key] = nil
           while self.buffer.count > 0 && self.working.count < self.limit {
             self.queue(work: self.buffer.removeFirst())
           }
         }
-      }
+      })
     }
   }
   
@@ -142,6 +155,8 @@ public final class PressureThrottle : Throttle {
       }
       if self.buffer.count < self.bufferSize {
         self.buffer.append(work)
+      } else {
+        work(.cancel)
       }
     }
   }

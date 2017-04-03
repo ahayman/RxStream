@@ -65,6 +65,7 @@ enum Prune : Int {
 protocol EventValue {
   associatedtype Value
   var eventValue: Value? { get }
+  var termination: Termination? { get }
 }
 
 /// Events are passed down streams for processing
@@ -81,6 +82,11 @@ public enum Event<T> : EventValue {
   
   var eventValue: T? {
     if case .next(let value) = self { return value }
+    return nil
+  }
+  
+  var termination: Termination? {
+    if case .terminate(let reason) = self { return reason }
     return nil
   }
 }
@@ -107,7 +113,7 @@ public class Stream<T> {
   
   /// The amount of work currently in progress.  Mostly, it's used to keep track of running work so that termination events are only processed after
   private var currentWork: UInt = 0
-  
+
   /// The queue contains the prior value, if any, and the current value.  The queue will be `nil` when the stream is first created.
   var queue: (prior: T?, current: T)?
   
@@ -354,47 +360,60 @@ public class Stream<T> {
       }
       
       // Abstract out the process work so it can be done inline or applied to a throttle
-      let workProcessor: ThrottledWork = { completion in
-          self.dispatch.execute {
-            var termination: Termination? = nil
-            // If this is a termination event, we need to `nil` out the `onTerminate` so it's not called when the termination is pushed.  Otherwise, we'll end up with two termination events processed.
-            if case .terminate = event {
-              self.onTerminate = nil
+      let workProcessor: ThrottledWork = { signal in
+        self.dispatch.execute {
+          // If the throttle signal `.cancel` (not .perform), then we need to decrement current work and process the termination, if any
+          guard case .perform(let completion) = signal else {
+            self.currentWork -= 1
+            if self.currentWork == 0, let reason = self.pendingTermination {
+              self.push(event: .terminate(reason: reason), withKey: key)
+              self.terminate(reason: reason, andPrune: .downStream)
+              self.pendingTermination = nil
+              self.postProcess(event: event, producedEvents: [], withTermination: reason)
+            } else {
+              self.postProcess(event: event, producedEvents: [], withTermination: nil)
             }
-            op(prior, event) { result in
-              self.dispatch.execute {
-                let events = result ?? []
-                outer: for event in events {
-                  // push each event
-                  self.push(event: event, withKey: key)
-                  // if the event is a termination, we break.  There's no point in pushing any more events.
-                  switch event{
-                  case .terminate(let reason):
-                    termination  = reason
-                    self.terminate(reason: reason, andPrune: .upStream)
-                    break outer
-                  // A processor can take a termination event and turn it into an error. This will prevent the stream from terminating and instead pass an error down. The only reason to do this is for merged streams.
-                  case .error:
-                    self.pendingTermination = nil
-                  default: break
-                  }
-                }
-                
-                self.currentWork -= 1
-                
-                // If all current work is done and the stream is terminated and it hasn't been pushed, we need to push that termination downstream
-                if self.currentWork == 0, let reason = self.pendingTermination {
-                  if termination == nil {
-                    termination = reason
-                    self.push(event: .terminate(reason: reason), withKey: key)
-                    self.terminate(reason: reason, andPrune: .downStream)
-                  }
+            return
+          }
+          var termination: Termination? = nil
+          // If this is a termination event, we need to `nil` out the `onTerminate` so it's not called when the termination is pushed.  Otherwise, we'll end up with two termination events processed.
+          if case .terminate = event {
+            self.onTerminate = nil
+          }
+          op(prior, event) { result in
+            self.dispatch.execute {
+              let events = result ?? []
+              outer: for event in events {
+                // push each event
+                self.push(event: event, withKey: key)
+                // if the event is a termination, we break.  There's no point in pushing any more events.
+                switch event{
+                case .terminate(let reason):
+                  termination  = reason
+                  self.terminate(reason: reason, andPrune: .upStream)
+                  break outer
+                // A processor can take a termination event and turn it into an error. This will prevent the stream from terminating and instead pass an error down. The only reason to do this is for merged streams.
+                case .error:
                   self.pendingTermination = nil
+                default: break
                 }
-                
-                self.postProcess(event: event, producedEvents: events, withTermination: termination)
-                completion()
               }
+              
+              self.currentWork -= 1
+              
+              // If all current work is done and the stream is terminated and it hasn't been pushed, we need to push that termination downstream
+              if self.currentWork == 0, let reason = self.pendingTermination {
+                if termination == nil {
+                  termination = reason
+                  self.push(event: .terminate(reason: reason), withKey: key)
+                  self.terminate(reason: reason, andPrune: .downStream)
+                }
+                self.pendingTermination = nil
+              }
+              
+              self.postProcess(event: event, producedEvents: events, withTermination: termination)
+              completion()
+            }
           }
         }
       }
@@ -402,7 +421,7 @@ public class Stream<T> {
       if let throttle = self.throttle {
         throttle.process(work: workProcessor)
       } else {
-        workProcessor { }
+        workProcessor(.perform{ })
       }
     }
   }

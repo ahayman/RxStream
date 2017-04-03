@@ -17,14 +17,16 @@ class ThrottleTests: XCTestCase {
     let throttle = TimedThrottle(interval: 0.1, delayFirst: true)
     
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[0]] = completion
     }
     
     XCTAssertEqual(completions.count, 0, "Work should be delayed")
     
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[1]] = completion
     }
     
@@ -37,14 +39,16 @@ class ThrottleTests: XCTestCase {
     completions[keys[1]]?()
     
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[2]] = completion
     }
     
     XCTAssertEqual(completions.count, 1, "Next work should buffer.")
     
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[3]] = completion
     }
     
@@ -62,7 +66,8 @@ class ThrottleTests: XCTestCase {
     let throttle = TimedThrottle(interval: 0.1, delayFirst: false)
     
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[0]] = completion
     }
     
@@ -70,7 +75,8 @@ class ThrottleTests: XCTestCase {
     completions[keys[0]]?()
     
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[1]] = completion
     }
     
@@ -89,7 +95,8 @@ class ThrottleTests: XCTestCase {
     
     // Pressure: 1
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[0]] = completion
     }
     
@@ -98,7 +105,8 @@ class ThrottleTests: XCTestCase {
     
     // Pressure: 2
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[1]] = completion
     }
     
@@ -106,7 +114,8 @@ class ThrottleTests: XCTestCase {
     XCTAssertNotNil(completions[keys[1]], "Verify correct work executed.")
     
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[2]] = completion
     }
     
@@ -121,7 +130,8 @@ class ThrottleTests: XCTestCase {
     
     // Pressure: 2
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[3]] = completion
     }
     
@@ -135,7 +145,8 @@ class ThrottleTests: XCTestCase {
     
     // Pressure: 1
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[4]] = completion
     }
     
@@ -144,7 +155,8 @@ class ThrottleTests: XCTestCase {
     
     // Pressure: 2
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[5]] = completion
     }
     
@@ -159,7 +171,8 @@ class ThrottleTests: XCTestCase {
     
     // Pressure: 1, Buffer: 0
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[0]] = completion
     }
     
@@ -168,7 +181,8 @@ class ThrottleTests: XCTestCase {
     
     // Pressure: 1, Buffer: 1
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[1]] = completion
     }
     
@@ -176,7 +190,8 @@ class ThrottleTests: XCTestCase {
     
     // Pressure: 1, Buffer: 2
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[2]] = completion
     }
     
@@ -184,7 +199,8 @@ class ThrottleTests: XCTestCase {
     
     // Pressure: 1, Buffer: 2
     keys.append(String.newUUID())
-    throttle.process { (completion) in
+    throttle.process { signal in
+      guard case .perform(let completion) = signal else { return }
       completions[keys[3]] = completion
     }
     XCTAssertEqual(completions.count, 1, "Fourth work should be dropped, exceeds buffer.")

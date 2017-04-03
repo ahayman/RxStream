@@ -20,4 +20,8 @@ extension Array where Element: EventValue {
     return self.first(where: { $0.eventValue != nil })?.eventValue
   }
   
+  var termination: Termination? {
+    return self.first(where: { $0.termination != nil })?.termination
+  }
+  
 }

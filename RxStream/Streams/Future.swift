@@ -12,12 +12,25 @@ import Foundation
  A Future Task is a closure that takes a completion handler.
  The closure is called to begin the task and the completion handler should be called with the result when the task has completed.
  */
-public typealias FutureTask<T> = (_ completion: @escaping (Result<T>) -> Void) -> Void
 
 public class Future<T> : Stream<T> {
-  
+  public typealias Task<T> = (_ completion: @escaping (Result<T>) -> Void) -> Void
   private var lock: Future<T>?
   private var complete: Bool = false
+  
+  /// Allows for the creation of a `Future` that already has a value filled.
+  public class func completed(_ value: T) -> Future<T> {
+    let future = Future<T>()
+    future.process(event: .next(value))
+    return future
+  }
+  
+  /// Allows for the creation of a `Future` that already has an error filled.
+  public class func completed(_ error: Error) -> Future<T> {
+    let future = Future<T>()
+    future.process(event: .error(error))
+    return future
+  }
   
   /**
    A Future is initialized with the task.  The task should call the completions handler with the result when it's done.
@@ -26,7 +39,7 @@ public class Future<T> : Stream<T> {
    
    - returns: A new Future
    */
-  public init(task: @escaping FutureTask<T>) {
+  public init(task: @escaping Task<T>) {
     super.init()
     persist()
     self.replay = true
@@ -60,6 +73,48 @@ public class Future<T> : Stream<T> {
   override func postProcess<U>(event: Event<U>, producedEvents events: [Event<T>], withTermination termination: Termination?) {
     guard termination == nil else { return }
     self.terminate(reason: .completed, andPrune: .none)
+  }
+  
+}
+
+/**
+ A Future Input is a type of future where the Future can be filled externally instead of inside an attached Task.
+ Mostly, this is useful for semantics, where the task in quesiton doesn't easily fit inside a closure.
+ Because the Future isn't tied to a task, it's possible for it to deinit before being filled.  
+ In that case, the Future will emit a `.cancelled` termination event.
+ */
+public class FutureInput<T> : Future<T> {
+  
+  /**
+   Initialization of a Future Input requires no parameters, but may require type information.
+   After initializing, the Future should be completed by calling  the `complete` func with a value or an error.
+   */
+  public override init() {
+    super.init()
+  }
+  
+  /**
+   This will complete the future with the provided value. 
+   After passing this value, no other values or errors can be passed in.
+   
+   - parameter value: The value to complete the future with.
+   */
+  public func complete(_ value: T) {
+    self.process(event: .next(value))
+  }
+  
+  /**
+   This will complete the future with the provided error. 
+   After passing this error, no other values or errors can be passed in.
+   
+   - parameter error: The error to complete the future with.
+   */
+  public func complete(_ error: Error) {
+    self.process(event: .terminate(reason: .error(error)))
+  }
+  
+  deinit {
+    self.process(event: .terminate(reason: .cancelled))
   }
   
 }
