@@ -13,7 +13,7 @@ private struct TestError : Error { }
 
 private class TestClass { }
 
-class FutureOperationsTests: XCTestCase {
+class ObservableOperationsTests: XCTestCase {
   
   func testOn() {
     var value: Int? = nil
