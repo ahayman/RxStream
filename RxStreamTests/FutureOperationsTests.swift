@@ -1,8 +1,8 @@
 //
-//  HotTests.swift
+//  FutureOperationsTests.swift
 //  RxStream
 //
-//  Created by Aaron Hayman on 3/20/17.
+//  Created by Aaron Hayman on 4/5/17.
 //  Copyright © 2017 Aaron Hayman. All rights reserved.
 //
 
@@ -13,27 +13,27 @@ private struct TestError : Error { }
 
 private class TestClass { }
 
-class HotTests: XCTestCase {
+class FutureOperationsTests: XCTestCase {
   
   func testOn() {
     var value: Int? = nil
     var onCount = 0
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.on {
       value = $0
       onCount += 1
     }
     
-    stream.push(0)
+    stream.set(0)
     XCTAssertEqual(value, 0)
     XCTAssertEqual(onCount, 1)
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(value, 1)
     XCTAssertEqual(onCount, 2)
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(value, 2)
     XCTAssertEqual(onCount, 3)
   }
@@ -42,7 +42,7 @@ class HotTests: XCTestCase {
     var prior: Int? = nil
     var value: Int? = nil
     var onCount = 0
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.onTransition {
       prior = $0
@@ -50,17 +50,12 @@ class HotTests: XCTestCase {
       onCount += 1
     }
     
-    stream.push(0)
-    XCTAssertNil(prior)
-    XCTAssertEqual(value, 0)
-    XCTAssertEqual(onCount, 1)
-    
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(prior, 0)
     XCTAssertEqual(value, 1)
     XCTAssertEqual(onCount, 2)
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(prior, 1)
     XCTAssertEqual(value, 2)
     XCTAssertEqual(onCount, 3)
@@ -68,16 +63,16 @@ class HotTests: XCTestCase {
   
   func testOnTermination() {
     var terminations = [Termination]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.onTerminate{
       terminations.append($0)
     }
     
-    stream.push(0)
+    stream.set(0)
     XCTAssertEqual(terminations.count, 0)
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(terminations.count, 0)
     
     stream.terminate(withReason: .completed)
@@ -91,7 +86,7 @@ class HotTests: XCTestCase {
   func testTermination() {
     var terminations = [Termination]()
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream
       .onTerminate{
@@ -101,13 +96,13 @@ class HotTests: XCTestCase {
         values.append($0)
       }
     
-    stream.push(0)
+    stream.set(0)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, 0)
     XCTAssertEqual(terminations.count, 0)
     XCTAssertEqual(stream.state, .active)
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, 1)
     XCTAssertEqual(terminations.count, 0)
@@ -120,14 +115,14 @@ class HotTests: XCTestCase {
     XCTAssertEqual(terminations.count, 1, "The stream should only terminate once.")
     XCTAssertEqual(stream.state, .terminated(reason: .completed))
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, 1)
     XCTAssertEqual(terminations.last, Termination.completed, "The stream should only terminate once.")
     XCTAssertEqual(terminations.count, 1, "The stream should only terminate once.")
     XCTAssertEqual(stream.state, .terminated(reason: .completed))
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, 1)
     XCTAssertEqual(terminations.last, Termination.completed, "The stream should only terminate once.")
@@ -144,7 +139,7 @@ class HotTests: XCTestCase {
     var mapped: String? = nil
     var mapCount = 0
     var onCount = 0
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream
       .map{ value -> String? in
@@ -159,25 +154,25 @@ class HotTests: XCTestCase {
         mapped = $0
       }
     
-    stream.push(0)
+    stream.set(0)
     XCTAssertEqual(mapped, "0")
     XCTAssertEqual(mapCount, 1)
     XCTAssertEqual(onCount, 1)
     mapped = nil
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(mapped, "1")
     XCTAssertEqual(mapCount, 2)
     XCTAssertEqual(onCount, 2)
     mapped = nil
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(mapped, "2")
     XCTAssertEqual(mapCount, 3)
     XCTAssertEqual(onCount, 3)
     mapped = nil
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertNil(mapped)
     XCTAssertEqual(mapCount, 4)
     XCTAssertEqual(onCount, 3)
@@ -188,7 +183,7 @@ class HotTests: XCTestCase {
     var error: Error? = nil
     var mapCount = 0
     var onCount = 0
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream
       .resultMap{ value -> Result<String> in
@@ -204,20 +199,20 @@ class HotTests: XCTestCase {
       }
       .onError{ error = $0 }
     
-    stream.push(0)
+    stream.set(0)
     XCTAssertEqual(mapped, "0")
     XCTAssertEqual(mapCount, 1)
     XCTAssertEqual(onCount, 1)
     XCTAssertNil(error)
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(mapped, "1")
     XCTAssertEqual(mapCount, 2)
     XCTAssertEqual(onCount, 2)
     XCTAssertNil(error)
     mapped = nil
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertNil(mapped)
     XCTAssertEqual(mapCount, 3)
     XCTAssertEqual(onCount, 2)
@@ -230,7 +225,7 @@ class HotTests: XCTestCase {
     var onCount = 0
     var error: Error?
     var nextMap: (value: Int, callback: (Result<String>) -> Void)? = nil
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream
       .asyncMap { (value: Int, completion: @escaping (Result<String>) -> Void) in
@@ -243,7 +238,7 @@ class HotTests: XCTestCase {
       }
       .onError{ error = $0 }
     
-    stream.push(0)
+    stream.set(0)
     XCTAssertEqual(mapCount, 1)
     XCTAssertEqual(onCount, 0)
     XCTAssertNil(mapped)
@@ -255,7 +250,7 @@ class HotTests: XCTestCase {
     mapped = nil
     nextMap = nil
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(mapCount, 2)
     XCTAssertEqual(onCount, 1)
     XCTAssertNil(mapped)
@@ -266,7 +261,7 @@ class HotTests: XCTestCase {
     XCTAssertNil(error)
     mapped = nil
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(mapCount, 3)
     XCTAssertEqual(onCount, 2)
     XCTAssertNil(mapped)
@@ -279,19 +274,19 @@ class HotTests: XCTestCase {
   
   func testFlatMap() {
     var mapped = [String]()
-    let stream = HotInput<String>()
+    let stream = ObservableInput<String>("")
     
     stream
       .flatMap { $0.components(separatedBy: " ") }
       .on { mapped.append($0) }
     
-    stream.push("Hello world")
+    stream.set("Hello world")
     guard mapped.count == 2 else { return XCTFail("Didn't receive expected mapped output count.") }
     XCTAssertEqual(mapped[0], "Hello")
     XCTAssertEqual(mapped[1], "world")
     mapped = []
     
-    stream.push("Test a multitude of words in a sentence.")
+    stream.set("Test a multitude of words in a sentence.")
     guard mapped.count == 8 else { return XCTFail("Didn't receive expected mapped output count.") }
     XCTAssertEqual(mapped[0], "Test")
     XCTAssertEqual(mapped[1], "a")
@@ -305,13 +300,13 @@ class HotTests: XCTestCase {
   
   func testFlatten() {
     var mapped = [Int]()
-    let stream = HotInput<[Int]>()
+    let stream = ObservableInput<[Int]>([])
     
     stream
       .flatten()
       .on { mapped.append($0) }
     
-    stream.push([0, 1, 2, 3, 4])
+    stream.set([0, 1, 2, 3, 4])
     guard mapped.count == 5 else { return XCTFail("Didn't receive expected mapped output count.") }
     for i in 0..<5 {
       XCTAssertEqual(mapped[i], i)
@@ -319,7 +314,7 @@ class HotTests: XCTestCase {
     mapped = []
     
     
-    stream.push([10, 11, 12, 13, 14])
+    stream.set([10, 11, 12, 13, 14])
     guard mapped.count == 5 else { return XCTFail("Didn't receive expected mapped output count.") }
     for (index, i) in (10..<15).enumerated() {
       XCTAssertEqual(mapped[index], i)
@@ -328,47 +323,47 @@ class HotTests: XCTestCase {
   
   func testScan() {
     var current = 0
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream
       .scan(initial: current) { $0 + $1 }
-      .map { current = $0 }
+      .on { current = $0 }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(current, 1)
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(current, 3)
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(current, 6)
     
-    stream.push(4)
+    stream.set(4)
     XCTAssertEqual(current, 10)
     
-    stream.push(-10)
+    stream.set(-10)
     XCTAssertEqual(current, 0)
   }
   
   func testReduce() {
     var reduction = 0
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream
       .reduce(initial: reduction) { $0 + $1 }
       .last()
       .map { reduction = $0 }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(reduction, 0)
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(reduction, 0)
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(reduction, 0)
     
-    stream.push(4)
+    stream.set(4)
     XCTAssertEqual(reduction, 0)
     
     stream.terminate(withReason: .completed)
@@ -378,19 +373,19 @@ class HotTests: XCTestCase {
   func testFirst() {
     var values = [Int]()
     var term: Termination? = nil
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream
       .first()
       .on { values.append($0) }
       .onTerminate{ term = $0 }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, 1)
     XCTAssertEqual(term, .cancelled)
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, 1)
     XCTAssertEqual(term, .cancelled)
@@ -399,32 +394,32 @@ class HotTests: XCTestCase {
   func testFirstCount() {
     var values = [Int]()
     var term: Termination? = nil
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream
       .first(3)
       .on { values.append($0) }
       .onTerminate{ term = $0 }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, 1)
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, 2)
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last, 3)
     XCTAssertEqual(term, .cancelled)
     
-    stream.push(4)
+    stream.set(4)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last, 3)
     XCTAssertEqual(term, .cancelled)
     
-    stream.push(5)
+    stream.set(5)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last, 3)
     XCTAssertEqual(term, .cancelled)
@@ -432,17 +427,17 @@ class HotTests: XCTestCase {
   
   func testLast() {
     var last = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.last().on{ last.append($0) }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(last.count, 0)
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(last.count, 0)
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(last.count, 0)
     
     stream.terminate(withReason: .completed)
@@ -452,19 +447,19 @@ class HotTests: XCTestCase {
   
   func testLastCount() {
     var last = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.last(3).on{ last.append($0) }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(last.count, 0)
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(last.count, 0)
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(last.count, 0)
-    stream.push(4)
+    stream.set(4)
     XCTAssertEqual(last.count, 0)
-    stream.push(5)
+    stream.set(5)
     XCTAssertEqual(last.count, 0)
     
     stream.terminate(withReason: .completed)
@@ -477,15 +472,15 @@ class HotTests: XCTestCase {
   func testLastCountPartial() {
     var noPartial = [Int]()
     var partial = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.last(3).on{ partial.append($0) }
     stream.last(3, partial: false).on{ noPartial.append($0) }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(noPartial.count, 0)
     XCTAssertEqual(partial.count, 0)
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(noPartial.count, 0)
     XCTAssertEqual(partial.count, 0)
     stream.terminate(withReason: .completed)
@@ -496,39 +491,39 @@ class HotTests: XCTestCase {
   func testBuffer() {
     var buffer = [[Int]]()
     var noPartial = [[Int]]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.buffer(size: 3).on{ buffer.append($0) }
     stream.buffer(size: 3, partial: false).on{ noPartial.append($0) }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(buffer.count, 0)
     XCTAssertEqual(noPartial.count, 0)
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(buffer.count, 0)
     XCTAssertEqual(noPartial.count, 0)
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(buffer.count, 1)
     XCTAssertEqual(noPartial.count, 1)
     XCTAssertEqual(buffer.last ?? [], [1, 2, 3])
     XCTAssertEqual(noPartial.last ?? [], [1, 2, 3])
     
-    stream.push(4)
+    stream.set(4)
     XCTAssertEqual(buffer.count, 1)
     XCTAssertEqual(noPartial.count, 1)
-    stream.push(5)
+    stream.set(5)
     XCTAssertEqual(buffer.count, 1)
     XCTAssertEqual(noPartial.count, 1)
-    stream.push(6)
+    stream.set(6)
     XCTAssertEqual(buffer.count, 2)
     XCTAssertEqual(noPartial.count, 2)
     XCTAssertEqual(buffer.last ?? [], [4, 5, 6])
     XCTAssertEqual(noPartial.last ?? [], [4, 5, 6])
     
-    stream.push(7)
+    stream.set(7)
     XCTAssertEqual(buffer.count, 2)
     XCTAssertEqual(noPartial.count, 2)
-    stream.push(8)
+    stream.set(8)
     XCTAssertEqual(buffer.count, 2)
     XCTAssertEqual(noPartial.count, 2)
     stream.terminate(withReason: .completed)
@@ -541,30 +536,30 @@ class HotTests: XCTestCase {
   func testSizedWindow() {
     var window = [[Int]]()
     var partial = [[Int]]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.window(size: 3).on{ window.append($0) }
     stream.window(size: 3, partial: true).on{ partial.append($0) }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(window.count, 0)
     XCTAssertEqual(partial.count, 1)
     XCTAssertEqual(partial.last ?? [], [1])
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(window.count, 0)
     XCTAssertEqual(partial.count, 2)
     XCTAssertEqual(partial.last ?? [], [1, 2])
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(window.count, 1)
     XCTAssertEqual(partial.count, 3)
     XCTAssertEqual(window.last ?? [], [1, 2, 3])
     XCTAssertEqual(partial.last ?? [], [1, 2, 3])
-    stream.push(4)
+    stream.set(4)
     XCTAssertEqual(window.count, 2)
     XCTAssertEqual(partial.count, 4)
     XCTAssertEqual(window.last ?? [], [2, 3, 4])
     XCTAssertEqual(partial.last ?? [], [2, 3, 4])
-    stream.push(5)
+    stream.set(5)
     XCTAssertEqual(window.count, 3)
     XCTAssertEqual(partial.count, 5)
     XCTAssertEqual(window.last ?? [], [3, 4, 5])
@@ -579,30 +574,30 @@ class HotTests: XCTestCase {
   func testTimedWindow() {
     var window = [[Int]]()
     var limited = [[Int]]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.window(size: 1.0).on{ window.append($0) }
     stream.window(size: 1.0, limit: 3).on{ limited.append($0) }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(window.count, 1)
     XCTAssertEqual(limited.count, 1)
     XCTAssertEqual(window.last ?? [], [1])
     XCTAssertEqual(limited.last ?? [], [1])
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(window.count, 2)
     XCTAssertEqual(limited.count, 2)
     XCTAssertEqual(window.last ?? [], [1, 2])
     XCTAssertEqual(limited.last ?? [], [1, 2])
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(window.count, 3)
     XCTAssertEqual(limited.count, 3)
     XCTAssertEqual(window.last ?? [], [1, 2, 3])
     XCTAssertEqual(limited.last ?? [], [1, 2, 3])
     
-    stream.push(4)
+    stream.set(4)
     XCTAssertEqual(window.count, 4)
     XCTAssertEqual(limited.count, 4)
     XCTAssertEqual(window.last ?? [], [1, 2, 3, 4])
@@ -610,13 +605,13 @@ class HotTests: XCTestCase {
     
     wait(for: 0.5)
     
-    stream.push(5)
+    stream.set(5)
     XCTAssertEqual(window.count, 5)
     XCTAssertEqual(limited.count, 5)
     XCTAssertEqual(window.last ?? [], [1, 2, 3, 4, 5])
     XCTAssertEqual(limited.last ?? [], [3, 4, 5])
     
-    stream.push(6)
+    stream.set(6)
     XCTAssertEqual(window.count, 6)
     XCTAssertEqual(limited.count, 6)
     XCTAssertEqual(window.last ?? [], [1, 2, 3, 4, 5, 6])
@@ -624,13 +619,13 @@ class HotTests: XCTestCase {
     
     wait(for: 0.75)
     
-    stream.push(7)
+    stream.set(7)
     XCTAssertEqual(window.count, 7)
     XCTAssertEqual(limited.count, 7)
     XCTAssertEqual(window.last ?? [], [5, 6, 7])
     XCTAssertEqual(limited.last ?? [], [5, 6, 7])
     
-    stream.push(8)
+    stream.set(8)
     XCTAssertEqual(window.count, 8)
     XCTAssertEqual(limited.count, 8)
     XCTAssertEqual(window.last ?? [], [5, 6, 7, 8])
@@ -645,29 +640,29 @@ class HotTests: XCTestCase {
   
   func testFilter() {
     var values = [String]()
-    let stream = HotInput<String>()
+    let stream = ObservableInput<String>("")
     
     stream
       .filter { !$0.contains("a") } //Filter out strings that contain a
       .on{ values.append($0) }
     
-    stream.push("hello")
+    stream.set("hello")
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, "hello")
     
-    stream.push("stream")
+    stream.set("stream")
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, "hello")
     
-    stream.push("for")
+    stream.set("for")
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, "for")
     
-    stream.push("ever")
+    stream.set("ever")
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last, "ever")
     
-    stream.push("value")
+    stream.set("value")
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last, "ever")
     
@@ -679,106 +674,112 @@ class HotTests: XCTestCase {
   func testDistinct() {
     var distinct = [String]()
     var distinctEquality = [String]()
-    let stream = HotInput<String>()
+    let stream = ObservableInput<String>("")
     
     stream.distinct{ $0 != $1 }.on{ distinct.append($0) }
     stream.distinct().on{ distinctEquality.append($0) }
     
-    stream.push("hello")
     XCTAssertEqual(distinct.count, 1)
     XCTAssertEqual(distinctEquality.count, 1)
+    XCTAssertEqual(distinct.last, "")
+    XCTAssertEqual(distinctEquality.last, "")
+    
+    
+    stream.set("hello")
+    XCTAssertEqual(distinct.count, 2)
+    XCTAssertEqual(distinctEquality.count, 2)
     XCTAssertEqual(distinct.last, "hello")
     XCTAssertEqual(distinctEquality.last, "hello")
     
-    stream.push("stream")
-    XCTAssertEqual(distinct.count, 2)
-    XCTAssertEqual(distinctEquality.count, 2)
-    XCTAssertEqual(distinct.last, "stream")
-    XCTAssertEqual(distinctEquality.last, "stream")
-    
-    stream.push("stream")
-    XCTAssertEqual(distinct.count, 2)
-    XCTAssertEqual(distinctEquality.count, 2)
-    XCTAssertEqual(distinct.last, "stream")
-    XCTAssertEqual(distinctEquality.last, "stream")
-    
-    stream.push("for")
+    stream.set("stream")
     XCTAssertEqual(distinct.count, 3)
     XCTAssertEqual(distinctEquality.count, 3)
+    XCTAssertEqual(distinct.last, "stream")
+    XCTAssertEqual(distinctEquality.last, "stream")
+    
+    stream.set("stream")
+    XCTAssertEqual(distinct.count, 3)
+    XCTAssertEqual(distinctEquality.count, 3)
+    XCTAssertEqual(distinct.last, "stream")
+    XCTAssertEqual(distinctEquality.last, "stream")
+    
+    stream.set("for")
+    XCTAssertEqual(distinct.count, 4)
+    XCTAssertEqual(distinctEquality.count, 4)
     XCTAssertEqual(distinct.last, "for")
     XCTAssertEqual(distinctEquality.last, "for")
     
-    stream.push("for")
-    XCTAssertEqual(distinct.count, 3)
-    XCTAssertEqual(distinctEquality.count, 3)
+    stream.set("for")
+    XCTAssertEqual(distinct.count, 4)
+    XCTAssertEqual(distinctEquality.count, 4)
     XCTAssertEqual(distinct.last, "for")
     XCTAssertEqual(distinctEquality.last, "for")
     
     stream.terminate(withReason: .completed)
-    XCTAssertEqual(distinct.count, 3)
-    XCTAssertEqual(distinctEquality.count, 3)
+    XCTAssertEqual(distinct.count, 4)
+    XCTAssertEqual(distinctEquality.count, 4)
     XCTAssertEqual(distinct.last, "for")
     XCTAssertEqual(distinctEquality.last, "for")
   }
   
   func testStride() {
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.stride(3).on{ values.append($0) }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values.count, 0)
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(values.count, 0)
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, 3)
     
-    stream.push(4)
+    stream.set(4)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, 3)
     
-    stream.push(5)
+    stream.set(5)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, 3)
     
-    stream.push(6)
+    stream.set(6)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, 6)
     
-    stream.push(7)
+    stream.set(7)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, 6)
     
-    stream.push(8)
+    stream.set(8)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, 6)
     
-    stream.push(9)
+    stream.set(9)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last, 9)
   }
   
   func testStamp() {
     var values = [(Int, String)]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.stamp{ "\($0)" }.on{ values.append($0) }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, 1)
     XCTAssertEqual(values.last?.1, "1")
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.0, 2)
     XCTAssertEqual(values.last?.1, "2")
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last?.0, 3)
     XCTAssertEqual(values.last?.1, "3")
@@ -786,23 +787,23 @@ class HotTests: XCTestCase {
   
   func testTimeStamp() {
     var values = [(Int, Date)]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.timeStamp().on{ values.append($0) }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, 1)
     XCTAssertEqualWithAccuracy(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.0, 2)
     XCTAssertEqualWithAccuracy(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
     
     wait(for: 0.5)
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last?.0, 3)
     XCTAssertEqualWithAccuracy(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
@@ -810,16 +811,15 @@ class HotTests: XCTestCase {
   
   func testCountStamp() {
     var values = [(String, UInt)]()
-    let stream = HotInput<String>()
+    let stream = ObservableInput<String>("Hello")
     
     stream.countStamp().on{ values.append($0) }
     
-    stream.push("Hello")
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, "Hello")
     XCTAssertEqual(values.last?.1, 1)
     
-    stream.push("World")
+    stream.set("World")
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.0, "World")
     XCTAssertEqual(values.last?.1, 2)
@@ -828,42 +828,41 @@ class HotTests: XCTestCase {
   func testMin() {
     var minValues = [Int]()
     var minComparable = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(10)
     
     stream.min{ $0 < $1 }.on{ minValues.append($0) }
     stream.min().on{ minComparable.append($0) }
     
-    stream.push(10)
     XCTAssertEqual(minValues.count, 1)
     XCTAssertEqual(minComparable.count, 1)
     XCTAssertEqual(minValues.last, 10)
     XCTAssertEqual(minComparable.last, 10)
     
-    stream.push(12)
+    stream.set(12)
     XCTAssertEqual(minValues.count, 1)
     XCTAssertEqual(minComparable.count, 1)
     XCTAssertEqual(minValues.last, 10)
     XCTAssertEqual(minComparable.last, 10)
     
-    stream.push(8)
+    stream.set(8)
     XCTAssertEqual(minValues.count, 2)
     XCTAssertEqual(minComparable.count, 2)
     XCTAssertEqual(minValues.last, 8)
     XCTAssertEqual(minComparable.last, 8)
     
-    stream.push(8)
+    stream.set(8)
     XCTAssertEqual(minValues.count, 2)
     XCTAssertEqual(minComparable.count, 2)
     XCTAssertEqual(minValues.last, 8)
     XCTAssertEqual(minComparable.last, 8)
     
-    stream.push(10)
+    stream.set(10)
     XCTAssertEqual(minValues.count, 2)
     XCTAssertEqual(minComparable.count, 2)
     XCTAssertEqual(minValues.last, 8)
     XCTAssertEqual(minComparable.last, 8)
     
-    stream.push(5)
+    stream.set(5)
     XCTAssertEqual(minValues.count, 3)
     XCTAssertEqual(minComparable.count, 3)
     XCTAssertEqual(minValues.last, 5)
@@ -879,36 +878,35 @@ class HotTests: XCTestCase {
   func testMax() {
     var maxValues = [Int]()
     var maxComparable = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(10)
     
     stream.max{ $0 > $1 }.on{ maxValues.append($0) }
     stream.max().on{ maxComparable.append($0) }
     
-    stream.push(10)
     XCTAssertEqual(maxValues.count, 1)
     XCTAssertEqual(maxComparable.count, 1)
     XCTAssertEqual(maxValues.last, 10)
     XCTAssertEqual(maxComparable.last, 10)
     
-    stream.push(10)
+    stream.set(10)
     XCTAssertEqual(maxValues.count, 1)
     XCTAssertEqual(maxComparable.count, 1)
     XCTAssertEqual(maxValues.last, 10)
     XCTAssertEqual(maxComparable.last, 10)
     
-    stream.push(12)
+    stream.set(12)
     XCTAssertEqual(maxValues.count, 2)
     XCTAssertEqual(maxComparable.count, 2)
     XCTAssertEqual(maxValues.last, 12)
     XCTAssertEqual(maxComparable.last, 12)
     
-    stream.push(8)
+    stream.set(8)
     XCTAssertEqual(maxValues.count, 2)
     XCTAssertEqual(maxComparable.count, 2)
     XCTAssertEqual(maxValues.last, 12)
     XCTAssertEqual(maxComparable.last, 12)
     
-    stream.push(20)
+    stream.set(20)
     XCTAssertEqual(maxValues.count, 3)
     XCTAssertEqual(maxComparable.count, 3)
     XCTAssertEqual(maxValues.last, 20)
@@ -923,16 +921,16 @@ class HotTests: XCTestCase {
   
   func testDelay() {
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.delay(0.5).on{ values.append($0) }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values.count, 0)
     
     wait(for: 0.25)
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(values.count, 0)
     
     wait(for: 0.3)
@@ -948,29 +946,29 @@ class HotTests: XCTestCase {
   
   func testSkip() {
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
-    stream.push(1)
-    stream.push(2)
+    stream.set(1)
+    stream.set(2)
     
     stream.skip(3).on{ values.append($0) }
     
     XCTAssertEqual(values.count, 0)
     
-    stream.push(4)
+    stream.set(4)
     XCTAssertEqual(values.count, 0)
     
-    stream.push(5)
+    stream.set(5)
     XCTAssertEqual(values.count, 0)
     
-    stream.push(6)
+    stream.set(6)
     XCTAssertEqual(values.count, 0)
     
-    stream.push(7)
+    stream.set(7)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, 7)
     
-    stream.push(8)
+    stream.set(8)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, 8)
     
@@ -981,64 +979,43 @@ class HotTests: XCTestCase {
   
   func testStart() {
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.start(with: [-1, -2, -3]).on{ values.append($0) }
     
-    stream.push(0)
+    stream.set(0)
     XCTAssertEqual(values, [-1, -2, -3, 0])
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values, [-1, -2, -3, 0, 1])
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(values, [-1, -2, -3, 0, 1, 2])
   }
   
   func testConcat() {
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     
     stream.concat([98, 99, 100]).on{ values.append($0) }
     
-    stream.push(0)
+    stream.set(0)
     XCTAssertEqual(values, [0])
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values, [0, 1])
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(values, [0, 1, 2])
     
     stream.terminate(withReason: .completed)
     XCTAssertEqual(values, [0, 1, 2, 98, 99, 100])
   }
   
-  func testDefaultValue() {
-    var values = [Int]()
-    var stream = HotInput<Int>()
-    
-    stream.defaultValue(0).on{ values.append($0) }
-    
-    stream.terminate(withReason: .completed)
-    XCTAssertEqual(values, [0])
-    
-    stream = HotInput<Int>()
-    values = []
-    
-    stream.defaultValue(0).on{ values.append($0) }
-    
-    stream.push(1)
-    XCTAssertEqual(values, [1])
-    
-    stream.terminate(withReason: .completed)
-    XCTAssertEqual(values, [1])
-  }
-  
   func testMerge() {
     var values = [Either<Int, String>]()
-    let left = HotInput<Int>()
-    let right = HotInput<String>()
+    let left = ObservableInput<Int>(0)
+    let right = ObservableInput<String>("")
     var term: Termination? = nil
     var error: Error? = nil
     
@@ -1048,19 +1025,19 @@ class HotTests: XCTestCase {
       .onTerminate{ term = $0 }
       .onError{ error = $0 }
     
-    left.push(1)
+    left.set(1)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
     
-    right.push("first")
+    right.set("first")
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.right, "first")
     
-    right.push("second")
+    right.set("second")
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last?.right, "second")
     
-    left.push(2)
+    left.set(2)
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 2)
     
@@ -1072,17 +1049,17 @@ class HotTests: XCTestCase {
       reason == .cancelled
     else { return XCTFail("Expected Error to be thrown for left stream termination.") }
     
-    left.push(2)
+    left.set(2)
     XCTAssertEqual(values.count, 4)
     
-    right.push("third")
+    right.set("third")
     XCTAssertEqual(values.count, 5)
     XCTAssertEqual(values.last?.right, "third")
     
     right.terminate(withReason: .completed)
     XCTAssertEqual(values.count, 5)
     
-    right.push("fourth")
+    right.set("fourth")
     XCTAssertEqual(values.count, 5)
     
     XCTAssertEqual(term, .completed)
@@ -1090,8 +1067,8 @@ class HotTests: XCTestCase {
   
   func testMergeWithSameType() {
     var values = [Int]()
-    let left = HotInput<Int>()
-    let right = HotInput<Int>()
+    let left = ObservableInput<Int>(0)
+    let right = ObservableInput<Int>(0)
     var term: Termination? = nil
     var error: Error? = nil
     
@@ -1101,19 +1078,19 @@ class HotTests: XCTestCase {
       .onTerminate{ term = $0 }
       .onError{ error = $0 }
     
-    left.push(1)
+    left.set(1)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, 1)
     
-    right.push(100)
+    right.set(100)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, 100)
     
-    right.push(101)
+    right.set(101)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last, 101)
     
-    left.push(2)
+    left.set(2)
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last, 2)
     
@@ -1125,10 +1102,10 @@ class HotTests: XCTestCase {
       reason == .cancelled
     else { return XCTFail("Expected Error to be thrown for left stream termination.") }
     
-    left.push(2)
+    left.set(2)
     XCTAssertEqual(values.count, 4)
     
-    right.push(102)
+    right.set(102)
     XCTAssertEqual(values.count, 5)
     XCTAssertEqual(values.last, 102)
     
@@ -1140,8 +1117,8 @@ class HotTests: XCTestCase {
   
   func testZip() {
     var values = [(left: Int, right: String)]()
-    let left = HotInput<Int>()
-    let right = HotInput<String>()
+    let left = ObservableInput<Int>(0)
+    let right = ObservableInput<String>("")
     var term: Termination? = nil
     
     left
@@ -1149,43 +1126,43 @@ class HotTests: XCTestCase {
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
     
-    left.push(1)
+    left.set(1)
     XCTAssertEqual(values.count, 0)
     
-    left.push(2)
+    left.set(2)
     XCTAssertEqual(values.count, 0)
     
-    right.push("one")
+    right.set("one")
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
     XCTAssertEqual(values.last?.right, "one")
     
-    right.push("two")
+    right.set("two")
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.push("three")
+    right.set("three")
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.push("four")
+    right.set("four")
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.push("five")
+    right.set("five")
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    left.push(3)
+    left.set(3)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last?.left, 3)
     XCTAssertEqual(values.last?.right, "three")
     
-    left.push(4)
+    left.set(4)
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 4)
     XCTAssertEqual(values.last?.right, "four")
@@ -1197,8 +1174,8 @@ class HotTests: XCTestCase {
   
   func testZipBuffer() {
     var values = [(left: Int, right: String)]()
-    let left = HotInput<Int>()
-    let right = HotInput<String>()
+    let left = ObservableInput<Int>(0)
+    let right = ObservableInput<String>("")
     var term: Termination? = nil
     
     left
@@ -1206,78 +1183,78 @@ class HotTests: XCTestCase {
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
     
-    left.push(1)
+    left.set(1)
     XCTAssertEqual(values.count, 0)
     
-    left.push(2)
+    left.set(2)
     XCTAssertEqual(values.count, 0)
     
-    right.push("one")
+    right.set("one")
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
     XCTAssertEqual(values.last?.right, "one")
     
-    right.push("two")
+    right.set("two")
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.push("three")
+    right.set("three")
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.push("four")
+    right.set("four")
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.push("five") //Should be ignored, exceeds buffer
+    right.set("five") //Should be ignored, exceeds buffer
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.push("six") //Should be ignored, exceeds buffer
+    right.set("six") //Should be ignored, exceeds buffer
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.push("seven") //Should be ignored, exceeds buffer
+    right.set("seven") //Should be ignored, exceeds buffer
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    left.push(3)
+    left.set(3)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last?.left, 3)
     XCTAssertEqual(values.last?.right, "three")
     
-    left.push(4)
+    left.set(4)
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 4)
     XCTAssertEqual(values.last?.right, "four")
     
-    left.push(5)
+    left.set(5)
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 4)
     XCTAssertEqual(values.last?.right, "four")
     
-    left.push(6)
+    left.set(6)
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 4)
     XCTAssertEqual(values.last?.right, "four")
     
-    left.push(7) //Should be ignored, exceeds buffer
+    left.set(7) //Should be ignored, exceeds buffer
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 4)
     XCTAssertEqual(values.last?.right, "four")
     
-    right.push("eight")
+    right.set("eight")
     XCTAssertEqual(values.count, 5)
     XCTAssertEqual(values.last?.left, 5)
     XCTAssertEqual(values.last?.right, "eight")
     
-    right.push("nine")
+    right.set("nine")
     XCTAssertEqual(values.count, 6)
     XCTAssertEqual(values.last?.left, 6)
     XCTAssertEqual(values.last?.right, "nine")
@@ -1289,8 +1266,8 @@ class HotTests: XCTestCase {
   
   func testCombineLatest() {
     var values = [(left: Int, right: String)]()
-    let left = HotInput<Int>()
-    let right = HotInput<String>()
+    let left = ObservableInput<Int>(0)
+    let right = ObservableInput<String>("")
     var term: Termination? = nil
     var error: Error? = nil
     
@@ -1300,33 +1277,33 @@ class HotTests: XCTestCase {
       .onError{ error = $0 }
       .onTerminate{ term = $0 }
     
-    left.push(1)
+    left.set(1)
     XCTAssertEqual(values.count, 0)
     
-    left.push(2)
+    left.set(2)
     XCTAssertEqual(values.count, 0)
     
-    right.push("one")
+    right.set("one")
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "one")
     
-    right.push("two")
+    right.set("two")
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.push("three")
+    right.set("three")
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "three")
     
-    left.push(3)
+    left.set(3)
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 3)
     XCTAssertEqual(values.last?.right, "three")
     
-    right.push("four")
+    right.set("four")
     XCTAssertEqual(values.count, 5)
     XCTAssertEqual(values.last?.left, 3)
     XCTAssertEqual(values.last?.right, "four")
@@ -1340,7 +1317,7 @@ class HotTests: XCTestCase {
     else { return XCTFail("Expected Error to be thrown for right stream termination.") }
     error = nil
     
-    left.push(4)
+    left.set(4)
     XCTAssertEqual(values.count, 6)
     XCTAssertEqual(values.last?.left, 4)
     XCTAssertEqual(values.last?.right, "four")
@@ -1353,8 +1330,8 @@ class HotTests: XCTestCase {
   
   func testCombine() {
     var values = [(left: Int, right: String)]()
-    let left = HotInput<Int>()
-    let right = HotInput<String>()
+    let left = ObservableInput<Int>(0)
+    let right = ObservableInput<String>("")
     var term: Termination? = nil
     var error: Error? = nil
     
@@ -1364,33 +1341,33 @@ class HotTests: XCTestCase {
       .onError{ error = $0 }
       .onTerminate{ term = $0 }
     
-    left.push(1)
+    left.set(1)
     XCTAssertEqual(values.count, 0)
     
-    left.push(2)
+    left.set(2)
     XCTAssertEqual(values.count, 0)
     
-    right.push("one")
+    right.set("one")
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "one")
     
-    right.push("two")
+    right.set("two")
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "one")
     
-    right.push("three")
+    right.set("three")
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "one")
     
-    left.push(3)
+    left.set(3)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 3)
     XCTAssertEqual(values.last?.right, "three")
     
-    right.push("four")
+    right.set("four")
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 3)
     XCTAssertEqual(values.last?.right, "three")
@@ -1399,7 +1376,7 @@ class HotTests: XCTestCase {
     XCTAssertEqual(term, .completed)
     XCTAssertNil(error)
     
-    left.push(4)
+    left.set(4)
     XCTAssertEqual(values.count, 2)
     
     left.terminate(withReason: .cancelled)
@@ -1410,20 +1387,17 @@ class HotTests: XCTestCase {
   
   func testAverage() {
     var values = [Double]()
-    let stream = HotInput<Double>()
+    let stream = ObservableInput<Double>(2.0)
     
     stream.average().on{ values.append($0) }
     
-    stream.push(2.0) // 2 / 1
-    XCTAssertEqual(values, [2.0])
-    
-    stream.push(2.0) // 4 / 2
+    stream.set(2.0) // 4 / 2
     XCTAssertEqual(values, [2.0, 2.0])
     
-    stream.push(5.0) // 9 / 3
+    stream.set(5.0) // 9 / 3
     XCTAssertEqual(values, [2.0, 2.0, 3.0])
     
-    stream.push(7.0) // 16 / 4
+    stream.set(7.0) // 16 / 4
     XCTAssertEqual(values, [2.0, 2.0, 3.0, 4.0])
     
     stream.terminate(withReason: .completed)
@@ -1432,23 +1406,22 @@ class HotTests: XCTestCase {
   
   func testSum() {
     var values = [Double]()
-    let stream = HotInput<Double>()
+    let stream = ObservableInput<Double>(2.0)
     
     stream.sum().on{ values.append($0) }
     
-    stream.push(2.0)
     XCTAssertEqual(values, [2.0])
     
-    stream.push(3.0)
+    stream.set(3.0)
     XCTAssertEqual(values, [2.0, 5.0])
     
-    stream.push(3.0)
+    stream.set(3.0)
     XCTAssertEqual(values, [2.0, 5.0, 8.0])
     
-    stream.push(2.5)
+    stream.set(2.5)
     XCTAssertEqual(values, [2.0, 5.0, 8.0, 10.5])
     
-    stream.push(-10.5)
+    stream.set(-10.5)
     XCTAssertEqual(values, [2.0, 5.0, 8.0, 10.5, 0])
     
     stream.terminate(withReason: .completed)
@@ -1457,7 +1430,7 @@ class HotTests: XCTestCase {
   
   func testWhile() {
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     var term: Termination? = nil
     
     stream
@@ -1465,23 +1438,23 @@ class HotTests: XCTestCase {
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values, [1])
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(values, [1, 3])
     
-    stream.push(7)
+    stream.set(7)
     XCTAssertEqual(values, [1, 3, 7])
     
-    stream.push(10)
+    stream.set(10)
     XCTAssertEqual(values, [1, 3, 7])
     XCTAssertEqual(term, .cancelled)
   }
   
   func testWhileTransition() {
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     var term: Termination? = nil
     
     stream
@@ -1493,23 +1466,23 @@ class HotTests: XCTestCase {
       .onTerminate{ term = $0 }
     
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values, [1])
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(values, [1, 3])
     
-    stream.push(7)
+    stream.set(7)
     XCTAssertEqual(values, [1, 3, 7])
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values, [1, 3, 7])
     XCTAssertEqual(term, .cancelled)
   }
   
   func testUntil() {
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     var term: Termination? = nil
     
     stream
@@ -1517,26 +1490,26 @@ class HotTests: XCTestCase {
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values, [1])
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(values, [1, 3])
     
-    stream.push(7)
+    stream.set(7)
     XCTAssertEqual(values, [1, 3, 7])
     
-    stream.push(11)
+    stream.set(11)
     XCTAssertEqual(values, [1, 3, 7, 11])
     
-    stream.push(10)
+    stream.set(10)
     XCTAssertEqual(values, [1, 3, 7, 11])
     XCTAssertEqual(term, .cancelled)
   }
   
   func testUntilTransition() {
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     var term: Termination? = nil
     
     stream
@@ -1547,50 +1520,50 @@ class HotTests: XCTestCase {
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values, [1])
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(values, [1, 3])
     
-    stream.push(7)
+    stream.set(7)
     XCTAssertEqual(values, [1, 3, 7])
     
-    stream.push(7)
+    stream.set(7)
     XCTAssertEqual(values, [1, 3, 7])
     XCTAssertEqual(term, .cancelled)
   }
   
   func testNext() {
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     var term: Termination? = nil
     
-    stream.push(1)
-    stream.push(2)
+    stream.set(1)
+    stream.set(2)
     
     stream
       .next(3, then: .completed)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(values, [3])
     
-    stream.push(4)
+    stream.set(4)
     XCTAssertEqual(values, [3, 4])
     
-    stream.push(5)
+    stream.set(5)
     XCTAssertEqual(values, [3, 4, 5])
     XCTAssertEqual(term, .completed)
     
-    stream.push(6)
+    stream.set(6)
     XCTAssertEqual(values, [3, 4, 5])
   }
   
   func testUsing() {
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     var term: Termination? = nil
     var object: TestClass? = TestClass()
     
@@ -1599,27 +1572,27 @@ class HotTests: XCTestCase {
       .on{ values.append($0.1) }
       .onTerminate{ term = $0 }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values, [1])
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(values, [1, 2])
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(values, [1, 2, 3])
     
     object = nil
    
     wait(for: 0.1) // Allow the object to deinit
     
-    stream.push(4)
+    stream.set(4)
     XCTAssertEqual(values, [1, 2, 3])
     XCTAssertEqual(term, .cancelled)
   }
   
   func testLifeOf() {
     var values = [Int]()
-    let stream = HotInput<Int>()
+    let stream = ObservableInput<Int>(0)
     var term: Termination? = nil
     var object: TestClass? = TestClass()
     
@@ -1628,21 +1601,22 @@ class HotTests: XCTestCase {
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
     
-    stream.push(1)
+    stream.set(1)
     XCTAssertEqual(values, [1])
     
-    stream.push(2)
+    stream.set(2)
     XCTAssertEqual(values, [1, 2])
     
-    stream.push(3)
+    stream.set(3)
     XCTAssertEqual(values, [1, 2, 3])
     
     object = nil
    
     wait(for: 0.1) // Allow the object to deinit
     
-    stream.push(4)
+    stream.set(4)
     XCTAssertEqual(values, [1, 2, 3])
     XCTAssertEqual(term, .cancelled)
   }
+  
 }

@@ -460,7 +460,7 @@ extension Observable {
     return stamp{ _ in
       count += 1
       return count
-    }
+    }.replayNext()
   }
   
   /**
