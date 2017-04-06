@@ -115,15 +115,15 @@ public class Promise<T> : Stream<T> {
    */
   public init(task: @escaping PromiseTask<T>) {
     self.task = task
-    super.init()
+    super.init(op: "Task")
     persist()
     run(task: task)
   }
   
   /// Internal init for creating down stream promises
-  override init() {
+  override init(op: String) {
     task = nil
-    super.init()
+    super.init(op: op)
   }
   
   /// Overriden to update the complete variable

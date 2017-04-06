@@ -10,6 +10,7 @@
 		651477D81E6E17A800190A44 /* DispatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651477D71E6E17A800190A44 /* DispatchTests.swift */; };
 		653271B31E5F2BA300E3DE9C /* Rx.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 653271A91E5F2BA300E3DE9C /* Rx.framework */; };
 		65491DDB1E95802700A1C736 /* ObservableOperationsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65491DDA1E95802700A1C736 /* ObservableOperationsTests.swift */; };
+		65491DDD1E958E4200A1C736 /* FutureOperationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65491DDC1E958E4200A1C736 /* FutureOperationTests.swift */; };
 		658370581E89A8F600B979F4 /* ThrottleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658370571E89A8F600B979F4 /* ThrottleTests.swift */; };
 		659432E11E83187800B71335 /* FutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659432E01E83187800B71335 /* FutureTests.swift */; };
 		659432E31E831B3100B71335 /* ColdTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659432E21E831B3100B71335 /* ColdTests.swift */; };
@@ -64,6 +65,7 @@
 		653271B21E5F2BA300E3DE9C /* RxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		653271B91E5F2BA300E3DE9C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		65491DDA1E95802700A1C736 /* ObservableOperationsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ObservableOperationsTests.swift; sourceTree = "<group>"; };
+		65491DDC1E958E4200A1C736 /* FutureOperationTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FutureOperationTests.swift; sourceTree = "<group>"; };
 		658370571E89A8F600B979F4 /* ThrottleTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ThrottleTests.swift; sourceTree = "<group>"; };
 		658370591E89BCE400B979F4 /* throttle.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = throttle.md; path = Docs/throttle.md; sourceTree = SOURCE_ROOT; };
 		658692BA1E85ADCF000C9413 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
@@ -170,6 +172,7 @@
 				651477D71E6E17A800190A44 /* DispatchTests.swift */,
 				65DC98311E8039B60045BFA3 /* HotOperationsTests.swift */,
 				65491DDA1E95802700A1C736 /* ObservableOperationsTests.swift */,
+				65491DDC1E958E4200A1C736 /* FutureOperationTests.swift */,
 				659432E01E83187800B71335 /* FutureTests.swift */,
 				659432E21E831B3100B71335 /* ColdTests.swift */,
 				65CDD95C1E84361000FF5C06 /* ObservableTests.swift */,
@@ -396,6 +399,7 @@
 				658370581E89A8F600B979F4 /* ThrottleTests.swift in Sources */,
 				65CDD95D1E84361000FF5C06 /* ObservableTests.swift in Sources */,
 				65CB069C1E8BF020007826E0 /* TimerTests.swift in Sources */,
+				65491DDD1E958E4200A1C736 /* FutureOperationTests.swift in Sources */,
 				651477D81E6E17A800190A44 /* DispatchTests.swift in Sources */,
 				65ACFD5C1E82CFD000641BB2 /* PromiseTests.swift in Sources */,
 				65CB069A1E8B4281007826E0 /* ConditionalTimerTests.swift in Sources */,

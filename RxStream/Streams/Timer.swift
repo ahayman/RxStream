@@ -53,7 +53,7 @@ public class Timer : Hot<Void> {
    */
   public init(interval: TimeInterval) {
     self.interval = interval
-    super.init()
+    super.init(op: "Source")
     self.persist()
   }
   

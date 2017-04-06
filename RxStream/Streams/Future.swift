@@ -20,14 +20,14 @@ public class Future<T> : Stream<T> {
   
   /// Allows for the creation of a `Future` that already has a value filled.
   public class func completed(_ value: T) -> Future<T> {
-    let future = Future<T>()
+    let future = Future<T>(op: "CompletedValue")
     future.process(event: .next(value))
     return future
   }
   
   /// Allows for the creation of a `Future` that already has an error filled.
   public class func completed(_ error: Error) -> Future<T> {
-    let future = Future<T>()
+    let future = Future<T>(op: "CompletedError")
     future.process(event: .error(error))
     return future
   }
@@ -40,7 +40,7 @@ public class Future<T> : Stream<T> {
    - returns: A new Future
    */
   public init(task: @escaping Task<T>) {
-    super.init()
+    super.init(op: "Task")
     persist()
     self.replay = true
     self.lock = self
@@ -55,8 +55,8 @@ public class Future<T> : Stream<T> {
     }
   }
   
-  override init() {
-    super.init()
+  override init(op: String) {
+    super.init(op: op)
     self.replay = true
   }
   
@@ -89,8 +89,8 @@ public class FutureInput<T> : Future<T> {
    Initialization of a Future Input requires no parameters, but may require type information.
    After initializing, the Future should be completed by calling  the `complete` func with a value or an error.
    */
-  public override init() {
-    super.init()
+  public init() {
+    super.init(op: "Input")
   }
   
   /**

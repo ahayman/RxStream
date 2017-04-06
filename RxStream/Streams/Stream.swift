@@ -30,6 +30,16 @@ public func ==(lhs: Termination, rhs: Termination) -> Bool {
   }
 }
 
+extension Termination : CustomDebugStringConvertible {
+  public var debugDescription: String {
+    switch self {
+    case .completed: return ".completed"
+    case .cancelled: return ".cancelled"
+    case .error(let error): return ".error(\(error))"
+    }
+  }
+}
+
 /// Defines the current state of the stream, which can be active (the stream is emitting data) or terminated with a reason.
 public enum StreamState : Equatable {
   /// The stream is currently active can can emit data
@@ -99,6 +109,16 @@ public enum Event<T> : EventValue {
   }
 }
 
+extension Event : CustomDebugStringConvertible {
+  public var debugDescription: String {
+    switch self {
+    case .next(let value): return ".next(\(value))"
+    case .error(let error): return ".error(\(error))"
+    case .terminate(let reason): return ".terminate(reason: \(reason))"
+    }
+  }
+}
+
 /// Defines work that should be done for an event.  The event is passed in, and the completion handler is called when the work has completed.
 typealias StreamOp<U, T> = (_ prior: U?, _ next: Event<U>, _ complete: @escaping ([Event<T>]?) -> Void) -> Void
 
@@ -110,11 +130,47 @@ extension Stream : BaseStream { }
 protocol ParentStream : class {
   func prune(_ prune: Prune, withReason reason: Termination)
 }
+
+/// Indirection because we can't store class variables in a Generic
+private var globalDebugPrinter: ((String) -> Void)? = nil
+
 extension Stream : ParentStream { }
 
 /// Base class for Streams.  It cannot be instantiated directly and should not generally be used as a type directly.
 public class Stream<T> {
   typealias Data = T
+  
+  /** 
+   If set, debug information will be passed into this closure.
+   For example, setting this to:
+   
+   ```
+   Stream<Int>.debugPrinter = { print($0) }
+   ```
+   
+   will cause all debug info to be printed to standard output.  This can really help when debugging something inside a stream.
+   
+   - warning: This is a _global_ setting, so setting this will replace any existing printer.  
+   It is not specific to any particular Stream type, even though you have to specify one to set it (due to how generics are constructed).
+   
+   By default, it's set to `nil` so no debug info will be generated.
+  */
+  public class var debugPrinter: ((String) -> Void)? {
+    set { globalDebugPrinter = newValue }
+    get { return globalDebugPrinter }
+  }
+  
+  /**
+   If set, then only this stream will print debug information.  
+   - note: This overrides `Stream<_>.debugPrinter`.  If this is `nil` and `Stream<_>.debugPrinter` is set, the latter will be used.
+  */
+  public var debugPrinter : ((String) -> Void)?
+  
+  /**
+   Primarily used for debugging purposes, this describes the current stream, including it's operation.
+   This helps make it easier when debugging to tell what is going on.
+  */
+  public let descriptor: String
   
   /// Storage of all down streams.
   var downStreams = [StreamProcessor<T>]()
@@ -194,6 +250,15 @@ public class Stream<T> {
    but since a stream doesn't have access to it's own processor, it needs a way to alert the processor of a termination.
    */
   var onTerminate: ((Termination) -> Void)?
+  
+  init(op: String) {
+    self.descriptor = "\(String(describing: type(of: self)))." + op
+  }
+  
+  private func printDebug(info: String) {
+    guard let printer = debugPrinter ?? globalDebugPrinter else { return }
+    printer(info)
+  }
   
   /// By default, this returns a DownstreamProcessor, but it's primarily so that subclasses can override and provide their own custom processors.
   func newDownstreamProcessor<U>(forStream stream: Stream<U>, withProcessor processor: @escaping StreamOp<T, U>) -> StreamProcessor<T> {
@@ -278,6 +343,8 @@ public class Stream<T> {
   private func push(event: Event<T>, withKey key: EventKey) {
     guard self.isActive else { return }
     
+    printDebug(info: "\(descriptor): push event: \(event)")
+    
     // Push the event down stream.  If the stream is reusable, we don't want to filter downstreams.  
     for processor in self.downStreams {
       processor.process(prior: self.queue?.current, next: event, withKey: key) 
@@ -295,6 +362,7 @@ public class Stream<T> {
    */
   func terminate(reason: Termination, andPrune prune: Prune) {
     dispatch.execute {
+      self.printDebug(info: "\(self.descriptor): Terminating with \(reason)")
       if self.isActive {
         self.state = .terminated(reason: reason)
       }
@@ -358,6 +426,7 @@ public class Stream<T> {
   func process<U>(key: EventKey, prior: U?, next: Event<U>, withOp op: @escaping StreamOp<U, T>) {
     guard isActive && pendingTermination == nil else { return }
     dispatch.execute {
+      self.printDebug(info: "\(self.descriptor): begin processing \(next)")
       guard let (key, event) = self.preProcess(event: next, withKey: key) else { return }
       
       // Make sure we're receiving data, otherwise it's a termination event and we should set the terminateWork
@@ -381,6 +450,7 @@ public class Stream<T> {
             } else {
               self.postProcess(event: event, withKey: key, producedEvents: [], withTermination: nil)
             }
+            self.printDebug(info: "\(self.descriptor): throttle cancelled \(event)")
             return
           }
           var termination: Termination? = nil
@@ -420,6 +490,7 @@ public class Stream<T> {
               }
               
               self.postProcess(event: event, withKey: key, producedEvents: events, withTermination: termination)
+              self.printDebug(info: "\(self.descriptor): end Processing \(event) ")
               completion()
             }
           }
@@ -534,6 +605,16 @@ extension Stream {
    */
   @discardableResult public func persist(_ persist: Bool = true) -> Self {
     self.persist = persist
+    return self
+  }
+  
+  /**
+   Setting this to a closure will cause all debug information for this stream to be passed into the closure.
+   - note: Set the `debugPrinter` property on this stream.
+   - returns: Self for chaining
+  */
+  @discardableResult public func onDebugInfo(_ printer: ((String) -> Void)?) -> Self {
+    self.debugPrinter = printer
     return self
   }
   

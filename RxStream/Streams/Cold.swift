@@ -74,14 +74,14 @@ public class Cold<Request, Response> : Stream<Response> {
     }
   }
   
-  func newSubStream<U>() -> Cold<Request, U> {
-    return Cold<Request, U>{ [weak self] (request, key) in
+  func newSubStream<U>(_ op: String) -> Cold<Request, U> {
+    return Cold<Request, U>(op: op) { [weak self] (request, key) in
       self?.process(request: request, withKey: key)
     }
   }
   
   func newMappedRequestStream<U>(mapper: @escaping (U) -> Request) -> Cold<U, Response> {
-    return Cold<U, Response>{ [weak self] (request: U, key: String) in
+    return Cold<U, Response>(op: "mapRequest"){ [weak self] (request: U, key: String) in
       self?.process(request: mapper(request), withKey: key)
     }
   }
@@ -93,11 +93,13 @@ public class Cold<Request, Response> : Stream<Response> {
   public init(task: @escaping ColdTask) {
     self.requestProcessor = Either(task)
     self.shared = .keyed
+    super.init(op: "Task")
   }
   
-  init(processor: @escaping ParentProcessor) {
+  init(op: String, processor: @escaping ParentProcessor) {
     self.requestProcessor = Either(processor)
     self.shared = .inherit
+    super.init(op: op)
   }
   
   /**

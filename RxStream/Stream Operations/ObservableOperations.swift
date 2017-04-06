@@ -13,12 +13,12 @@ extension Observable {
   
   /// This will return a new immutable Observable attached to this one.
   public func observable() -> Observable<T> {
-    return appendNewStream(stream: Observable(self.value))
+    return appendNewStream(stream: Observable(self.value, op: "new"))
   }
   
   /// This will return a hot stream attached to the observable.
   public func hot() -> Hot<T> {
-    return appendNewStream(stream: Hot<T>())
+    return appendNewStream(stream: Hot<T>(op: "new"))
   }
   
 }
@@ -36,7 +36,7 @@ extension Observable {
    - returns: a new Observable stream
    */
   @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Void) -> Observable<T> {
-    return appendOnError(stream: Observable<T>(self.value), handler: handler)
+    return appendOnError(stream: Observable<T>(self.value, op: "onError"), handler: handler)
   }
   
   /**
@@ -51,7 +51,7 @@ extension Observable {
    - returns: a new Observable stream
    */
   @discardableResult public func mapError(_ handler: @escaping (_ error: Error) -> Termination?) -> Observable<T> {
-    return appendMapError(stream: Observable<T>(self.value), handler: handler)
+    return appendMapError(stream: Observable<T>(self.value, op: "mapError"), handler: handler)
   }
   
   /**
@@ -65,7 +65,7 @@ extension Observable {
    - returns: A new Observable stream
    */
   @discardableResult public func on(_ handler: @escaping (_ value: T) -> Void) -> Observable<T> {
-    return appendOn(stream: Observable<T>(self.value), handler: handler)
+    return appendOn(stream: Observable<T>(self.value, op: "on"), handler: handler)
   }
   
   /**
@@ -83,7 +83,7 @@ extension Observable {
    */
   @discardableResult public func onTransition(_ handler: @escaping (_ prior: T?, _ next: T) -> Void) -> Observable<T> {
     let replay = self.replay
-    return replayNext(true).appendTransition(stream: Observable<T>(self.value), handler: handler).replayNext(replay)
+    return replayNext(true).appendTransition(stream: Observable<T>(self.value, op: "onTransition"), handler: handler).replayNext(replay)
   }
   
   /**
@@ -96,7 +96,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func onTerminate(_ handler: @escaping (Termination) -> Void) -> Observable<T> {
-    return appendOnTerminate(stream: Observable<T>(self.value), handler: handler)
+    return appendOnTerminate(stream: Observable<T>(self.value, op: "onTerminate"), handler: handler)
   }
   
   /**
@@ -112,7 +112,7 @@ extension Observable {
    - returns: A new Observable with the mapped value type
    */
   public func map<U>(_ mapper: @escaping (_ value: T) -> U) -> Observable<U> {
-    return appendMap(stream: Observable<U>(mapper(self.value)), withMapper: mapper)
+    return appendMap(stream: Observable<U>(mapper(self.value), op: "map"), withMapper: mapper)
   }
   
   /**
@@ -130,7 +130,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func map<U>(_ mapper: @escaping (_ value: T) -> U?) -> Hot<U> {
-    return appendMap(stream: Hot<U>(), withMapper: mapper)
+    return appendMap(stream: Hot<U>(op: "map"), withMapper: mapper)
   }
   
   /**
@@ -147,7 +147,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func resultMap<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Hot<U> {
-    return appendMap(stream: Hot<U>(), withMapper: mapper)
+    return appendMap(stream: Hot<U>(op: "resultMap"), withMapper: mapper)
   }
   
   /**
@@ -172,7 +172,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func asyncMap<U>(_ mapper: @escaping (_ value: T, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Hot<U> {
-    return appendMap(stream: Hot<U>(), withMapper: mapper)
+    return appendMap(stream: Hot<U>(op: "asyncMap"), withMapper: mapper)
   }
   
   /**
@@ -188,7 +188,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func flatMap<U>(_ mapper: @escaping (_ value: T) -> [U]) -> Hot<U> {
-    return appendFlatMap(stream: Hot<U>(), withFlatMapper: mapper)
+    return appendFlatMap(stream: Hot<U>(op: "flatMap"), withFlatMapper: mapper)
   }
   
   /**
@@ -207,7 +207,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func scan<U>(initial: U, scanner: @escaping (_ current: U, _ next: T) -> U) -> Observable<U> {
-    return appendScan(stream: Observable<U>(initial), initial: initial, withScanner: scanner)
+    return appendScan(stream: Observable<U>(initial, op: "scan(initial: \(initial))"), initial: initial, withScanner: scanner)
   }
   
   /**
@@ -224,7 +224,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func first(_ count: Int = 1, then: Termination = .cancelled) -> Hot<T> {
-    return appendFirst(stream: Hot<T>(), count: count, then: then)
+    return appendFirst(stream: Hot<T>(op: "first(\(count), then: \(then)"), count: count, then: then)
   }
   
   /**
@@ -242,9 +242,9 @@ extension Observable {
    */
   @discardableResult public func last(_ count: Int = 1, partial: Bool = true) -> Hot<T> {
     if count < 2 {
-      return appendLast(stream: Hot<T>())
+      return appendLast(stream: Hot<T>(op: "last(1)"))
     }
-    return appendLast(stream: Hot<T>(), count: count, partial: partial)
+    return appendLast(stream: Hot<T>(op: "last(\(count), partial: \(partial)"), count: count, partial: partial)
   }
   
   /**
@@ -279,7 +279,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func buffer(size: Int, partial: Bool = true) -> Hot<[T]> {
-    return appendBuffer(stream: Hot<[T]>(), bufferSize: size, partial: partial)
+    return appendBuffer(stream: Hot<[T]>(op: "buffer(size: \(size), partial: \(partial)"), bufferSize: size, partial: partial)
   }
   
   /**
@@ -296,7 +296,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func window(size: Int, partial: Bool = false) -> Hot<[T]> {
-    return appendWindow(stream: Hot<[T]>(), windowSize: size, partial: partial)
+    return appendWindow(stream: Hot<[T]>(op: "window(size: \(size), partial: \(partial)"), windowSize: size, partial: partial)
   }
   
   /**
@@ -313,7 +313,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func window(size: TimeInterval, limit: Int? = nil) -> Hot<[T]> {
-    return appendWindow(stream: Hot<[T]>(), windowSize: size, limit: limit)
+    return appendWindow(stream: Hot<[T]>(op: "window(size: \(size), limit: \(limit ?? -1)"), windowSize: size, limit: limit)
   }
   
   /**
@@ -329,7 +329,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func filter(include: @escaping (_ value: T) -> Bool) -> Hot<T> {
-    return appendFilter(stream: Hot<T>(), include: include)
+    return appendFilter(stream: Hot<T>(op: "filter"), include: include)
   }
   
   /**
@@ -345,7 +345,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func stride(_ stride: Int) -> Observable<T> {
-    return appendStride(stream: Observable<T>(self.value), stride: stride)
+    return appendStride(stream: Observable<T>(self.value, op: "stride(\(stride))"), stride: stride)
   }
   
   /**
@@ -359,7 +359,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Observable<(value: T, stamp: U)> {
-    return appendStamp(stream: Observable<(value: T, stamp: U)>(value: self.value, stamp: stamper(self.value)), stamper: stamper)
+    return appendStamp(stream: Observable<(value: T, stamp: U)>((value: self.value, stamp: stamper(self.value)), op: "stamp"), stamper: stamper)
   }
   
   /**
@@ -392,7 +392,7 @@ extension Observable {
    */
   @discardableResult public func distinct(_ isDistinct: @escaping (_ prior: T, _ next: T) -> Bool) -> Observable<T> {
     let replay = self.replay
-    return replayNext(true).appendDistinct(stream: Observable<T>(self.value), isDistinct: isDistinct).replayNext(replay)
+    return replayNext(true).appendDistinct(stream: Observable<T>(self.value, op: "distinct"), isDistinct: isDistinct).replayNext(replay)
   }
  
   /**
@@ -413,7 +413,7 @@ extension Observable {
    */
   @discardableResult public func min(lessThan: @escaping (_ isValue: T, _ lessThan: T) -> Bool) -> Observable<T> {
     let replay = self.replay
-    return replayNext(true).appendMin(stream: Observable<T>(self.value), lessThan: lessThan).replayNext(replay)
+    return replayNext(true).appendMin(stream: Observable<T>(self.value, op: "min"), lessThan: lessThan).replayNext(replay)
   }
   
   /**
@@ -434,7 +434,7 @@ extension Observable {
    */
   @discardableResult public func max(greaterThan: @escaping (_ isValue: T, _ greaterThan: T) -> Bool) -> Observable<T> {
     let replay = self.replay
-    return replayNext(true).appendMax(stream: Observable<T>(self.value), greaterThan: greaterThan).replayNext(replay)
+    return replayNext(true).appendMax(stream: Observable<T>(self.value, op: "max"), greaterThan: greaterThan).replayNext(replay)
   }
   
   /**
@@ -445,7 +445,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func count() -> Observable<UInt> {
-    return appendCount(stream: Observable<UInt>(1))
+    return appendCount(stream: Observable<UInt>(1, op: "count"))
   }
   
   /**
@@ -475,7 +475,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func delay(_ delay: TimeInterval) -> Observable<T> {
-    return appendDelay(stream: Observable<T>(self.value), delay: delay)
+    return appendDelay(stream: Observable<T>(self.value, op: "delay"), delay: delay)
   }
   
   /**
@@ -488,7 +488,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func skip(_ count: Int) -> Observable<T> {
-    return appendSkip(stream: Observable<T>(self.value), count: count)
+    return appendSkip(stream: Observable<T>(self.value, op: "skip"), count: count)
   }
   
   /**
@@ -502,7 +502,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func start(with: [T]) -> Observable<T> {
-    return appendStart(stream: Observable<T>(self.value), startWith: with)
+    return appendStart(stream: Observable<T>(self.value, op: "start(with: \(with.count)"), startWith: with)
   }
   
   /**
@@ -516,7 +516,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func concat(_ concat: [T]) -> Observable<T> {
-    return appendConcat(stream: Observable<T>(self.value), concat: concat)
+    return appendConcat(stream: Observable<T>(self.value, op: "concat(\(concat.count))"), concat: concat)
   }
   
 }
@@ -534,7 +534,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func merge<U>(_ stream: Stream<U>) -> Observable<Either<T, U>> {
-    return appendMerge(stream: stream, intoStream: Observable<Either<T, U>>(.left(self.value)))
+    return appendMerge(stream: stream, intoStream: Observable<Either<T, U>>(.left(self.value), op: "merge"))
   }
   
   /**
@@ -547,7 +547,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func merge(_ stream: Stream<T>) -> Observable<T> {
-    return appendMerge(stream: stream, intoStream: Observable<T>(self.value))
+    return appendMerge(stream: stream, intoStream: Observable<T>(self.value, op: "merge"))
   }
   
   /**
@@ -566,7 +566,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Hot<(T, U)> {
-    return appendZip(stream: stream, intoStream: Hot<(T, U)>(), buffer: buffer)
+    return appendZip(stream: stream, intoStream: Hot<(T, U)>(op: "zip(buffer: \(buffer ?? -1))"), buffer: buffer)
   }
   
   /**
@@ -586,7 +586,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func zip<U>(_ stream: Observable<U>, buffer: Int? = nil) -> Observable<(T, U)> {
-    return appendZip(stream: stream, intoStream: Observable<(T, U)>(self.value, stream.value), buffer: buffer)
+    return appendZip(stream: stream, intoStream: Observable<(T, U)>((self.value, stream.value), op: "zip(buffer: \(buffer ?? -1)"), buffer: buffer)
   }
   
   /**
@@ -608,7 +608,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func combine<U>(latest: Bool = true, stream: Stream<U>) -> Hot<(T, U)> {
-    return appendCombine(stream: stream, intoStream: Hot<(T, U)>(), latest: latest)
+    return appendCombine(stream: stream, intoStream: Hot<(T, U)>(op: "combine(latest: \(latest))"), latest: latest)
   }
   
   /**
@@ -631,7 +631,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func combine<U>(latest: Bool = true, stream: Observable<U>) -> Observable<(T, U)> {
-    return appendCombine(stream: stream, intoStream: Observable<(T, U)>(self.value, stream.value), latest: latest)
+    return appendCombine(stream: stream, intoStream: Observable<(T, U)>((self.value, stream.value), op: "combine(latest: \(latest))"), latest: latest)
   }
 }
 
@@ -652,7 +652,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ value: T) -> Bool) -> Observable<T> {
-    return appendWhile(stream: Observable<T>(self.value), handler: handler, then: then)
+    return appendWhile(stream: Observable<T>(self.value, op: "doWhile(then: \(then))"), handler: handler, then: then)
   }
   
   /**
@@ -671,7 +671,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (T) -> Bool) -> Observable<T> {
-    return appendUntil(stream: Observable<T>(self.value), handler: handler, then: then)
+    return appendUntil(stream: Observable<T>(self.value, op: "until(then: \(then))"), handler: handler, then: then)
   }
   
   /**
@@ -687,7 +687,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func until(_ handler: @escaping (_ value: T) -> Termination?) -> Observable<T> {
-    return appendUntil(stream: Observable<T>(self.value), handler: handler)
+    return appendUntil(stream: Observable<T>(self.value, op: "until"), handler: handler)
   }
   
   /**
@@ -705,7 +705,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Observable<T> {
-    return appendWhile(stream: Observable<T>(self.value), handler: handler, then: then)
+    return appendWhile(stream: Observable<T>(self.value, op: "doWhileTransition(then: \(then))"), handler: handler, then: then)
   }
   
   /**
@@ -725,7 +725,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Observable<T> {
-    return appendUntil(stream: Observable<T>(self.value), handler: handler, then: then)
+    return appendUntil(stream: Observable<T>(self.value, op: "untilTransition(then: \(then))"), handler: handler, then: then)
   }
   
   /**
@@ -742,7 +742,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func until(handler: @escaping (_ prior: T?, _ next: T) -> Termination?) -> Observable<T> {
-    return appendUntil(stream: Observable<T>(self.value), handler: handler)
+    return appendUntil(stream: Observable<T>(self.value, op: "untilTransition"), handler: handler)
   }
   
   /**
@@ -760,7 +760,7 @@ extension Observable {
    - returns: A new Hot Stream.  Cannot return an observable as it will retain the object we're seeking to use the life time of.
    */
   @discardableResult public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Hot<(U, T)> {
-    return appendUsing(stream: Hot<(U, T)>(), object: object, then: then).canReplay(false)
+    return appendUsing(stream: Hot<(U, T)>(op: "using(\(object)), then: \(then)"), object: object, then: then).canReplay(false)
   }
   
   /**
@@ -777,7 +777,7 @@ extension Observable {
    - returns: A new Observab le Stream
    */
   @discardableResult public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Observable<T> {
-    return appendLifeOf(stream: Observable<T>(self.value), object: object, then: then)
+    return appendLifeOf(stream: Observable<T>(self.value, op: "lifeOf(\(object), then: \(then))"), object: object, then: then)
   }
   
   /**
@@ -793,7 +793,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func next(_ count: UInt = 1, then: Termination = .cancelled) -> Observable<T> {
-    return appendNext(stream: Observable<T>(self.value), count: count, then: then)
+    return appendNext(stream: Observable<T>(self.value, op: "next(\(count), then: \(then))"), count: count, then: then)
   }
   
 }
@@ -829,7 +829,7 @@ extension Observable where T : Arithmetic {
    */
   @discardableResult public func average() -> Observable<T> {
     let replay = self.replay
-    return replayNext(true).appendAverage(stream: Observable<T>(self.value)).replayNext(replay)
+    return replayNext(true).appendAverage(stream: Observable<T>(self.value, op: "average")).replayNext(replay)
   }
   
   /**
@@ -843,7 +843,7 @@ extension Observable where T : Arithmetic {
    */
   @discardableResult public func sum() -> Observable<T> {
     let replay = self.replay
-    return replayNext(true).appendSum(stream: Observable<T>(self.value)).replayNext(replay)
+    return replayNext(true).appendSum(stream: Observable<T>(self.value, op: "sum")).replayNext(replay)
   }
   
 }
@@ -862,7 +862,7 @@ extension Observable where T : Equatable {
    */
   @discardableResult public func distinct() -> Observable<T> {
     let replay = self.replay
-    return replayNext(true).appendDistinct(stream: Observable<T>(self.value), isDistinct: { $0 != $1 }).replayNext(replay)
+    return replayNext(true).appendDistinct(stream: Observable<T>(self.value, op: "distinct"), isDistinct: { $0 != $1 }).replayNext(replay)
   }
 }
 
@@ -879,7 +879,7 @@ extension Observable where T : Comparable {
    */
   @discardableResult public func min() -> Observable<T> {
     let replay = self.replay
-    return replayNext(true).appendMin(stream: Observable<T>(self.value)) { $0 < $1 }.replayNext(replay)
+    return replayNext(true).appendMin(stream: Observable<T>(self.value, op: "min")) { $0 < $1 }.replayNext(replay)
   }
   
   /**
@@ -893,6 +893,6 @@ extension Observable where T : Comparable {
    */
   @discardableResult public func max() -> Observable<T> {
     let replay = self.replay
-    return replayNext(true).appendMax(stream: Observable<T>(self.value)) { $0 > $1 }.replayNext(replay)
+    return replayNext(true).appendMax(stream: Observable<T>(self.value, op: "max")) { $0 > $1 }.replayNext(replay)
   }
 }

@@ -21,7 +21,7 @@ extension Future {
    - returns: A new Future stream
    */
   @discardableResult public func on(_ handler: @escaping (_ value: T) -> Void) -> Future<T> {
-    return appendOn(stream: Future<T>(), handler: handler)
+    return appendOn(stream: Future<T>(op: "on"), handler: handler)
   }
   
   /**
@@ -37,7 +37,7 @@ extension Future {
    - returns: a new Hot stream
    */
   @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Void) -> Future<T> {
-    return append(stream: Future<T>()) { (_, next, completion) in
+    return append(stream: Future<T>(op: "onError")) { (_, next, completion) in
       switch next {
       case .next: completion([next])
       case .error(let error):
@@ -63,7 +63,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func onTransition(_ handler: @escaping (_ prior: T?, _ next: T) -> Void) -> Future<T> {
-    return appendTransition(stream: Future<T>(), handler: handler)
+    return appendTransition(stream: Future<T>(op: "onTransition"), handler: handler)
   }
   
   /**
@@ -76,7 +76,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func onTerminate(_ handler: @escaping (Termination) -> Void) -> Future<T> {
-    return appendOnTerminate(stream: Future<T>(), handler: handler)
+    return appendOnTerminate(stream: Future<T>(op: "onTerminate"), handler: handler)
   }
   
   /**
@@ -92,7 +92,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func map<U>(_ mapper: @escaping (_ value: T) -> U?) -> Future<U> {
-    return appendMap(stream: Future<U>(), withMapper: mapper)
+    return appendMap(stream: Future<U>(op: "map"), withMapper: mapper)
   }
   
   /**
@@ -107,7 +107,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func resultMap<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Future<U> {
-    return appendMap(stream: Future<U>(), withMapper: mapper)
+    return appendMap(stream: Future<U>(op: "resultMap"), withMapper: mapper)
   }
   
   /**
@@ -130,7 +130,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func asyncMap<U>(_ mapper: @escaping (_ value: T, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Future<U> {
-    return appendMap(stream: Future<U>(), withMapper: mapper)
+    return appendMap(stream: Future<U>(op: "asyncMap"), withMapper: mapper)
   }
   
   /**
@@ -146,7 +146,7 @@ extension Future {
    - returns: A new Hot Stream
    */
   @discardableResult public func flatMap<U>(_ mapper: @escaping (_ value: T) -> [U]) -> Hot<U> {
-    return appendFlatMap(stream: Hot<U>(), withFlatMapper: mapper)
+    return appendFlatMap(stream: Hot<U>(op: "flatMap"), withFlatMapper: mapper)
   }
   
   /**
@@ -160,7 +160,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func filter(include: @escaping (_ value: T) -> Bool) -> Future<T> {
-    return appendFilter(stream: Future<T>(), include: include)
+    return appendFilter(stream: Future<T>(op: "filter"), include: include)
   }
   
   /**
@@ -174,7 +174,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Future<(value: T, stamp: U)> {
-    return appendStamp(stream: Future<(value: T, stamp: U)>(), stamper: stamper)
+    return appendStamp(stream: Future<(value: T, stamp: U)>(op: "stamp"), stamper: stamper)
   }
   
   /**
@@ -200,7 +200,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func delay(_ delay: TimeInterval) -> Future<T> {
-    return appendDelay(stream: Future<T>(), delay: delay)
+    return appendDelay(stream: Future<T>(op: "delay(\(delay))"), delay: delay)
   }
   
   /**
@@ -216,7 +216,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func start(with: [T]) -> Hot<T> {
-    return appendStart(stream: Hot<T>(), startWith: with)
+    return appendStart(stream: Hot<T>(op: "start(with: \(with.count) values)"), startWith: with)
   }
   
   /**
@@ -232,7 +232,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func concat(_ concat: [T]) -> Hot<T> {
-    return appendConcat(stream: Hot<T>(), concat: concat)
+    return appendConcat(stream: Hot<T>(op: "conat(\(concat.count) values)"), concat: concat)
   }
   
   /**
@@ -245,7 +245,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func defaultValue(_ value: T) -> Future<T> {
-    return appendDefault(stream: Future<T>(), value: value)
+    return appendDefault(stream: Future<T>(op: "defaultValue(\(value))"), value: value)
   }
   
 }
@@ -263,7 +263,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func merge<U>(_ stream: Stream<U>) -> Future<Either<T, U>> {
-    return appendMerge(stream: stream, intoStream: Future<Either<T, U>>())
+    return appendMerge(stream: stream, intoStream: Future<Either<T, U>>(op: "merge(stream:\(stream))"))
   }
   
   /**
@@ -276,7 +276,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func merge(_ stream: Stream<T>) -> Future<T> {
-    return appendMerge(stream: stream, intoStream: Future<T>())
+    return appendMerge(stream: stream, intoStream: Future<T>(op: "merge(stream:\(stream))"))
   }
   
   /**
@@ -295,7 +295,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Future<(T, U)> {
-    return appendZip(stream: stream, intoStream: Future<(T, U)>(), buffer: buffer)
+    return appendZip(stream: stream, intoStream: Future<(T, U)>(op: "zip(stream: \(stream), buffer: \(buffer ?? -1))"), buffer: buffer)
   }
   
   /**
@@ -316,8 +316,8 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func combine<U>(latest: Bool = true, stream: Stream<U>) -> Future<(T, U)> {
-    return appendCombine(stream: stream, intoStream: Future<(T, U)>(), latest: latest)
+  @discardableResult public func combine<U>(stream: Stream<U>) -> Future<(T, U)> {
+    return appendCombine(stream: stream, intoStream: Future<(T, U)>(op: "combine(stream: \(stream))"), latest: true)
   }
   
 }
@@ -339,7 +339,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ value: T) -> Bool) -> Future<T> {
-    return appendWhile(stream: Future<T>(), handler: handler, then: then)
+    return appendWhile(stream: Future<T>(op: "doWhile(then: \(then))"), handler: handler, then: then)
   }
   
   /**
@@ -358,45 +358,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (T) -> Bool) -> Future<T> {
-    return appendUntil(stream: Future<T>(), handler: handler, then: then)
-  }
-  
-  /**
-   ## Branching
-   
-   Emit values from stream until the handler returns `false`, and then terminate the stream with the provided termination.
-   
-   - parameter then: **Default:** `.cancelled`. When the handler returns `false`, then terminate the stream with this termination.
-   - parameter handler: Takes the next value and returns `false` to terminate the stream or `true` to remain active.
-   - parameter prior: The prior value, if any.
-   - parameter next: The current value being passed down the stream.
-   
-   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
-   
-   - returns: A new Future Stream
-   */
-  @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Future<T> {
-    return appendWhile(stream: Future<T>(), handler: handler, then: then)
-  }
-  
-  /**
-   ## Branching
-   
-   Emit values from stream until the handler returns `true`, and then terminate the stream with the provided termination.
-   
-   - note: This is the inverse of `doWhile`, in that the stream remains active _until_ it returns `true` whereas `doWhile` remains active until the handler return `false`.
-   
-   - parameter then: **Default:** `.cancelled`. When the handler returns `true`, then terminate the stream with this termination.
-   - parameter handler: Takes the next value and returns `true` to terminate the stream or `false` to remain active.
-   - parameter prior: The prior value, if any.
-   - parameter next: The current value being passed down the stream.
-   
-   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
-   
-   - returns: A new Future Stream
-   */
-  @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Future<T> {
-    return appendUntil(stream: Future<T>(), handler: handler, then: then)
+    return appendUntil(stream: Future<T>(op: "until(then: \(then))"), handler: handler, then: then)
   }
   
   /**
@@ -413,7 +375,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Future<(U, T)> {
-    return appendUsing(stream: Future<(U, T)>(), object: object, then: then)
+    return appendUsing(stream: Future<(U, T)>(op: "using(\(object), then: \(then))"), object: object, then: then)
   }
   
   /**
@@ -431,23 +393,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Future<T> {
-    return appendUsing(stream: Future<(U, T)>(), object: object, then: then).map{ $0.1 }
-  }
-  
-  /**
-   ## Branching
-   
-   Emit the next "n" values and then terminate the stream.
-   
-   - parameter count: The number of values to emit before terminating the stream.
-   - parameter then: **Default:** `.cancelled`. How the stream is terminated after the events are emitted.
-   
-   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
-   
-   - returns: A new Future Stream
-   */
-  @discardableResult public func next(_ count: UInt = 1, then: Termination = .cancelled) -> Future<T> {
-    return appendNext(stream: Future<T>(), count: count, then: then)
+    return appendUsing(stream: Future<(U, T)>(op: "lifeOf(\(object), then: \(then))"), object: object, then: then).map{ $0.1 }
   }
   
 }

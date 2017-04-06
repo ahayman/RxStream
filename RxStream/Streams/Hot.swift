@@ -19,8 +19,8 @@ public class Hot<T> : Stream<T> { }
 public class HotInput<T> : Hot<T> {
   
   /// Public initialize to create a new HotInput.
-  public override init() {
-    super.init()
+  public init() {
+    super.init(op: "Input")
   }
   
   /// Terminate the Hot Stream with a reason.
@@ -64,7 +64,7 @@ public class HotProducer<T> : Hot<T> {
    */
   public init(task: @escaping HotTask<T>) {
     self.task = task
-    super.init()
+    super.init(op: "Task")
     self.task { [weak self] event in
       self?.process(event: event)
     }

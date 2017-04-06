@@ -13,7 +13,7 @@ extension Promise {
   
   /// Converts the promise into a Future and returns that.
   public func future() -> Future<T> {
-    return appendNewStream(stream: Future<T>())
+    return appendNewStream(stream: Future<T>(op: "new"))
   }
   
   /**
@@ -26,7 +26,7 @@ extension Promise {
    - returns: a new Promise
    */
   @discardableResult public func retryOn(_ handler: @escaping (_ attempt: UInt, _ value: Error) -> Bool) -> Promise<T> {
-    let promise = Promise<T>()
+    let promise = Promise<T>(op: "retryOn")
     var attempt: UInt = 0
     return append(stream: promise) { [weak promise] (_, next, completion) in
       guard case let .error(error) = next else { return completion([next]) }
@@ -50,7 +50,7 @@ extension Promise {
    - returns: a new Promise
    */
   @discardableResult public func retryOn(_ handler: @escaping (_ attempt: UInt, _ value: Error, _ retry: @escaping (Bool) -> Void) -> Void) -> Promise<T> {
-    let promise = Promise<T>()
+    let promise = Promise<T>(op: "asyncRetryOn")
     var attempt: UInt = 0
     return append(stream: promise) { [weak promise] (_, next, completion) in
       guard case let .error(error) = next else { return completion([next]) }
@@ -78,7 +78,7 @@ extension Promise {
    - returns: a new Promise
    */
   @discardableResult public func retry(_ limit: UInt, delay: TimeInterval? = nil) -> Promise<T> {
-    let promise = Promise<T>()
+    let promise = Promise<T>(op: "retry(limit: \(limit), delay: \(delay ?? -1.0)")
     var count: UInt = 0
     return append(stream: promise) { [weak promise] (_, next, completion) in
       guard case .error = next, count < limit else { return completion([next]) }
@@ -110,7 +110,7 @@ extension Promise {
    - returns: A new Promise stream
    */
   @discardableResult public func on(_ handler: @escaping (_ value: T) -> Void) -> Promise<T> {
-    return appendOn(stream: Promise<T>(), handler: handler)
+    return appendOn(stream: Promise<T>(op: "on"), handler: handler)
   }
   
   /**
@@ -125,7 +125,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func onTransition(_ handler: @escaping (_ prior: T?, _ next: T) -> Void) -> Promise<T> {
-    return appendTransition(stream: Promise<T>(), handler: handler)
+    return appendTransition(stream: Promise<T>(op: "onTransition"), handler: handler)
   }
   
   /**
@@ -138,7 +138,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func onTerminate(_ handler: @escaping (Termination) -> Void) -> Promise<T> {
-    return appendOnTerminate(stream: Promise<T>(), handler: handler)
+    return appendOnTerminate(stream: Promise<T>(op: "onTerminate"), handler: handler)
   }
   
   /**
@@ -154,7 +154,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func map<U>(_ mapper: @escaping (_ value: T) -> U?) -> Promise<U> {
-    return appendMap(stream: Promise<U>(), withMapper: mapper)
+    return appendMap(stream: Promise<U>(op: "map"), withMapper: mapper)
   }
   
   /**
@@ -169,7 +169,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func resultMap<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Promise<U> {
-    return appendMap(stream: Promise<U>(), withMapper: mapper)
+    return appendMap(stream: Promise<U>(op: "resultMap"), withMapper: mapper)
   }
   
   /**
@@ -192,7 +192,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func asyncMap<U>(_ mapper: @escaping (_ value: T, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Promise<U> {
-    return appendMap(stream: Promise<U>(), withMapper: mapper)
+    return appendMap(stream: Promise<U>(op: "asyncMap"), withMapper: mapper)
   }
   
   /**
@@ -208,7 +208,7 @@ extension Promise {
    - returns: A new Hot Stream
    */
   @discardableResult public func flatMap<U>(_ mapper: @escaping (_ value: T) -> [U]) -> Hot<U> {
-    return appendFlatMap(stream: Hot<U>(), withFlatMapper: mapper)
+    return appendFlatMap(stream: Hot<U>(op: "flatMap"), withFlatMapper: mapper)
   }
   
   /**
@@ -222,7 +222,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func filter(include: @escaping (_ value: T) -> Bool) -> Promise<T> {
-    return appendFilter(stream: Promise<T>(), include: include)
+    return appendFilter(stream: Promise<T>(op: "filter"), include: include)
   }
   
   /**
@@ -236,7 +236,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Promise<(value: T, stamp: U)> {
-    return appendStamp(stream: Promise<(value: T, stamp: U)>(), stamper: stamper)
+    return appendStamp(stream: Promise<(value: T, stamp: U)>(op: "stamp"), stamper: stamper)
   }
   
   /**
@@ -262,7 +262,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func delay(_ delay: TimeInterval) -> Promise<T> {
-    return appendDelay(stream: Promise<T>(), delay: delay)
+    return appendDelay(stream: Promise<T>(op: "delay(\(delay))"), delay: delay)
   }
   
   /**
@@ -278,7 +278,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func start(with: [T]) -> Hot<T> {
-    return appendStart(stream: Hot<T>(), startWith: with)
+    return appendStart(stream: Hot<T>(op: "start(with: \(with.count) values)"), startWith: with)
   }
   
   /**
@@ -294,7 +294,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func concat(_ concat: [T]) -> Hot<T> {
-    return appendConcat(stream: Hot<T>(), concat: concat)
+    return appendConcat(stream: Hot<T>(op: "concat(\(concat.count) values"), concat: concat)
   }
   
   /**
@@ -307,7 +307,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func defaultValue(_ value: T) -> Promise<T> {
-    return appendDefault(stream: Promise<T>(), value: value)
+    return appendDefault(stream: Promise<T>(op: "defaultValue(\(value))"), value: value)
   }
   
 }
@@ -325,7 +325,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func merge<U>(_ stream: Stream<U>) -> Promise<Either<T, U>> {
-    return appendMerge(stream: stream, intoStream: Promise<Either<T, U>>())
+    return appendMerge(stream: stream, intoStream: Promise<Either<T, U>>(op: "merge(\(stream))"))
   }
   
   /**
@@ -338,7 +338,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func merge(_ stream: Stream<T>) -> Promise<T> {
-    return appendMerge(stream: stream, intoStream: Promise<T>())
+    return appendMerge(stream: stream, intoStream: Promise<T>(op: "merge(\(stream))"))
   }
   
   /**
@@ -357,7 +357,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Promise<(T, U)> {
-    return appendZip(stream: stream, intoStream: Promise<(T, U)>(), buffer: buffer)
+    return appendZip(stream: stream, intoStream: Promise<(T, U)>(op: "zip(stream: \(stream), buffer: \(buffer ?? -1))"), buffer: buffer)
   }
   
   /**
@@ -379,7 +379,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func combine<U>(latest: Bool = true, stream: Stream<U>) -> Promise<(T, U)> {
-    return appendCombine(stream: stream, intoStream: Promise<(T, U)>(), latest: latest)
+    return appendCombine(stream: stream, intoStream: Promise<(T, U)>(op: "combine(latest: \(latest), stream: \(stream))"), latest: latest)
   }
   
 }
@@ -401,7 +401,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ value: T) -> Bool) -> Promise<T> {
-    return appendWhile(stream: Promise<T>(), handler: handler, then: then)
+    return appendWhile(stream: Promise<T>(op: "doWhile(then: \(then)"), handler: handler, then: then)
   }
   
   /**
@@ -420,7 +420,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (T) -> Bool) -> Promise<T> {
-    return appendUntil(stream: Promise<T>(), handler: handler, then: then)
+    return appendUntil(stream: Promise<T>(op: "until(then: \(then))"), handler: handler, then: then)
   }
   
   /**
@@ -438,7 +438,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Promise<T> {
-    return appendWhile(stream: Promise<T>(), handler: handler, then: then)
+    return appendWhile(stream: Promise<T>(op: "doWhileTransition(then: \(then))"), handler: handler, then: then)
   }
   
   /**
@@ -458,7 +458,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Promise<T> {
-    return appendUntil(stream: Promise<T>(), handler: handler, then: then)
+    return appendUntil(stream: Promise<T>(op: "untilTransition(then: \(then))"), handler: handler, then: then)
   }
   
   /**
@@ -476,7 +476,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Promise<(U, T)> {
-    return appendUsing(stream: Promise<(U, T)>(), object: object, then: then)
+    return appendUsing(stream: Promise<(U, T)>(op: "using(\(object), then: \(then))"), object: object, then: then)
   }
   
   /**
@@ -493,7 +493,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Promise<T> {
-    return appendUsing(stream: Promise<(U, T)>(), object: object, then: then).map{ $0.1 }
+    return appendUsing(stream: Promise<(U, T)>(op: "lifeOf(\(object), then: \(then))"), object: object, then: then).map{ $0.1 }
   }
   
   /**
@@ -509,7 +509,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func next(_ count: UInt = 1, then: Termination = .cancelled) -> Promise<T> {
-    return appendNext(stream: Promise<T>(), count: count, then: then)
+    return appendNext(stream: Promise<T>(op: "next(\(count), then: \(then))"), count: count, then: then)
   }
   
 }

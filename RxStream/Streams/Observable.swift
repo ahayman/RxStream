@@ -26,9 +26,9 @@ public class Observable<T> : Stream<T> {
   private(set) public var value: T
   
   /// Private initilization.  An Observable is not intended to be initialized directly, except by it's subclass.
-  init(_ value: T) {
+  init(_ value: T, op: String) {
     self.value = value
-    super.init()
+    super.init(op: op)
     self.queue = (nil, value)
     persist()
   }
@@ -62,8 +62,8 @@ public class ObservableInput<T> : Observable<T> {
    
    - returns: A persistent observable
    */
-  public override init(_ value: T) {
-    super.init(value)
+  public init(_ value: T) {
+    super.init(value, op: "Input")
   }
   
   public func terminate(withReason reason: Termination) {
