@@ -134,7 +134,7 @@ protocol ParentStream : class {
 /// Indirection because we can't store class variables in a Generic
 private var globalDebugPrinter: ((String) -> Void)? = nil
 
-extension Stream : ParentStream { }
+extension Stream : ParentStream, CustomDebugStringConvertible { }
 
 /// Base class for Streams.  It cannot be instantiated directly and should not generally be used as a type directly.
 public class Stream<T> {
@@ -171,6 +171,8 @@ public class Stream<T> {
    This helps make it easier when debugging to tell what is going on.
   */
   public let descriptor: String
+  
+  public var debugDescription: String { return descriptor }
   
   /// Storage of all down streams.
   var downStreams = [StreamProcessor<T>]()
