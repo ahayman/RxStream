@@ -29,7 +29,7 @@ public class Observable<T> : Stream<T> {
   init(_ value: T, op: String) {
     self.value = value
     super.init(op: op)
-    self.queue = (nil, value)
+    self.current = [value]
     persist()
   }
   

@@ -28,7 +28,7 @@ extension Promise {
   @discardableResult public func retryOn(_ handler: @escaping (_ attempt: UInt, _ value: Error) -> Bool) -> Promise<T> {
     let promise = Promise<T>(op: "retryOn")
     var attempt: UInt = 0
-    return append(stream: promise) { [weak promise] (_, next, completion) in
+    return append(stream: promise) { [weak promise] (next, completion) in
       guard case let .error(error) = next else { return completion([next]) }
       attempt += 1
       if handler(attempt, error) {
@@ -52,7 +52,7 @@ extension Promise {
   @discardableResult public func retryOn(_ handler: @escaping (_ attempt: UInt, _ value: Error, _ retry: @escaping (Bool) -> Void) -> Void) -> Promise<T> {
     let promise = Promise<T>(op: "asyncRetryOn")
     var attempt: UInt = 0
-    return append(stream: promise) { [weak promise] (_, next, completion) in
+    return append(stream: promise) { [weak promise] (next, completion) in
       guard case let .error(error) = next else { return completion([next]) }
       attempt += 1
       handler(attempt, error) { retry in
@@ -80,7 +80,7 @@ extension Promise {
   @discardableResult public func retry(_ limit: UInt, delay: TimeInterval? = nil) -> Promise<T> {
     let promise = Promise<T>(op: "retry(limit: \(limit), delay: \(delay ?? -1.0)")
     var count: UInt = 0
-    return append(stream: promise) { [weak promise] (_, next, completion) in
+    return append(stream: promise) { [weak promise] (next, completion) in
       guard case .error = next, count < limit else { return completion([next]) }
       count += 1
       if let delay = delay {

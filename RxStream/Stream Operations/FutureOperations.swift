@@ -37,7 +37,7 @@ extension Future {
    - returns: a new Hot stream
    */
   @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Void) -> Future<T> {
-    return append(stream: Future<T>(op: "onError")) { (_, next, completion) in
+    return append(stream: Future<T>(op: "onError")) { (next, completion) in
       switch next {
       case .next: completion([next])
       case .error(let error):
@@ -232,7 +232,20 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func concat(_ concat: [T]) -> Hot<T> {
-    return appendConcat(stream: Hot<T>(op: "conat(\(concat.count) values)"), concat: concat)
+    // Future can only emit one value, so we buffer that value and concat on termination.  Normal concat won't work properly if the promise is filled
+    let prior = current?.last
+    return append(stream: Hot<T>(op: "concat(\(concat.count) values)")) { (next, completion) in
+      switch next {
+      case .next: completion([next])
+      case .error(let error): completion([.error(error)])
+      case .terminate:
+        if let prior = prior {
+          completion([.next(prior)] + concat.map{ .next($0) })
+        } else {
+          completion(concat.map{ .next($0) })
+        }
+      }
+    }
   }
   
   /**
@@ -262,8 +275,8 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func merge<U>(_ stream: Stream<U>) -> Future<Either<T, U>> {
-    return appendMerge(stream: stream, intoStream: Future<Either<T, U>>(op: "merge(stream:\(stream))"))
+  @discardableResult public func merge<U>(_ stream: Stream<U>) -> Hot<Either<T, U>> {
+    return appendMerge(stream: stream, intoStream: Hot<Either<T, U>>(op: "merge(stream:\(stream))"))
   }
   
   /**
@@ -275,8 +288,8 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func merge(_ stream: Stream<T>) -> Future<T> {
-    return appendMerge(stream: stream, intoStream: Future<T>(op: "merge(stream:\(stream))"))
+  @discardableResult public func merge(_ stream: Stream<T>) -> Hot<T> {
+    return appendMerge(stream: stream, intoStream: Hot<T>(op: "merge(stream:\(stream))"))
   }
   
   /**
@@ -294,8 +307,8 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Future<(T, U)> {
-    return appendZip(stream: stream, intoStream: Future<(T, U)>(op: "zip(stream: \(stream), buffer: \(buffer ?? -1))"), buffer: buffer)
+  @discardableResult public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Hot<(T, U)> {
+    return appendZip(stream: stream, intoStream: Hot<(T, U)>(op: "zip(stream: \(stream), buffer: \(buffer ?? -1))"), buffer: buffer)
   }
   
   /**
@@ -316,50 +329,14 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func combine<U>(stream: Stream<U>) -> Future<(T, U)> {
-    return appendCombine(stream: stream, intoStream: Future<(T, U)>(op: "combine(stream: \(stream))"), latest: true)
+  @discardableResult public func combine<U>(stream: Stream<U>) -> Hot<(T, U)> {
+    return appendCombine(stream: stream, intoStream: Hot<(T, U)>(op: "combine(stream: \(stream))"), latest: true)
   }
   
 }
 
 // MARK: Lifetime operators
 extension Future {
-  
-  /**
-   ## Branching
-   
-   Emit values from stream until the handler returns `false`, and then terminate the stream with the provided termination.
-   
-   - parameter then: **Default:** `.cancelled`. When the handler returns `false`, then terminate the stream with this termination.
-   - parameter handler: Takes the next value and returns `false` to terminate the stream or `true` to remain active.
-   - parameter value: The current value being passed down the stream.
-   
-   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
-   
-   - returns: A new Future Stream
-   */
-  @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ value: T) -> Bool) -> Future<T> {
-    return appendWhile(stream: Future<T>(op: "doWhile(then: \(then))"), handler: handler, then: then)
-  }
-  
-  /**
-   ## Branching
-   
-   Emit values from stream until the handler returns `true`, and then terminate the stream with the provided termination.
-   
-   - note: This is the inverse of `doWhile`, in that the stream remains active _until_ it returns `true` whereas `doWhile` remains active until the handler return `false`.
-   
-   - parameter then: **Default:** `.cancelled`. When the handler returns `true`, then terminate the stream with this termination.
-   - parameter handler: Takes the next value and returns `true` to terminate the stream or `false` to remain active.
-   - parameter value: The current value being passed down the stream.
-   
-   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
-   
-   - returns: A new Future Stream
-   */
-  @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (T) -> Bool) -> Future<T> {
-    return appendUntil(stream: Future<T>(op: "until(then: \(then))"), handler: handler, then: then)
-  }
   
   /**
    ## Branching

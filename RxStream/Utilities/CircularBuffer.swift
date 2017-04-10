@@ -9,16 +9,18 @@
 import Foundation
 
 /**
- A very simple Curcular Buffer designed to hold and return a statically limited number of elements without allocating, shifting or moving memory after the buffer has been initialized.
+ A very simple Circular Buffer designed to hold and return a statically limited number of elements without allocating, shifting or moving memory after the buffer has been initialized.
  
  Data can be iterated, accessed and appended. The size of the buffer can't change and data cannot be deleted from the buffer.
  */
-struct CircularBuffer<Element> : Collection {
+struct CircularBuffer<Element> : RandomAccessCollection {
+  typealias Indices = DefaultRandomAccessIndices<CircularBuffer<Element>>
+
   /// Privately, we use a simple fixed array to store the collection and replace elements as needed, keeping track of the head index.
   private var buffer: [Element] = []
   
   /// The size of the buffer.
-  private let size: Int
+  let size: Int
   
   /// The current head index. -1 when the buffer is empty, otherwise it points to the start of the current buffer.
   private var head: Int = -1
@@ -96,5 +98,9 @@ struct CircularBuffer<Element> : Collection {
   func index(after i: Int) -> Int {
     return i + 1
   }
-  
+
+  func index(before i: Int) -> Int {
+    return i - 1
+  }
+
 }

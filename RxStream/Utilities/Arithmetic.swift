@@ -33,5 +33,4 @@ extension UInt32 : Arithmetic { }
 extension UInt64 : Arithmetic { }
 
 extension Float : Arithmetic { }
-extension Float80 : Arithmetic { }
 extension Double : Arithmetic { }

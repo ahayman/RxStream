@@ -45,7 +45,7 @@ class PromiseTests: XCTestCase {
     XCTAssertEqual(terminations, [.completed])
     XCTAssertEqual(promise.state, .terminated(reason: .completed))
     
-    completionTask(.failure(NSError()))
+    completionTask(.failure(TestError()))
     XCTAssertEqual(results, [0])
     XCTAssertEqual(terminations, [.completed])
     XCTAssertEqual(promise.state, .terminated(reason: .completed))
@@ -64,26 +64,26 @@ class PromiseTests: XCTestCase {
     XCTAssertTrue(promise.isActive)
     guard let completionTask = completion else { return XCTFail("Expected the Promise task to be called") }
     
-    completionTask(.failure(NSError()))
+    completionTask(.failure(TestError()))
     
     XCTAssertEqual(results, [])
-    XCTAssertEqual(terminations, [.error(NSError())])
-    XCTAssertEqual(promise.state, .terminated(reason: .error(NSError())))
+    XCTAssertEqual(terminations, [.error(TestError())])
+    XCTAssertEqual(promise.state, .terminated(reason: .error(TestError())))
     
     completionTask(.success(1))
     XCTAssertEqual(results, [])
-    XCTAssertEqual(terminations, [.error(NSError())])
-    XCTAssertEqual(promise.state, .terminated(reason: .error(NSError())))
+    XCTAssertEqual(terminations, [.error(TestError())])
+    XCTAssertEqual(promise.state, .terminated(reason: .error(TestError())))
     
     completionTask(.success(2))
     XCTAssertEqual(results, [])
-    XCTAssertEqual(terminations, [.error(NSError())])
-    XCTAssertEqual(promise.state, .terminated(reason: .error(NSError())))
+    XCTAssertEqual(terminations, [.error(TestError())])
+    XCTAssertEqual(promise.state, .terminated(reason: .error(TestError())))
     
-    completionTask(.failure(NSError()))
+    completionTask(.failure(TestError()))
     XCTAssertEqual(results, [])
-    XCTAssertEqual(terminations, [.error(NSError())])
-    XCTAssertEqual(promise.state, .terminated(reason: .error(NSError())))
+    XCTAssertEqual(terminations, [.error(TestError())])
+    XCTAssertEqual(promise.state, .terminated(reason: .error(TestError())))
   }
   
   ///Testing: A promise fills results _down_ the chain, but then completes results back _up_ the chain.
@@ -287,6 +287,7 @@ class PromiseTests: XCTestCase {
     
     guard let completion2 = completion else { return XCTFail("Expected task to be called, but it wasn't") }
     completion = nil
+    onRetry = nil
     
     completion2(.failure(RetryError.noRetry))
     XCTAssertNotNil(onRetry)
@@ -408,7 +409,7 @@ class PromiseTests: XCTestCase {
     XCTAssertEqual(terminations, [.cancelled])
     XCTAssertEqual(promise.state, .terminated(reason: .cancelled))
     
-    completionTask(.failure(NSError()))
+    completionTask(.failure(TestError()))
     XCTAssertEqual(results, [])
     XCTAssertEqual(terminations, [.cancelled])
     XCTAssertEqual(promise.state, .terminated(reason: .cancelled))

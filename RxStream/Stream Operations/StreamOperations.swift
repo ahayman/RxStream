@@ -24,7 +24,7 @@ public enum MergeError : Error {
 extension Stream {
   
   func appendNewStream<U: BaseStream>(stream: U) -> U where U.Data == T {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next, .error: completion([next])
       case .terminate: completion(nil)
@@ -33,7 +33,7 @@ extension Stream {
   }
   
   func appendOnError<U: BaseStream>(stream: U, handler: @escaping (Error) -> Void) -> U where U.Data == T {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next: completion([next])
       case .error(let error):
@@ -45,7 +45,7 @@ extension Stream {
   }
   
   func appendMapError<U: BaseStream>(stream: U, handler: @escaping (Error) -> Termination?) -> U where U.Data == T {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next: completion([next])
       case .error(let error):
@@ -60,7 +60,7 @@ extension Stream {
   }
   
   func appendOn<U: BaseStream>(stream: U, handler: @escaping (U.Data) -> Void) -> U where U.Data == T {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         handler(value)
@@ -72,10 +72,12 @@ extension Stream {
   }
   
   func appendTransition<U: BaseStream>(stream: U, handler: @escaping (U.Data?, U.Data) -> Void) -> U where U.Data == T {
-    return append(stream: stream) { (prior, next, completion) in
+    var prior: T? = nil
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         handler(prior, value)
+        prior = value
         completion([next])
       case .error: completion([next])
       case .terminate: completion(nil)
@@ -84,7 +86,7 @@ extension Stream {
   }
   
   func appendOnTerminate<U: BaseStream>(stream: U, handler: @escaping (Termination) -> Void) -> U where U.Data == T {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next: completion([next])
       case .error: completion([next])
@@ -96,7 +98,7 @@ extension Stream {
   }
   
   func appendTerminateOn<U: BaseStream>(stream: U, handler: @escaping (T) -> Termination?) -> U where U.Data == T {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next(let value):
         if let termination = handler(value) {
@@ -111,7 +113,7 @@ extension Stream {
   }
   
   func appendMap<U: BaseStream>(stream: U, withMapper mapper: @escaping (T) -> U.Data?) -> U {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value): completion((mapper(value) >>? { [.next($0)] }) ?? nil )
       case .error(let error): completion([.error(error)])
@@ -121,7 +123,7 @@ extension Stream {
   }
   
   func appendMap<U: BaseStream>(stream: U, withMapper mapper: @escaping (T) -> Result<U.Data>) -> U {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         mapper(value)
@@ -134,7 +136,7 @@ extension Stream {
   }
   
   func appendMap<U: BaseStream>(stream: U, withMapper mapper: @escaping (T, @escaping (Result<U.Data>?) -> Void) -> Void) -> U {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         mapper(value) {
@@ -153,7 +155,7 @@ extension Stream {
   }
   
   func appendFlatMap<U: BaseStream>(stream: U, withFlatMapper mapper: @escaping (T) -> [U.Data]) -> U {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value): completion(mapper(value).map{ .next($0) })
       case .error(let error): completion([.error(error)])
@@ -164,7 +166,7 @@ extension Stream {
   
   func appendScan<U: BaseStream>(stream: U, initial: U.Data, withScanner scanner: @escaping (U.Data, T) -> U.Data) -> U {
     var reduction: U.Data = initial
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
           reduction = scanner(reduction, value)
@@ -178,7 +180,7 @@ extension Stream {
   func appendFirst<U: BaseStream>(stream: U, count: Int, then: Termination) -> U where U.Data == T {
     let first = max(1, count)
     var count = 0
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       var events: [Event<T>] = []
       switch next {
       case let .next(value):
@@ -198,7 +200,7 @@ extension Stream {
   
   func appendLast<U: BaseStream>(stream: U) -> U where U.Data == T {
     var last: Event<U.Data>? = nil
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next:
         last = next
@@ -212,7 +214,7 @@ extension Stream {
   
   func appendLast<U: BaseStream>(stream: U, count: Int, partial: Bool) -> U where U.Data == T {
     var buffer = CircularBuffer<T>(size: max(1, count))
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         buffer.append(value)
@@ -229,7 +231,7 @@ extension Stream {
     let size = Int(max(1, bufferSize)) - 1
     var buffer: U.Data = []
     buffer.reserveCapacity(size)
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         if buffer.count < size {
@@ -251,7 +253,7 @@ extension Stream {
   func appendWindow<U: BaseStream>(stream: U, windowSize: Int, partial: Bool) -> U where U.Data == [T] {
     let windowSize = max(1, windowSize)
     var buffer = CircularBuffer<T>(size: windowSize)
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         buffer.append(value)
@@ -275,7 +277,7 @@ extension Stream {
   
   func appendWindow<U: BaseStream>(stream: U, windowSize: TimeInterval, limit: Int?) -> U where U.Data == [T] {
     var buffer = [(TimeInterval, T)]()
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         let now = Date.timeIntervalSinceReferenceDate
@@ -292,7 +294,7 @@ extension Stream {
   }
   
   func appendFilter<U: BaseStream>(stream: U, include: @escaping (T) -> Bool) -> U where U.Data == T {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value): completion(include(value) ? [next] : nil)
       case .error(let error): completion([.error(error)])
@@ -304,7 +306,7 @@ extension Stream {
   func appendStride<U: BaseStream>(stream: U, stride: Int) -> U where U.Data == T {
     let stride = max(1, stride)
     var current = 0
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next:
         current += 1
@@ -321,7 +323,7 @@ extension Stream {
   }
   
   func appendStamp<U: BaseStream, V>(stream: U, stamper: @escaping (T) -> V) -> U where U.Data == (value: T, stamp: V) {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value): completion([.next(value: value, stamp: stamper(value))])
       case .error(let error): completion([.error(error)])
@@ -331,11 +333,16 @@ extension Stream {
   }
   
   func appendDistinct<U: BaseStream>(stream: U, isDistinct: @escaping (T, T) -> Bool) -> U where U.Data == T {
-    return append(stream: stream) { (prior, next, completion) in
+    var prior: T? = nil
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
-        guard let prior = prior else { return completion([next]) }
-        completion(isDistinct(prior, value) ? [next] : nil)
+        guard let priorVal = prior else {
+          prior = value
+          return completion([next])
+        }
+        prior = value
+        completion(isDistinct(priorVal, value) ? [next] : nil)
       case .error(let error): completion([.error(error)])
       case .terminate: completion(nil)
       }
@@ -344,10 +351,10 @@ extension Stream {
   
   func appendMin<U: BaseStream>(stream: U, lessThan: @escaping (T, T) -> Bool) -> U where U.Data == T {
     var min: T? = nil
-    return append(stream: stream) { (prior, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
-        guard let prior = min ?? prior, !lessThan(value, prior) else {
+        guard let prior = min, !lessThan(value, prior) else {
           min = value
           return (completion([next]))
         }
@@ -360,10 +367,10 @@ extension Stream {
   
   func appendMax<U: BaseStream>(stream: U, greaterThan: @escaping (T, T) -> Bool) -> U where U.Data == T {
     var max: T? = nil
-    return append(stream: stream) { (prior, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
-          guard let prior = max ?? prior, !greaterThan(value, prior) else {
+          guard let prior = max, !greaterThan(value, prior) else {
             max = value
             return (completion([next]))
           }
@@ -376,7 +383,7 @@ extension Stream {
   
   func appendCount<U: BaseStream>(stream: U) -> U where U.Data == UInt {
     var count: UInt = 0
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next:
         count += 1
@@ -388,7 +395,7 @@ extension Stream {
   }
   
   func appendDelay<U: BaseStream>(stream: U, delay: TimeInterval) -> U where U.Data == T {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next: Dispatch.after(delay: delay, on: .main).execute{ completion([next]) }
       case .error(let error): completion([.error(error)])
@@ -399,7 +406,7 @@ extension Stream {
   
   func appendSkip<U: BaseStream>(stream: U, count: Int) -> U where U.Data == T {
     var count = max(0, count)
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next:
         guard count > 0 else { return completion([next]) }
@@ -414,7 +421,7 @@ extension Stream {
   func appendNext<U: BaseStream>(stream: U, count: UInt, then: Termination) -> U where U.Data == T {
     var count = max(1, count)
     
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next:
         guard count > 0 else { return completion(nil) }
@@ -430,9 +437,32 @@ extension Stream {
     }
   }
   
+  func appendShift<U: BaseStream>(stream: U, shifted: Int, flush: Bool) -> U where U.Data == T {
+    var buffer = CircularBuffer<T>(size: shifted)
+    return append(stream: stream) { (next, completion) in
+      switch next {
+      case .next(let value):
+        guard
+          buffer.count == buffer.size,
+          let shiftedValue = buffer.last
+        else { return completion(nil) }
+        buffer.append(value)
+        completion([.next(shiftedValue)])
+      case .error(let error):
+        completion([.error(error)])
+      case .terminate:
+        if flush && !buffer.isEmpty {
+          completion(buffer.map{ .next($0) })
+        } else {
+          completion(nil)
+        }
+      }
+    }
+  }
+  
   func appendStart<U: BaseStream>(stream: U, startWith: [T]) -> U where U.Data == T {
     var start: [T]? = startWith
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next:
         if let events = start {
@@ -448,7 +478,7 @@ extension Stream {
   }
   
   func appendConcat<U: BaseStream>(stream: U, concat: [T]) -> U where U.Data == T {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next: completion([next])
       case .error(let error): completion([.error(error)])
@@ -459,14 +489,14 @@ extension Stream {
   
   func appendDefault<U: BaseStream>(stream: U, value: T) -> U where U.Data == T {
     var empty = true
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case .next:
         empty = false
         completion([next])
       case .error(let error): completion([.error(error)])
-      case let .terminate(reason):
-        guard empty, case .completed = reason else { return completion(nil) }
+      case .terminate:
+        guard empty else { return completion(nil) }
         completion([.next(value)])
       }
     }
@@ -477,35 +507,66 @@ extension Stream {
 extension Stream {
   
   func appendMerge<U: BaseStream, V>(stream: Stream<V>, intoStream: U) -> U where U.Data == Either<T, V> {
-    stream.append(stream: intoStream) { [weak self] (_, next, completion) in
+    /*
+     We manually keep track of terminations in order to preserve replay behavior.
+     Terminations are always replayed so they won't be missed.
+     Prior attempts to use the "other" stream's active state caused replay to fail if both streams were already terminated,
+     which can happen frequently for types like Promise or Future.
+    */
+    var rightTerm: Termination? = nil
+    var leftTerm: Termination? = nil
+
+    // Right Stream
+    stream.append(stream: intoStream) { (next, completion) in
       switch next {
       case let .next(value): completion([.next(.right(value))])
       case .error(let error): completion([.error(error)])
-      case let .terminate(reason): completion(self?.isActive ?? false ? [.error(MergeError.right(reason))] : nil)
+      case let .terminate(reason):
+        rightTerm = reason
+        completion(leftTerm == nil ? [.error(MergeError.right(reason))] : nil)
       }
     }
-    return append(stream: intoStream) { [weak stream] (_, next, completion) in
+    // Left Stream
+    return append(stream: intoStream) { (next, completion) in
       switch next {
       case let .next(value): completion([.next(.left(value))])
       case .error(let error): completion([.error(error)])
-      case let .terminate(reason): completion(stream?.isActive ?? false ? [.error(MergeError.left(reason))] : nil)
+      case let .terminate(reason):
+        leftTerm = reason
+        completion(rightTerm == nil ? [.error(MergeError.left(reason))] : nil)
       }
     }
   }
   
   func appendMerge<U: BaseStream>(stream: Stream<T>, intoStream: U) -> U where U.Data == T {
-    stream.append(stream: intoStream) { [weak self] (_, next, completion) in
+    /*
+     We manually keep track of terminations in order to preserve replay behavior.
+     Terminations are always replayed so they won't be missed.
+     Prior attempts to use the "other" stream's active state caused replay to fail if both streams were already terminated,
+     which can happen frequently for types like Promise or Future.
+    */
+    var rightTerm: Termination? = nil
+    var leftTerm: Termination? = nil
+
+    //Right Stream
+    stream.append(stream: intoStream) { (next, completion) in
       switch next {
       case let .next(value): completion([.next(value)])
       case .error(let error): completion([.error(error)])
-      case let .terminate(reason): completion(self?.isActive ?? false ? [.error(MergeError.right(reason))] : nil)
+      case let .terminate(reason):
+        rightTerm = reason
+        completion(leftTerm == nil ? [.error(MergeError.right(reason))] : nil)
       }
     }
-    return append(stream: intoStream) { [weak stream] (_, next, completion) in
+
+    //Left Stream
+    return append(stream: intoStream) { (next, completion) in
       switch next {
       case let .next(value): completion([.next(value)])
       case .error(let error): completion([.error(error)])
-      case let .terminate(reason): completion(stream?.isActive ?? false ? [.error(MergeError.left(reason))] : nil)
+      case let .terminate(reason):
+        leftTerm = reason
+        completion(rightTerm == nil ? [.error(MergeError.left(reason))] : nil)
       }
     }
   }
@@ -513,9 +574,18 @@ extension Stream {
   func appendZip<U: BaseStream, V>(stream: Stream<V>, intoStream: U, buffer: Int?) -> U where U.Data == (T, V) {
     var leftBuffer = [T]()
     var rightBuffer = [V]()
-    
+    /*
+     We manually keep track of terminations in order to preserve replay behavior.
+     Terminations are always replayed so they won't be missed.
+     Prior attempts to use the "other" stream's active state caused replay to fail if both streams were already terminated,
+     which can happen frequently for types like Promise or Future.
+    */
+    var rightTerm: Termination? = nil
+    var leftTerm: Termination? = nil
+
+
     // Right Stream
-    stream.append(stream: intoStream) { (_, next, completion) in
+    stream.append(stream: intoStream) { (next, completion) in
       switch next {
       case let .next(value):
         if leftBuffer.count > 0 {
@@ -528,12 +598,18 @@ extension Stream {
           completion(nil)
         }
       case .error(let error): completion([.error(error)])
-      case .terminate: completion(nil)
+      case .terminate(let reason):
+        rightTerm = reason
+        if rightBuffer.count > 0 && leftTerm == nil {
+          completion([.error(MergeError.right(reason))])
+        } else {
+          completion(nil)
+        }
       }
     }
     
     // Left Stream
-    return append(stream: intoStream) { (_, next, completion) in
+    return append(stream: intoStream) { (next, completion) in
       switch next {
       case let .next(value):
         if rightBuffer.count > 0 {
@@ -546,7 +622,13 @@ extension Stream {
           completion(nil)
         }
       case .error(let error): completion([.error(error)])
-      case .terminate: completion(nil)
+      case .terminate(let reason):
+        leftTerm = reason
+        if leftBuffer.count > 0 && rightTerm == nil {
+          completion([.error(MergeError.left(reason))])
+        } else {
+          completion(nil)
+        }
       }
     }
   }
@@ -554,9 +636,18 @@ extension Stream {
   func appendCombine<U: BaseStream, V>(stream: Stream<V>, intoStream: U, latest: Bool) -> U where U.Data == (T, V) {
     var left: T? = nil
     var right: V? = nil
-    
+    /*
+     We manually keep track of terminations in order to preserve replay behavior.
+     Terminations are always replayed so they won't be missed.
+     Prior attempts to use the "other" stream's active state caused replay to fail if both streams were already terminated,
+     which can happen frequently for types like Promise or Future.
+    */
+    var rightTerm: Termination? = nil
+    var leftTerm: Termination? = nil
+
+
     // Right Stream
-    stream.append(stream: intoStream) { [weak self] (_, next, completion) in
+    stream.append(stream: intoStream) { (next, completion) in
       switch next {
       case let .next(value):
         guard let leftValue = left else {
@@ -572,8 +663,9 @@ extension Stream {
         completion([.next(leftValue, value)])
       case .error(let error): completion([.error(error)])
       case let .terminate(reason):
-        if latest && self?.isActive ?? false && left != nil {
-          // Even thought the right stream has terminated, we still have a left value that can be used to emit combinations. So the termination is converted into an error.
+        rightTerm = reason
+        if latest && leftTerm == nil && right != nil {
+          // Even thought the right stream has terminated, we still have a right value that can be used to emit combinations from new left values. So the termination is converted into an error.
           completion([.error(MergeError.right(reason))])
         } else {
           completion(nil)
@@ -582,7 +674,7 @@ extension Stream {
     }
     
     // Left Stream
-    return append(stream: intoStream) { [weak stream] (_, next, completion) in
+    return append(stream: intoStream) { (next, completion) in
       switch next {
       case let .next(value):
         guard let rightValue = right else {
@@ -598,8 +690,9 @@ extension Stream {
         completion([.next(value, rightValue)])
       case .error(let error): completion([.error(error)])
       case let .terminate(reason):
-        if latest && stream?.isActive ?? false && right != nil {
-          // Even thought the left stream has terminated, we still have a right value that can be used to emit combinations. So the termination is converted into an error.
+        leftTerm = reason
+        if latest && rightTerm == nil && left != nil {
+          // Even thought the left stream has terminated, we still have a left value that can be used to emit combinations from new right values. So the termination is converted into an error.
           completion([.error(MergeError.left(reason))])
         } else {
           completion(nil)
@@ -614,7 +707,7 @@ extension Stream {
 extension Stream {
   
   func appendWhile<U: BaseStream>(stream: U, handler: @escaping (U.Data) -> Bool, then: Termination) -> U where U.Data == T {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         if !handler(value) {
@@ -629,7 +722,7 @@ extension Stream {
   }
   
   func appendUntil<U: BaseStream>(stream: U, handler: @escaping (U.Data) -> Bool, then: Termination) -> U where U.Data == T {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         if handler(value) {
@@ -644,7 +737,7 @@ extension Stream {
   }
   
   func appendUntil<U: BaseStream>(stream: U, handler: @escaping (T) -> Termination?) -> U where U.Data == T {
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         if let termination = handler(value) {
@@ -659,7 +752,8 @@ extension Stream {
   }
   
   func appendWhile<U: BaseStream>(stream: U, handler: @escaping (U.Data?, U.Data) -> Bool, then: Termination) -> U where U.Data == T {
-    return append(stream: stream) { (prior, next, completion) in
+    var prior: T? = nil
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         if !handler(prior, value) {
@@ -667,6 +761,7 @@ extension Stream {
         } else {
           completion([next])
         }
+        prior = value
       case .error(let error): completion([.error(error)])
       case .terminate: completion(nil)
       }
@@ -674,7 +769,8 @@ extension Stream {
   }
   
   func appendUntil<U: BaseStream>(stream: U, handler: @escaping (U.Data?, U.Data) -> Bool, then: Termination) -> U where U.Data == T {
-    return append(stream: stream) { (prior, next, completion) in
+    var prior: T? = nil
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         if handler(prior, value) {
@@ -682,6 +778,7 @@ extension Stream {
         } else {
           completion([next])
         }
+        prior = value
       case .error(let error): completion([.error(error)])
       case .terminate: completion(nil)
       }
@@ -689,7 +786,8 @@ extension Stream {
   }
   
   func appendUntil<U: BaseStream>(stream: U, handler: @escaping (T?, T) -> Termination?) -> U where U.Data == T {
-    return append(stream: stream) { (prior, next, completion) in
+    var prior: T? = nil
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         if let termination = handler(prior, value) {
@@ -697,6 +795,7 @@ extension Stream {
         } else {
           completion([next])
         }
+        prior = value
       case .error(let error): completion([.error(error)])
       case .terminate: completion(nil)
       }
@@ -705,7 +804,7 @@ extension Stream {
   
   func appendUsing<U: BaseStream, V: AnyObject>(stream: U, object: V, then: Termination) -> U where U.Data == (V, T) {
     let box = WeakBox(object)
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         if let object = box.object {
@@ -721,7 +820,7 @@ extension Stream {
   
   func appendLifeOf<U: BaseStream, V: AnyObject>(stream: U, object: V, then: Termination) -> U where U.Data == T {
     let box = WeakBox(object)
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         if let _ = box.object {
@@ -742,7 +841,7 @@ extension Stream where T: Arithmetic {
   func appendAverage<U: BaseStream>(stream: U) -> U where U.Data == Data {
     var total = T(0)
     var count = T(0)
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         count = count + T(1)
@@ -756,7 +855,7 @@ extension Stream where T: Arithmetic {
   
   func appendSum<U: BaseStream>(stream: U) -> U where U.Data == Data {
     var current = T(0)
-    return append(stream: stream) { (_, next, completion) in
+    return append(stream: stream) { (next, completion) in
       switch next {
       case let .next(value):
         current = value + current

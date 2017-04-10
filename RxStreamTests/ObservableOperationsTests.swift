@@ -9,8 +9,6 @@
 import XCTest
 @testable import Rx
 
-private struct TestError : Error { }
-
 private class TestClass { }
 
 class ObservableOperationsTests: XCTestCase {

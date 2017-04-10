@@ -61,7 +61,7 @@ class ColdTests: XCTestCase {
       if request % 2 == 0 {
         response(.success(request + 1))
       } else {
-        response(.failure(NSError()))
+        response(.failure(TestError()))
       }
     }
     
@@ -109,7 +109,7 @@ class ColdTests: XCTestCase {
       if request % 2 == 0 {
         response(.success(request + 1))
       } else {
-        response(.failure(NSError()))
+        response(.failure(TestError()))
       }
     }
     
@@ -177,7 +177,7 @@ class ColdTests: XCTestCase {
       if request % 2 == 0 {
         response(.success(request + 1))
       } else {
-        response(.failure(NSError()))
+        response(.failure(TestError()))
       }
     }.share(true)
     

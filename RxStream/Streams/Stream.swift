@@ -120,7 +120,7 @@ extension Event : CustomDebugStringConvertible {
 }
 
 /// Defines work that should be done for an event.  The event is passed in, and the completion handler is called when the work has completed.
-typealias StreamOp<U, T> = (_ prior: U?, _ next: Event<U>, _ complete: @escaping ([Event<T>]?) -> Void) -> Void
+typealias StreamOp<U, T> = (_ next: Event<U>, _ complete: @escaping ([Event<T>]?) -> Void) -> Void
 
 internal protocol BaseStream : class {
   associatedtype Data
@@ -181,14 +181,14 @@ public class Stream<T> {
   private var currentWork: UInt = 0
 
   /// The queue contains the prior value, if any, and the current value.  The queue will be `nil` when the stream is first created.
-  var queue: (prior: T?, current: T)?
+  var current: [T]? = nil
   
   /// If this is set `true`, the next stream attached will have the current values replayed into it, if any.
   var replay: Bool = false
   
   /// If this is set `true`, the stream can replay values.  Otherwise, it cannot.  If a stream cannot replay values, then setting `replay == true` will do nothing.
   fileprivate(set) public var canReplay: Bool = true {
-    didSet { if !canReplay { queue = nil } }
+    didSet { if !canReplay { current = nil } }
   }
   
   /// Defines the parent stream to which this stream is attached.  Currently used for pruning when a child is terminated.
@@ -240,11 +240,6 @@ public class Stream<T> {
   
   /// If set, the next stream added will have their throttle set to this.
   fileprivate var nextThrottle: Throttle?
-  
-  /// Returns the last value to be emitted from the stream
-  var last: T? {
-    return queue?.current
-  }
   
   /**
    When pruning, this will be called so the stream processor can be notified of the termination.
@@ -307,14 +302,16 @@ public class Stream<T> {
     if
       self.canReplay,
       replay,
-      let queue = self.queue
+      let current = self.current
     {
-      processor.process(prior: queue.prior, next: .next(queue.current), withKey: .none)
+      for event in current {
+        processor.process(next: .next(event), withKey: .none)
+      }
     }
     
     // If this stream is terminated, pass that into the processor, else append the processor
     if let termination = self.termination {
-      processor.process(prior: self.queue?.current, next: .terminate(reason: termination), withKey: .none)
+      processor.process(next: .terminate(reason: termination), withKey: .none)
     } else {
       self.downStreams.append(processor)
     }
@@ -331,7 +328,7 @@ public class Stream<T> {
       guard prune != .none else { return }
       self.downStreams = self.downStreams.filter{ !$0.shouldPrune }
       if case .upStream = prune {
-        self.terminate(reason: reason, andPrune: .none)
+        self.terminate(reason: reason, andPrune: .none, pushDownstream: false)
         self.parent?.prune(prune, withReason: reason)
       }
     }
@@ -342,19 +339,23 @@ public class Stream<T> {
    Provide a key to pass down stream if one was provided.
    - warning: if the stream is not active, the event will be ignored.
   */
-  private func push(event: Event<T>, withKey key: EventKey) {
+  private func push(events: [Event<T>], withKey key: EventKey) {
     guard self.isActive else { return }
     
-    printDebug(info: "\(descriptor): push event: \(event)")
+    var values = [T]()
+    for event in events {
+      printDebug(info: "\(descriptor): push event: \(event)")
     
-    // Push the event down stream.  If the stream is reusable, we don't want to filter downstreams.  
-    for processor in self.downStreams {
-      processor.process(prior: self.queue?.current, next: event, withKey: key) 
+      // Push the event down stream.  If the stream is reusable, we don't want to filter downstreams.  
+      for processor in self.downStreams {
+        processor.process(next: event, withKey: key)
+      }
+      event.eventValue >>? { values.append($0) }
     }
     
     // update internal state
-    if case let .next(value) = event, self.canReplay {
-      self.queue = (self.queue?.current, value)
+    if values.count > 0, self.canReplay {
+      self.current = values
     }
   }
   
@@ -362,7 +363,7 @@ public class Stream<T> {
    This will terminate the stream. It will only push the termination down stream if there is no work currently in progress.
    Otherwise, the termination will be pushed when the work is complete in the `process` function.
    */
-  func terminate(reason: Termination, andPrune prune: Prune) {
+  func terminate(reason: Termination, andPrune prune: Prune, pushDownstream: Bool) {
     dispatch.execute {
       self.printDebug(info: "\(self.descriptor): Terminating with \(reason)")
       if self.isActive {
@@ -370,6 +371,12 @@ public class Stream<T> {
       }
       self.onTerminate?(reason)
       self.onTerminate = nil
+      if pushDownstream {
+        let termination = Event<T>.terminate(reason: reason)
+        for processor in self.downStreams {
+          processor.process(next: termination, withKey: .none)
+        }
+      }
       self.prune(prune, withReason: reason)
     }
   }
@@ -382,7 +389,7 @@ public class Stream<T> {
    - parameter key: _(Optional)_, the key to restrict the event.
    */
   func process(event: Event<T>, withKey key: EventKey = .none) {
-    self.process(key: key, prior: queue?.current, next: event) { (_, event, completion) in
+    self.process(key: key, next: event) { (event, completion) in
       switch event {
       case .next, .error: completion([event])
       case .terminate: completion(nil)
@@ -425,7 +432,7 @@ public class Stream<T> {
    
    - warning: All work for a stream should use this function to process events.
    */
-  func process<U>(key: EventKey, prior: U?, next: Event<U>, withOp op: @escaping StreamOp<U, T>) {
+  func process<U>(key: EventKey, next: Event<U>, withOp op: @escaping StreamOp<U, T>) {
     guard isActive && pendingTermination == nil else { return }
     dispatch.execute {
       self.printDebug(info: "\(self.descriptor): begin processing \(next)")
@@ -445,8 +452,8 @@ public class Stream<T> {
           guard case .perform(let completion) = signal else {
             self.currentWork -= 1
             if self.currentWork == 0, let reason = self.pendingTermination {
-              self.push(event: .terminate(reason: reason), withKey: key)
-              self.terminate(reason: reason, andPrune: .downStream)
+              self.push(events: [.terminate(reason: reason)], withKey: key)
+              self.terminate(reason: reason, andPrune: .downStream, pushDownstream: false)
               self.pendingTermination = nil
               self.postProcess(event: event, withKey: key, producedEvents: [], withTermination: reason)
             } else {
@@ -460,24 +467,21 @@ public class Stream<T> {
           if case .terminate = event {
             self.onTerminate = nil
           }
-          op(prior, event) { result in
+          op(event) { result in
             self.dispatch.execute {
-              let events = result ?? []
-              outer: for event in events {
-                // push each event
-                self.push(event: event, withKey: key)
-                // if the event is a termination, we break.  There's no point in pushing any more events.
-                switch event{
-                case .terminate(let reason):
-                  termination  = reason
-                  self.terminate(reason: reason, andPrune: .upStream)
-                  break outer
-                // A processor can take a termination event and turn it into an error. This will prevent the stream from terminating and instead pass an error down. The only reason to do this is for merged streams.
-                case .error:
-                  self.pendingTermination = nil
+              var events = result ?? []
+              events = events.takeUntil {
+                guard termination == nil else { return true }
+                switch $0 {
+                case .terminate(let reason): termination  = reason
+                case .error: self.pendingTermination = nil
                 default: break
                 }
+                return false
               }
+              
+              self.push(events: events, withKey: key)
+              termination >>? { self.terminate(reason: $0, andPrune: .upStream, pushDownstream: false) }
               
               self.currentWork -= 1
               
@@ -485,8 +489,8 @@ public class Stream<T> {
               if self.currentWork == 0, let reason = self.pendingTermination {
                 if termination == nil {
                   termination = reason
-                  self.push(event: .terminate(reason: reason), withKey: key)
-                  self.terminate(reason: reason, andPrune: .downStream)
+                  self.push(events: [.terminate(reason: reason)], withKey: key)
+                  self.terminate(reason: reason, andPrune: .downStream, pushDownstream: false)
                 }
                 self.pendingTermination = nil
               }

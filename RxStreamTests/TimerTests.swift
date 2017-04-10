@@ -22,10 +22,7 @@ class TimerTests: XCTestCase {
     
     timer.start()
     
-    wait(for: 0.11)
-    XCTAssertEqual(count, 1)
-    
-    wait(for: 0.11)
+    wait(for: 0.21)
     XCTAssertEqual(count, 2)
     
     timer.terminate(withReason: .completed)
@@ -49,7 +46,7 @@ class TimerTests: XCTestCase {
     XCTAssertTrue(timer.isActive, "The stream should be active.")
     XCTAssertTrue(timer.isTimerActive, "The Timer should now be active.")
     
-    wait(for: 0.11)
+    wait(for: 0.15)
     XCTAssertEqual(count, 1, "Wait for at least 1 fire.")
     
     timer.stop()
@@ -102,7 +99,7 @@ class TimerTests: XCTestCase {
     timer.start(delayFirst: false)
     XCTAssertEqual(count, 1)
     
-    wait(for: 0.11)
+    wait(for: 0.15)
     XCTAssertEqual(count, 2)
     
     timer.terminate(withReason: .completed)
@@ -118,7 +115,7 @@ class TimerTests: XCTestCase {
     
     timer?.start()
     
-    wait(for: 0.11)
+    wait(for: 0.15)
     XCTAssertEqual(count, 1, "Timer should have fired")
     
     timer = nil

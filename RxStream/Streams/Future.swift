@@ -12,7 +12,6 @@ import Foundation
  A Future Task is a closure that takes a completion handler.
  The closure is called to begin the task and the completion handler should be called with the result when the task has completed.
  */
-
 public class Future<T> : Stream<T> {
   public typealias Task<T> = (_ completion: @escaping (Result<T>) -> Void) -> Void
   private var lock: Future<T>?
@@ -61,6 +60,10 @@ public class Future<T> : Stream<T> {
   }
   
   override func preProcess<U>(event: Event<U>, withKey key: EventKey) -> (key: EventKey, event: Event<U>)? {
+    // Terminations are always processed.
+    if case .terminate = event {
+      return (key: key, event: event)
+    }
     guard !complete else { return nil }
     complete = true
     if case .error(let error) = event {
@@ -71,8 +74,9 @@ public class Future<T> : Stream<T> {
   }
   
   override func postProcess<U>(event: Event<U>, withKey: EventKey, producedEvents events: [Event<T>], withTermination termination: Termination?) {
-    guard termination == nil else { return }
-    self.terminate(reason: .completed, andPrune: .none)
+    if self.isActive && pendingTermination == nil {
+      self.terminate(reason: .completed, andPrune: .none, pushDownstream: true)
+    }
   }
   
 }

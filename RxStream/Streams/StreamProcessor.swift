@@ -14,7 +14,7 @@ import Foundation
  */
 class StreamProcessor<T> {
   var shouldPrune: Bool { return true }
-  func process(prior: T?, next: Event<T>, withKey key: EventKey) { }
+  func process(next: Event<T>, withKey key: EventKey) { }
 }
 
 /**
@@ -27,14 +27,14 @@ class DownstreamProcessor<T, U> : StreamProcessor<T> {
   
   override var shouldPrune: Bool { return stream.shouldPrune }
   
-  override func process(prior: T?, next: Event<T>, withKey key: EventKey) {
-    stream.process(key: key, prior: prior, next: next, withOp: processor)
+  override func process(next: Event<T>, withKey key: EventKey) {
+    stream.process(key: key, next: next, withOp: processor)
   }
   
   init(stream: Stream<U>, processor: @escaping StreamOp<T, U>) {
     self.stream = stream
     self.processor = processor
-    stream.onTerminate = { processor(nil, .terminate(reason: $0), { _ in }) }
+    stream.onTerminate = { processor(.terminate(reason: $0), { _ in }) }
   }
   
 }

@@ -9,6 +9,8 @@
 import XCTest
 import Rx
 
+struct TestError : Error { }
+
 extension XCTestCase {
   
   /**

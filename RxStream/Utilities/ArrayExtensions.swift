@@ -25,3 +25,27 @@ extension Array where Element: EventValue {
   }
   
 }
+
+extension Array {
+  
+  /// Iterate through the array searching for an element that returns true from the handler and return the index of that item.
+  func indexOf(_ handler: (Element) -> Bool) -> Index? {
+    for (index, element) in self.enumerated() where handler(element) {
+      return index
+    }
+    return nil
+  }
+  
+  func takeUntil(_ handler: (Element) -> Bool) -> [Element] {
+    var elements = [Element]()
+    for element in self {
+      if !handler(element) {
+        elements.append(element)
+      } else {
+        break
+      }
+    }
+    return elements
+  }
+  
+}

@@ -20,16 +20,13 @@ class ConditionalTimerTests : XCTestCase {
     
     timer.start()
     
-    wait(for: 0.11) 
-    XCTAssertEqual(count, 1, "Expect Timer to fire")
-    
-    wait(for: 0.11) 
-    XCTAssertEqual(count, 2, "Expect Timer to fire")
+    wait(for: 0.25)
+    XCTAssertEqual(count, 2, "Expect Timer to fire twice")
     
     timer.stop()
     XCTAssertFalse(timer.isActive, "Timer should be inactive")
     
-    wait(for: 0.11)
+    wait(for: 0.1)
     XCTAssertEqual(count, 2, "Expect Timer to have stopped firing.")
   }
   
@@ -68,19 +65,16 @@ class ConditionalTimerTests : XCTestCase {
     
     timer.start()
     
-    wait(for: 0.11) 
-    XCTAssertEqual(count, 1, "Expect Timer to fire")
-    
-    wait(for: 0.11) 
+    wait(for: 0.25)
     XCTAssertEqual(count, 2, "Expect Timer to fire")
     
     continueFiring = false
     
-    wait(for: 0.11) 
+    wait(for: 0.1)
     XCTAssertEqual(count, 3, "Expect Timer to fire, last time.")
     XCTAssertFalse(timer.isActive, "Timer should be inactive")
     
-    wait(for: 0.11) 
+    wait(for: 0.1)
     XCTAssertEqual(count, 3, "Timer shouldn't fire again")
   }
   
@@ -94,10 +88,7 @@ class ConditionalTimerTests : XCTestCase {
     
     timer.start()
     
-    wait(for: 0.11) 
-    XCTAssertEqual(count, 1, "Expect Timer to fire")
-    
-    wait(for: 0.11) 
+    wait(for: 0.21)
     XCTAssertEqual(count, 2, "Expect Timer to fire")
     
     continueFiring = false

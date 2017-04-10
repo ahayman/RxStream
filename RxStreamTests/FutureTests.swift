@@ -34,16 +34,6 @@ class FutureTests: XCTestCase {
     XCTAssertEqual(results, [0])
     XCTAssertEqual(terminations, [.completed])
     XCTAssertEqual(future.state, .terminated(reason: .completed))
-    
-    completionTask(.success(2))
-    XCTAssertEqual(results, [0])
-    XCTAssertEqual(terminations, [.completed])
-    XCTAssertEqual(future.state, .terminated(reason: .completed))
-    
-    completionTask(.failure(NSError()))
-    XCTAssertEqual(results, [0])
-    XCTAssertEqual(terminations, [.completed])
-    XCTAssertEqual(future.state, .terminated(reason: .completed))
   }
   
   func testError() {
@@ -59,26 +49,26 @@ class FutureTests: XCTestCase {
     XCTAssertTrue(future.isActive)
     guard let completionTask = completion else { return XCTFail("Expected the Future task to be called") }
     
-    completionTask(.failure(NSError()))
+    completionTask(.failure(TestError()))
     
     XCTAssertEqual(results, [])
-    XCTAssertEqual(terminations, [.error(NSError())])
-    XCTAssertEqual(future.state, .terminated(reason: .error(NSError())))
+    XCTAssertEqual(terminations, [.error(TestError())])
+    XCTAssertEqual(future.state, .terminated(reason: .error(TestError())))
     
     completionTask(.success(1))
     XCTAssertEqual(results, [])
-    XCTAssertEqual(terminations, [.error(NSError())])
-    XCTAssertEqual(future.state, .terminated(reason: .error(NSError())))
+    XCTAssertEqual(terminations, [.error(TestError())])
+    XCTAssertEqual(future.state, .terminated(reason: .error(TestError())))
     
     completionTask(.success(2))
     XCTAssertEqual(results, [])
-    XCTAssertEqual(terminations, [.error(NSError())])
-    XCTAssertEqual(future.state, .terminated(reason: .error(NSError())))
+    XCTAssertEqual(terminations, [.error(TestError())])
+    XCTAssertEqual(future.state, .terminated(reason: .error(TestError())))
     
-    completionTask(.failure(NSError()))
+    completionTask(.failure(TestError()))
     XCTAssertEqual(results, [])
-    XCTAssertEqual(terminations, [.error(NSError())])
-    XCTAssertEqual(future.state, .terminated(reason: .error(NSError())))
+    XCTAssertEqual(terminations, [.error(TestError())])
+    XCTAssertEqual(future.state, .terminated(reason: .error(TestError())))
   }
     
 }
