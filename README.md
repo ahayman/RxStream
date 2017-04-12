@@ -20,6 +20,7 @@ RxStream operates around the idea of a transforming stream of values.  If you’
 - **[Future](/Docs/future.md)**: A future is a stream that produces _only_ one value and then closes.  
 - **[Promise](/Docs/promise.md)**: A type of future that produces only one value, but it can be cancelled and retried by it’s client until it produces an error or a valid value.
 - **[Observable](/Docs/observable.md)**: An observable is a kind of Hot Stream who’s value is guaranteed and can be directly observed and accessed outside of the stream.
+- **[Timer](/Docs/timer.md)**: This is a concrete Hot Stream that emits an event repeatedly on a predefined interval.  While you can create your own timer by creating a `HotTask`, because of `Foundation.Timer`'s retaining behavior, it can be tricky to do this without creating a retain cycle.  So `Rx.Timer` has been created to provide an easier way.
 
 Hot and Observable streams have subclasses used for producing the values.  While Cold, Promise and Future streams can only be initialized with a Task (that generates the value).
 

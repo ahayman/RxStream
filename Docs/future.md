@@ -48,3 +48,15 @@ Future allows the task to also return an Error, at which point the Future stream
 
 
 Note: Where you place the `onError` in the processing chain matters.  If you place it at the beginning of the chain, it will only be called for errors returned by the network request.  If you place it at the end of the chain, it will also pick up errors that could be emitted by the processing chain itself.
+
+### Replaying Value
+
+Because a Future represents a single value, it will automatically replay the last (and only) value into new operations.  This is in contrast to other streams (like Hot, Cold, and Observable), which will only replay values if you ask for it.  
+
+This is done to cover the most common case (if you ask a client for a Future, it's assumed you want the value you asked for).  However, you should be aware of this behavior.
+
+### Merge Operations
+
+Just as any stream, both Future and Promise can be merged into other streams. It's important to understand how a Future and Promise work before you attempt merging them into each other or another type of stream.  Specifically, both are designed to emit a single value and then automatically complete.  It's important to realize that when given a Future or Promise from a client, _you can't assume it's not already completed_. This can create behavior different from what you might accept. 
+
+For example
