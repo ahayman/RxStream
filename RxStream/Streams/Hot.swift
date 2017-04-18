@@ -11,7 +11,9 @@ import Foundation
 /**
  A Hot stream is a type of stream that will continually push events without regard to who is subscribing.
  */
-public class Hot<T> : Stream<T> { }
+public class Hot<T> : Stream<T> {
+  override var streamType: StreamType { return .hot }
+}
 
 /**
  A HotInput allows inputs to be pushed into the hot stream.

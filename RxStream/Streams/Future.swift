@@ -14,6 +14,9 @@ import Foundation
  */
 public class Future<T> : Stream<T> {
   public typealias Task<T> = (_ completion: @escaping (Result<T>) -> Void) -> Void
+
+  override var streamType: StreamType { return .future }
+
   private var lock: Future<T>?
   private var complete: Bool = false
 
@@ -79,7 +82,7 @@ public class Future<T> : Stream<T> {
   
   override func postProcess<U>(event: Event<U>, withKey: EventKey, producedEvents events: [Event<T>], withTermination termination: Termination?) {
     if self.isActive && pendingTermination == nil {
-      self.terminate(reason: .completed, andPrune: .none, pushDownstream: true)
+      self.terminate(reason: .completed, andPrune: .none, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
     }
   }
   

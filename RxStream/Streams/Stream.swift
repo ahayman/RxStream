@@ -8,6 +8,24 @@
 
 import Foundation
 
+/**
+ Stream types are used to detect and alter behavior for specific types.
+ Because all streams are generics, determining the underlying types can be difficult
+ and require a lot of type erasure, which frankly is a pain.  This provides a simple but effective
+ way to determine a base type.
+ - note: This is mostly used to detect down stream types.  In order to appropriately send events to correct types.
+*/
+enum StreamType : Int {
+  static func all() -> [StreamType] {
+    return [ .hot, .cold, .future, .promise ]
+  }
+  case base
+  case hot
+  case cold
+  case future
+  case promise
+}
+
 ///Termination reason: Defines the reasons a stream can terminate
 public enum Termination : Equatable {
   
@@ -139,7 +157,10 @@ extension Stream : ParentStream, CustomDebugStringConvertible { }
 /// Base class for Streams.  It cannot be instantiated directly and should not generally be used as a type directly.
 public class Stream<T> {
   typealias Data = T
-  
+
+  /// Stream types are used to determine down stream types. This helps avoid complex type erasure just to test the base type.
+  var streamType: StreamType { return .base }
+
   /** 
    If set, debug information will be passed into this closure.
    For example, setting this to:
@@ -328,7 +349,7 @@ public class Stream<T> {
       guard prune != .none else { return }
       self.downStreams = self.downStreams.filter{ !$0.shouldPrune }
       if case .upStream = prune {
-        self.terminate(reason: reason, andPrune: .none, pushDownstream: false)
+        self.terminate(reason: reason, andPrune: .none, pushDownstreamTo: [])
         self.parent?.prune(prune, withReason: reason)
       }
     }
@@ -360,10 +381,10 @@ public class Stream<T> {
   }
   
   /**
-   This will terminate the stream. It will only push the termination down stream if there is no work currently in progress.
-   Otherwise, the termination will be pushed when the work is complete in the `process` function.
+   This will terminate the stream, call the onTerminate handler and if any downstream types are present, push
+   the termination into those downstreams.
    */
-  func terminate(reason: Termination, andPrune prune: Prune, pushDownstream: Bool) {
+  func terminate(reason: Termination, andPrune prune: Prune, pushDownstreamTo types: [StreamType]) {
     dispatch.execute {
       self.printDebug(info: "\(self.descriptor): Terminating with \(reason)")
       if self.isActive {
@@ -371,9 +392,9 @@ public class Stream<T> {
       }
       self.onTerminate?(reason)
       self.onTerminate = nil
-      if pushDownstream {
+      if types.count > 0 {
         let termination = Event<T>.terminate(reason: reason)
-        for processor in self.downStreams {
+        for processor in self.downStreams where types.contains(processor.streamType){
           processor.process(next: termination, withKey: .none)
         }
       }
@@ -453,7 +474,7 @@ public class Stream<T> {
             self.currentWork -= 1
             if self.currentWork == 0, let reason = self.pendingTermination {
               self.push(events: [.terminate(reason: reason)], withKey: key)
-              self.terminate(reason: reason, andPrune: .downStream, pushDownstream: false)
+              self.terminate(reason: reason, andPrune: .downStream, pushDownstreamTo: [])
               self.pendingTermination = nil
               self.postProcess(event: event, withKey: key, producedEvents: [], withTermination: reason)
             } else {
@@ -481,7 +502,7 @@ public class Stream<T> {
               }
               
               self.push(events: events, withKey: key)
-              termination >>? { self.terminate(reason: $0, andPrune: .upStream, pushDownstream: false) }
+              termination >>? { self.terminate(reason: $0, andPrune: .upStream, pushDownstreamTo: []) }
               
               self.currentWork -= 1
               
@@ -490,7 +511,7 @@ public class Stream<T> {
                 if termination == nil {
                   termination = reason
                   self.push(events: [.terminate(reason: reason)], withKey: key)
-                  self.terminate(reason: reason, andPrune: .downStream, pushDownstream: false)
+                  self.terminate(reason: reason, andPrune: .downStream, pushDownstreamTo: [])
                 }
                 self.pendingTermination = nil
               }

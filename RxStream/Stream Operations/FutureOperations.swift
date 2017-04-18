@@ -308,7 +308,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Future<(T, U)> {
-    return appendZip(stream: stream, intoStream: Future<(T, U)>(op: "zip(stream: \(stream), buffer: \(buffer ?? -1))").merged(), buffer: buffer)
+    return appendZip(stream: stream, intoStream: Future<(T, U)>(op: "zip(stream: \(stream), buffer: \(buffer ?? -1))"), buffer: buffer)
   }
   
   /**
@@ -330,7 +330,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func combine<U>(stream: Stream<U>) -> Future<(T, U)> {
-    return appendCombine(stream: stream, intoStream: Future<(T, U)>(op: "combine(stream: \(stream))").merged(), latest: true)
+    return appendCombine(stream: stream, intoStream: Future<(T, U)>(op: "combine(stream: \(stream))"), latest: true)
   }
   
 }

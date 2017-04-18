@@ -14,6 +14,7 @@ import Foundation
  */
 class StreamProcessor<T> {
   var shouldPrune: Bool { return true }
+  var streamType: StreamType { return  .base }
   func process(next: Event<T>, withKey key: EventKey) { }
 }
 
@@ -24,6 +25,8 @@ class StreamProcessor<T> {
 class DownstreamProcessor<T, U> : StreamProcessor<T> {
   var stream: Stream<U>
   var processor: StreamOp<T, U>
+
+  override var streamType: StreamType { return stream.streamType }
   
   override var shouldPrune: Bool { return stream.shouldPrune }
   

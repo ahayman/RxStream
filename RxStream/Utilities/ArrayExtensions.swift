@@ -47,5 +47,13 @@ extension Array {
     }
     return elements
   }
-  
+
+}
+
+extension Array where Element : Equatable {
+
+  func removing(_ elements: [Element]) -> [Element] {
+    return self.filter { !elements.contains($0) }
+  }
+
 }

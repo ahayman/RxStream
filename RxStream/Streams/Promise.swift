@@ -21,25 +21,17 @@ protocol Retriable : class {
   func retry()
 }
 
-/**
- Type erasure base type to allow cast testing when checking down stream processors (see the `shouldPrune` for where this is used).
- */
-private protocol PromiseProcessor { }
-
-/**
- Custom Processor for Promises. It's primarily used for type casting so a Promise can check the down stream type and prune if none of them are a Promise
- */
-class DownstreamPromiseProcessor<T, U> : DownstreamProcessor<T, U>, PromiseProcessor { }
-
 extension Promise : Cancelable { }
 extension Promise : Retriable { }
 
 public class Promise<T> : Stream<T> {
+
+  override var streamType: StreamType { return .promise }
   
   /// The current task for the promise.  If there's no task, there should be a parent with a task.
   let task: PromiseTask<T>?
   
-  /// The parent to handle cancelations
+  /// The parent to handle cancellations
   weak var cancelParent: Cancelable?
   
   /// Parent, retriable stream.  Note: This creates a retain cycle.  The parent must release the child in order to unravel the cycle.  This is done with the `prune` command when the child is no longer viable.
@@ -78,7 +70,7 @@ public class Promise<T> : Stream<T> {
     // We need to prune if there are no active down stream _promises_.  Since a promise emits only one value that can be retried, we can't prune until those streams complete.
     let active = downStreams.reduce(0) { (count, processor) -> Int in
       guard !processor.shouldPrune else { return count }
-      guard processor is PromiseProcessor else { return count }
+      guard processor.streamType == .promise else { return count }
       return count + 1
     }
     return active < 1
@@ -87,7 +79,7 @@ public class Promise<T> : Stream<T> {
   /// The number of downStreams that are promises. Used to determine if the stream should terminate after a value has been pushed.
   private var downStreamPromises: Int {
     return downStreams.reduce(0) { (count, processor) -> Int in
-      guard processor is PromiseProcessor else { return count }
+      guard processor.streamType == .promise else { return count }
       return count + 1
     }
   }
@@ -130,11 +122,11 @@ public class Promise<T> : Stream<T> {
     
     switch event {
     case .next where self.shouldPrune:
-      terminate(reason: .completed, andPrune: .upStream, pushDownstream: true)
+      terminate(reason: .completed, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
     case .error(let error) where self.shouldPrune:
-      terminate(reason: .error(error), andPrune: .upStream, pushDownstream: true)
+      terminate(reason: .error(error), andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
     case .terminate(let reason):
-      terminate(reason: reason, andPrune: .upStream, pushDownstream: true)
+      terminate(reason: reason, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
     default: break
     }
   }
@@ -144,10 +136,8 @@ public class Promise<T> : Stream<T> {
     if let child = stream as? Promise<U> {
       child.cancelParent = self
       child.retryParent = self
-      return DownstreamPromiseProcessor(stream: stream, processor: processor)
-    } else {
-      return super.newDownstreamProcessor(forStream: stream, withProcessor: processor)
     }
+    return super.newDownstreamProcessor(forStream: stream, withProcessor: processor)
   }
   
   /// Used to run the task and process the value the task returns.

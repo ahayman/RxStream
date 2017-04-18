@@ -15,6 +15,8 @@ import Foundation
  - note: Observables will automatically persist themselves.
  */
 public class Observable<T> : Stream<T> {
+
+  override var streamType: StreamType { return .hot }
   
   override func postProcess<U>(event: Event<U>, withKey: EventKey, producedEvents events: [Event<T>], withTermination termination: Termination?) {
     if let value = events.lastEventValue {

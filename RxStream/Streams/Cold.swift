@@ -45,7 +45,9 @@ public class Cold<Request, Response> : Stream<Response> {
   public typealias ColdTask = (_ state: Observable<StreamState>, _ request: Request, _ response: (Result<Response>) -> Void) -> Void
 
   typealias ParentProcessor = (Request, String) -> Void
-  
+
+  override var streamType: StreamType { return .cold }
+
   /// The processor responsible for filling a request.  It can either be a ColdTask or a ParentProcessor (a Parent stream that can handle fill the request).
   private var requestProcessor: Either<ColdTask, ParentProcessor>
   
