@@ -34,7 +34,7 @@ extension Future {
    
    - note: The behavior of this operation is slightly different from other streams in that an error is _always_ reported, whether it is terminating or not.  Other streams only report non-terminating errors.
    
-   - returns: a new Hot stream
+   - returns: a new Future stream
    */
   @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Void) -> Future<T> {
     return append(stream: Future<T>(op: "onError")) { (next, completion) in
@@ -307,8 +307,8 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Hot<(T, U)> {
-    return appendZip(stream: stream, intoStream: Hot<(T, U)>(op: "zip(stream: \(stream), buffer: \(buffer ?? -1))"), buffer: buffer)
+  @discardableResult public func zip<U>(_ stream: Stream<U>, buffer: Int? = nil) -> Future<(T, U)> {
+    return appendZip(stream: stream, intoStream: Future<(T, U)>(op: "zip(stream: \(stream), buffer: \(buffer ?? -1))").merged(), buffer: buffer)
   }
   
   /**
@@ -329,8 +329,8 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func combine<U>(stream: Stream<U>) -> Hot<(T, U)> {
-    return appendCombine(stream: stream, intoStream: Hot<(T, U)>(op: "combine(stream: \(stream))"), latest: true)
+  @discardableResult public func combine<U>(stream: Stream<U>) -> Future<(T, U)> {
+    return appendCombine(stream: stream, intoStream: Future<(T, U)>(op: "combine(stream: \(stream))").merged(), latest: true)
   }
   
 }

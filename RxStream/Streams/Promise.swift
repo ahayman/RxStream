@@ -52,7 +52,13 @@ public class Promise<T> : Stream<T> {
   override public var state: StreamState {
     didSet { stateObservable.set(state) }
   }
-  
+
+  // A Promise always replays an existing value into new streams since it can only have 1 value.
+  override var replay: Bool {
+    get { return true }
+    set { }
+  }
+
   /// Once completed, the promise shouldn't accept or process any more f
   private(set) fileprivate var complete: Bool = false
   

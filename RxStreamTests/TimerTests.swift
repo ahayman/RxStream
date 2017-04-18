@@ -73,15 +73,12 @@ class TimerTests: XCTestCase {
     
     timer.start()
     
-    wait(for: 0.11)
+    wait(for: 0.15)
     XCTAssertEqual(count, 1)
     
     timer.restart(withInterval: 0.2)
     
-    wait(for: 0.11)
-    XCTAssertEqual(count, 1)
-    
-    wait(for: 0.1)
+    wait(for: 0.25)
     XCTAssertEqual(count, 2)
     
     timer.terminate(withReason: .completed)

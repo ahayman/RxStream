@@ -112,7 +112,35 @@ extension Promise {
   @discardableResult public func on(_ handler: @escaping (_ value: T) -> Void) -> Promise<T> {
     return appendOn(stream: Promise<T>(op: "on"), handler: handler)
   }
-  
+
+  /**
+   ## Branching
+
+   This will call the handler when the stream receives any error.
+
+   - parameter handler: Handler will be called when an error is received.
+   - parameter error: The error thrown by the stream
+
+   - note: The behavior of this operation is slightly different from other streams in that an error is _always_ reported, whether it is terminating or not.  Other streams only report non-terminating errors.
+   - warning: It is possible for this to be called multiple times _if_ a retry operation is placed after this one.  Because a retry can re-initiate a task, that task may again return an error.  Use `onTerminate` and check for an error condition if you need to guarantee only one call.
+
+   - returns: a new Future stream
+   */
+  @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Void) -> Promise<T> {
+    return append(stream: Promise<T>(op: "onError")) { (next, completion) in
+      switch next {
+      case .next: completion([next])
+      case .error(let error):
+        handler(error)
+        completion([next])
+      case .terminate(.error(let error)):
+        handler(error)
+        completion(nil)
+      case .terminate: completion(nil)
+      }
+    }
+  }
+
   /**
    ## Branching
    

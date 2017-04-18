@@ -16,7 +16,13 @@ public class Future<T> : Stream<T> {
   public typealias Task<T> = (_ completion: @escaping (Result<T>) -> Void) -> Void
   private var lock: Future<T>?
   private var complete: Bool = false
-  
+
+  // A Future will always replay it's value into new streams because there is ever only 1 value.
+  override var replay: Bool {
+    get { return true }
+    set { }
+  }
+
   /// Allows for the creation of a `Future` that already has a value filled.
   public class func completed(_ value: T) -> Future<T> {
     let future = Future<T>(op: "CompletedValue")
@@ -41,7 +47,6 @@ public class Future<T> : Stream<T> {
   public init(task: @escaping Task<T>) {
     super.init(op: "Task")
     persist()
-    self.replay = true
     self.lock = self
     var complete = false
     task { [weak self] completion in
@@ -56,9 +61,8 @@ public class Future<T> : Stream<T> {
   
   override init(op: String) {
     super.init(op: op)
-    self.replay = true
   }
-  
+
   override func preProcess<U>(event: Event<U>, withKey key: EventKey) -> (key: EventKey, event: Event<U>)? {
     // Terminations are always processed.
     if case .terminate = event {
@@ -83,7 +87,7 @@ public class Future<T> : Stream<T> {
 
 /**
  A Future Input is a type of future where the Future can be filled externally instead of inside an attached Task.
- Mostly, this is useful for semantics, where the task in quesiton doesn't easily fit inside a closure.
+ Mostly, this is useful for semantics, where the task in question doesn't easily fit inside a closure.
  Because the Future isn't tied to a task, it's possible for it to deinit before being filled.  
  In that case, the Future will emit a `.cancelled` termination event.
  */

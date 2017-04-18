@@ -1,26 +1,24 @@
 //
-//  FutureOperationTests.swift
+//  PromiseOperationsTests.swift
 //  RxStream
 //
-//  Created by Aaron Hayman on 4/5/17.
+//  Created by Aaron Hayman on 4/12/17.
 //  Copyright © 2017 Aaron Hayman. All rights reserved.
 //
-
-import XCTest
 
 import XCTest
 @testable import Rx
 
 private class TestClass { }
 
-class FutureOperationsTests: XCTestCase {
-  
+class PromiseOperationsTests: XCTestCase {
+
   func testOn() {
     var value: Int? = nil
     var onCount = 0
-    let future = Future<Int>{ $0(.success(0)) }
+    let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    future.on {
+    promise.on {
       value = $0
       onCount += 1
     }
@@ -31,22 +29,22 @@ class FutureOperationsTests: XCTestCase {
   
   func testOnTermination() {
     var terminations = [Termination]()
-    let future = Future<Int>{ $0(.success(0)) }
+    let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    future.onTerminate{
+    promise.onTerminate{
       terminations.append($0)
     }
     
-    XCTAssertEqual(terminations.count, 1, "The future should only terminate once.")
+    XCTAssertEqual(terminations.count, 1, "The promise should only terminate once.")
   }
   
   func testMap() {
     var mapped: String? = nil
     var mapCount = 0
     var onCount = 0
-    let future = Future<Int>{ $0(.success(0)) }
+    let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    future
+    promise
       .map{ value -> String? in
         mapCount += 1
         if value == 3 {
@@ -57,7 +55,7 @@ class FutureOperationsTests: XCTestCase {
       .on{
         onCount += 1
         mapped = $0
-      }
+    }
     
     XCTAssertEqual(mapped, "0")
     XCTAssertEqual(mapCount, 1)
@@ -67,13 +65,13 @@ class FutureOperationsTests: XCTestCase {
   func testMapResult() {
     var mapped: [String] = []
     var error: Error? = nil
-    let future = Future<Int>{ $0(.success(0)) }
+    let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    future
+    promise
       .resultMap{ return .success("\($0)") }
       .on{ mapped.append($0) }
       .onError{ error = $0 }
-    
+
     XCTAssertEqual(mapped, ["0"])
     XCTAssertNil(error)
   }
@@ -84,9 +82,9 @@ class FutureOperationsTests: XCTestCase {
     var onCount = 0
     var error: Error?
     var nextMap: (value: Int, callback: (Result<String>) -> Void)? = nil
-    let future = Future<Int>{ $0(.success(0)) }
+    let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    future
+    promise
       .asyncMap { (value: Int, completion: @escaping (Result<String>) -> Void) in
         mapCount += 1
         nextMap = (value, completion)
@@ -109,9 +107,9 @@ class FutureOperationsTests: XCTestCase {
   
   func testFlatMap() {
     var mapped = [String]()
-    let future = Future<String> { $0(.success("Test a multitude of words in a sentence.")) }
+    let promise = Promise<String> { _, result in result(.success("Test a multitude of words in a sentence.")) }
     
-    future
+    promise
       .flatMap { $0.components(separatedBy: " ") }
       .on { mapped.append($0) }
     
@@ -128,9 +126,9 @@ class FutureOperationsTests: XCTestCase {
   
   func testFlatten() {
     var mapped = [Int]()
-    let future = Future<[Int]> { $0(.success([0, 1, 2, 3, 4])) }
+    let promise = Promise<[Int]> { _, result in result(.success([0, 1, 2, 3, 4])) }
     
-    future
+    promise
       .flatten()
       .on { mapped.append($0) }
     
@@ -142,9 +140,9 @@ class FutureOperationsTests: XCTestCase {
   
   func testFilter() {
     var values = [String]()
-    let future = Future<String>{ $0(.success("hello")) }
+    let promise = Promise<String>{ _, result in result(.success("hello")) }
     
-    future
+    promise
       .filter { !$0.contains("a") } //Filter out strings that contain a
       .on{ values.append($0) }
     
@@ -154,9 +152,9 @@ class FutureOperationsTests: XCTestCase {
   
   func testFiltered() {
     var values = [String]()
-    let future = Future<String>{ $0(.success("apple")) }
+    let promise = Promise<String>{ _, result in result(.success("apple")) }
     
-    future
+    promise
       .filter { !$0.contains("a") } //Filter out strings that contain a
       .on{ values.append($0) }
     
@@ -165,9 +163,9 @@ class FutureOperationsTests: XCTestCase {
   
   func testStamp() {
     var values = [(Int, String)]()
-    let future = Future<Int>{ $0(.success(0)) }
+    let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    future.stamp{ "\($0)" }.on{ values.append($0) }
+    promise.stamp{ "\($0)" }.on{ values.append($0) }
     
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, 0)
@@ -176,9 +174,9 @@ class FutureOperationsTests: XCTestCase {
   
   func testTimeStamp() {
     var values = [(Int, Date)]()
-    let future = Future<Int>{ $0(.success(0)) }
+    let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    future.timeStamp().on{ values.append($0) }
+    promise.timeStamp().on{ values.append($0) }
     
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, 0)
@@ -187,9 +185,9 @@ class FutureOperationsTests: XCTestCase {
   
   func testDelay() {
     var values = [Int]()
-    let future = Future<Int>{ $0(.success(0)) }
+    let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    future.delay(0.01).on{ values.append($0) }
+    promise.delay(0.01).on{ values.append($0) }
     
     XCTAssertEqual(values.count, 0)
     
@@ -201,9 +199,9 @@ class FutureOperationsTests: XCTestCase {
   
   func testStart() {
     var values = [Int]()
-    let future = Future<Int>{ $0(.success(0)) }
+    let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    future
+    promise
       .start(with: [-3, -2, -1])
       .on{ values.append($0) }
     
@@ -212,9 +210,9 @@ class FutureOperationsTests: XCTestCase {
   
   func testFilledConcat() {
     var values = [Int]()
-    let future = Future<Int>{ $0(.success(0)) }
+    let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    future
+    promise
       .concat([98, 99, 100])
       .on{ values.append($0) }
     
@@ -224,9 +222,9 @@ class FutureOperationsTests: XCTestCase {
   func testConcat() {
     var values = [Int]()
     var completion: ((Result<Int>) -> Void)?
-    let future = Future<Int>{ completion = $0 }
+    let promise = Promise<Int>{ _, result in completion = result }
     
-    future
+    promise
       .concat([98, 99, 100])
       .on{ values.append($0) }
     
@@ -237,18 +235,18 @@ class FutureOperationsTests: XCTestCase {
   
   func testDefaultValue() {
     var values = [Int]()
-    var future = Future<Int>{ $0(.failure(TestError())) }
+    var promise = Promise<Int>{ _, result in result(.failure(TestError())) }
     
-    future
+    promise
       .defaultValue(0)
       .on{ values.append($0) }
     
     XCTAssertEqual(values, [0])
     
-    future = Future<Int>{ $0(.success(1)) }
+    promise = Promise<Int>{ _, result in result(.success(1)) }
     values = []
     
-    future.defaultValue(0).on{ values.append($0) }
+    promise.defaultValue(0).on{ values.append($0) }
     
     XCTAssertEqual(values, [1])
   }
@@ -256,7 +254,7 @@ class FutureOperationsTests: XCTestCase {
   func testMerge() {
     var values = [Either<Int, String>]()
     var completion: ((Result<Int>) -> Void)?
-    let left = Future<Int>{ completion = $0 }
+    let left = Promise<Int>{ _, result in completion = result }
     let right = HotInput<String>()
     var term: Termination? = nil
     var error: Error? = nil
@@ -284,7 +282,7 @@ class FutureOperationsTests: XCTestCase {
       let mergeError = error as? MergeError,
       case let .left(reason) = mergeError,
       reason == .completed
-    else { return XCTFail("Expected Error to be thrown for left future termination.") }
+      else { return XCTFail("Expected Error to be thrown for left promise termination.") }
     
     right.push("third")
     XCTAssertEqual(values.count, 4)
@@ -301,7 +299,7 @@ class FutureOperationsTests: XCTestCase {
   
   func testMergeWithSameType() {
     var values = [Int]()
-    let left = Future<Int>{ $0(.success(0)) }
+    let left = Promise<Int>{ _, result in result(.success(0)) }
     let right = HotInput<Int>()
     var term: Termination? = nil
     
@@ -309,84 +307,84 @@ class FutureOperationsTests: XCTestCase {
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-
+    
     XCTAssertEqual(values, [0])
     XCTAssertNil(term)
-
+    
     right.push(1)
     XCTAssertEqual(values, [0, 1])
     XCTAssertNil(term)
-
+    
     right.push(2)
     XCTAssertEqual(values, [0, 1, 2])
     XCTAssertNil(term)
-
+    
     right.terminate(withReason: .completed)
     XCTAssertEqual(values, [0, 1, 2])
     XCTAssertEqual(term, .completed)
   }
-
-  func testMergeWithTwoCompletedFutures() {
+  
+  func testMergeWithTwoCompletedPromises() {
     var values = [Int]()
-    let left = Future<Int>{ $0(.success(0)) }
-    let right = Future<Int>{ $0(.success(1)) }
+    let left = Promise<Int>{ _, result in result(.success(0)) }
+    let right = Promise<Int>{ _, result in result(.success(1)) }
     var term: Termination? = nil
-
+    
     left
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-
+    
     XCTAssertEqual(values, [0], "Both terms are emitted, but only the last term emitted is replayed.")
     XCTAssertEqual(term, .completed)
   }
-
-  func testMergeWithLeftCompletedFuture() {
+  
+  func testMergeWithLeftCompletedPromise() {
     var values = [Int]()
     var completion: ((Result<Int>) -> Void)?
-    let left = Future<Int>{ $0(.success(0)) }
-    let right = Future<Int>{ completion = $0 }
+    let left = Promise<Int>{ _, result in result(.success(0)) }
+    let right = Promise<Int>{ _, result in completion = result }
     var term: Termination? = nil
-
+    
     left
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-
+    
     XCTAssertEqual(values, [0], "Left Completed should replay.")
     XCTAssertNil(term)
-
+    
     completion?(.success(1))
-
-    XCTAssertEqual(values, [0, 1], "Right Future should emit event.")
+    
+    XCTAssertEqual(values, [0, 1], "Right Promise should emit event.")
     XCTAssertEqual(term, .completed)
   }
-
-  func testMergeWithRightCompletedFuture() {
+  
+  func testMergeWithRightCompletedPromise() {
     var values = [Int]()
     var completion: ((Result<Int>) -> Void)?
-    let left = Future<Int>{ completion = $0 }
-    let right = Future<Int>{ $0(.success(0)) }
+    let left = Promise<Int>{ _, result in completion = result }
+    let right = Promise<Int>{ _, result in result(.success(0)) }
     var term: Termination? = nil
-
+    
     left
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-
+    
     XCTAssertEqual(values, [0], "Right Completed should replay.")
     XCTAssertNil(term)
-
+    
     completion?(.success(1))
-
-    XCTAssertEqual(values, [0, 1], "Left Future should emit event.")
+    
+    XCTAssertEqual(values, [0, 1], "Left Promise should emit event.")
     XCTAssertEqual(term, .completed)
   }
-
-  func testZipBothFutureCompleted() {
+  
+  func testZipBothPromiseCompleted() {
     var values = [(left: Int, right: String)]()
-    let left = Future<Int>{ $0(.success(1)) }
-    let right = Future<String>{ $0(.success("one")) }
+    let left = Promise<Int>{ _, result in result(.success(1)) }
+    let right = Promise<String>{ _, result in result(.success("one")) }
     var term: Termination? = nil
     
     left
@@ -399,54 +397,54 @@ class FutureOperationsTests: XCTestCase {
     XCTAssertEqual(values.last?.right, "one")
     XCTAssertEqual(term, .completed)
   }
-
-  func testZipLeftFutureCompleted() {
+  
+  func testZipLeftPromiseCompleted() {
     var values = [(left: Int, right: String)]()
     var completion: ((Result<String>) -> Void)?
-    let left = Future<Int>{ $0(.success(1)) }
-    let right = Future<String>{ completion = $0 }
+    let left = Promise<Int>{ _, result in result(.success(1)) }
+    let right = Promise<String>{ _, result in completion = result }
     var term: Termination? = nil
-
+    
     left
       .zip(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-
+    
     XCTAssertEqual(values.count, 0)
-
+    
     completion?(.success("one"))
-
+    
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
     XCTAssertEqual(values.last?.right, "one")
     XCTAssertEqual(term, .completed)
   }
-
-  func testZipRightFutureCompleted() {
+  
+  func testZipRightPromiseCompleted() {
     var values = [(left: Int, right: String)]()
     var completion: ((Result<Int>) -> Void)?
-    let left = Future<Int>{ completion = $0 }
-    let right = Future<String>{ $0(.success("one")) }
+    let left = Promise<Int>{ _, result in completion = result }
+    let right = Promise<String>{ _, result in result(.success("one")) }
     var term: Termination? = nil
-
+    
     left
       .zip(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-
+    
     XCTAssertEqual(values.count, 0)
-
+    
     completion?(.success(1))
-
+    
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
     XCTAssertEqual(values.last?.right, "one")
     XCTAssertEqual(term, .completed)
   }
-
+  
   func testCombine() {
     var values = [(left: Int, right: String)]()
-    let left = Future<Int>{ $0(.success(1)) }
+    let left = Promise<Int>{ _, result in result(.success(1)) }
     let right = HotInput<String>()
     var term: Termination? = nil
     
@@ -454,19 +452,17 @@ class FutureOperationsTests: XCTestCase {
       .combine(stream: right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-
+    
     right.push("one")
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
     XCTAssertEqual(values.last?.right, "one")
-    XCTAssertNil(term)
-
+    
     right.push("two")
-    XCTAssertEqual(values.count, 1)
+    XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 1)
-    XCTAssertEqual(values.last?.right, "one")
-    XCTAssertEqual(term, .completed)
-
+    XCTAssertEqual(values.last?.right, "two")
+    
     right.terminate(withReason: .completed)
     XCTAssertEqual(term, .completed)
   }
@@ -474,18 +470,18 @@ class FutureOperationsTests: XCTestCase {
   func testUsing() {
     var values = [Int]()
     var completion: ((Result<Int>) -> Void)?
-    let future = Future<Int>{ completion = $0 }
+    let promise = Promise<Int>{ _, result in completion = result }
     var term: Termination? = nil
     var object: TestClass? = TestClass()
     
-    future
+    promise
       .using(object!)
       .on{ values.append($0.1) }
       .onTerminate{ term = $0 }
     
     XCTAssertNotNil(completion)
     object = nil
-   
+    
     wait(for: 0.1) // Allow the object to deinit
     
     completion?(.success(1))
@@ -496,22 +492,23 @@ class FutureOperationsTests: XCTestCase {
   func testLifeOf() {
     var values = [Int]()
     var completion: ((Result<Int>) -> Void)?
-    let future = Future<Int>{ completion = $0 }
+    let promise = Promise<Int>{ _, result in completion = result }
     var term: Termination? = nil
     var object: TestClass? = TestClass()
     
-    future
+    promise
       .lifeOf(object!)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
     
     XCTAssertNotNil(completion)
     object = nil
-   
+    
     wait(for: 0.1) // Allow the object to deinit
     
     completion?(.success(1))
     XCTAssertEqual(values, [])
     XCTAssertEqual(term, .cancelled)
   }
+    
 }
