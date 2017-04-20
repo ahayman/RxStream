@@ -120,7 +120,7 @@ public class Promise<T> : Stream<T> {
     guard self.downStreamPromises == 0 else { return }
     
     switch signal {
-    case .map where self.shouldPrune:
+    case .push where self.shouldPrune:
       terminate(reason: .completed, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
     case .error(let error) where self.shouldPrune:
       terminate(reason: .error(error), andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))

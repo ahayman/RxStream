@@ -82,7 +82,7 @@ public class Future<T> : Stream<T> {
   
   override func postProcess<U>(event: Event<U>, withKey: EventKey, producedSignal signal: OpSignal<T>) {
     switch signal {
-    case .map, .error:
+    case .push, .error:
       if self.isActive && pendingTermination == nil {
         self.terminate(reason: .completed, andPrune: .none, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
       }

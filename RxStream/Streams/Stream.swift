@@ -8,31 +8,6 @@
 
 import Foundation
 
-enum OpValue<T> {
-  case value(T)
-  case flatten([T])
-
-  var values: [T] {
-    switch self {
-    case .value(let value): return [value]
-    case .flatten(let values): return values
-    }
-  }
-}
-/// Signal returned from stream operations. The Stream processor will use the signal to determine what it should do with the triggering event
-enum OpSignal<T> {
-  /// Map the event to a new value or a flattened
-  case map(OpValue<T>)
-  /// Event triggered an error
-  case error(Error)
-  /// Cancel the event.  Don't terminate or push anything into the down streams.
-  case cancel
-  /// Mainly used my merged Future, used to signal that a merge is pending
-  case merging
-  /// Event triggered termination with optional OpValue to be first pushed
-  case terminate(OpValue<T>?, Termination)
-}
-
 /**
  Stream types are used to detect and alter behavior for specific types.
  Because all streams are generics, determining the underlying types can be difficult
@@ -51,39 +26,6 @@ enum StreamType : Int {
   case promise
 }
 
-///Termination reason: Defines the reasons a stream can terminate
-public enum Termination : Equatable {
-  
-  /// The stream has completed without any problems.
-  case completed
-  
-  /// The stream has been explicitly cancelled.
-  case cancelled
-  
-  /// An error has occurred and the stream is no longer viable.
-  case error(Error)
-}
-
-public func ==(lhs: Termination, rhs: Termination) -> Bool {
-  switch (lhs, rhs) {
-  case (.completed, .completed),
-       (.cancelled, .cancelled),
-       (.error, .error): return true
-  default: return false
-  }
-}
-
-extension Termination : CustomDebugStringConvertible {
-  public var debugDescription: String {
-    switch self {
-    case .completed: return ".completed"
-    case .cancelled: return ".cancelled"
-    case .error(let error): return ".error(\(error))"
-    }
-  }
-}
-
-
 /// Defines the current state of the stream, which can be active (the stream is emitting data) or terminated with a reason.
 public enum StreamState : Equatable {
   /// The stream is currently active can can emit data
@@ -101,75 +43,10 @@ public func ==(lhs: StreamState, rhs: StreamState) -> Bool {
   }
 }
 
-/// Determines how events travel down their branches.
-enum EventKey {
-  case keyed(String) /// The event is keyed and should only travel down branches with that key
-  case shared(String) /// The event is keyed, but should travel down all branches.
-  case none /// The event is not keyed and should travel down all branches.
-  
-  var key: String? {
-    switch self {
-    case let .keyed(key): return key
-    case let .shared(key): return key
-    default: return nil
-    }
-  }
-}
-
 /// Defines how and if a stream should prune.
 enum Prune : Int {
   case upStream
   case none
-}
-
-/// Protocol used for extracting an event value from the Event.  Mostly used for Array Extensions.  May be removed when future versions of Swift support more robust extensions.
-protocol EventValue {
-  associatedtype Value
-  var eventValue: Value? { get }
-  var termination: Termination? { get }
-}
-
-/// Events are passed down streams for processing
-public enum Event<T> : EventValue {
-  typealias Value = T
-  /// Next data to be passed down the streams
-  case next(T)
-  
-  /// Stream terminate signal
-  case terminate(reason: Termination)
-  
-  /// A non-terminating error event
-  case error(Error)
-  
-  var eventValue: T? {
-    if case .next(let value) = self { return value }
-    return nil
-  }
-  
-  var termination: Termination? {
-    if case .terminate(let reason) = self { return reason }
-    return nil
-  }
-
-  /// Convenience function to transform the event into a default OpSignal with the same type
-  var signal: OpSignal<T> {
-    switch self {
-    case .next(let value): return .map(.value(value))
-    case .error(let error): return .error(error)
-    case .terminate(let reason): return .terminate(nil, reason)
-    }
-  }
-
-}
-
-extension Event : CustomDebugStringConvertible {
-  public var debugDescription: String {
-    switch self {
-    case .next(let value): return ".next(\(value))"
-    case .error(let error): return ".error(\(error))"
-    case .terminate(let reason): return ".terminate(reason: \(reason))"
-    }
-  }
 }
 
 /// Defines work that should be done for an event.  The event is passed in, and the completion handler is called when the work has completed.
@@ -533,10 +410,10 @@ public class Stream<T> {
           op(event) { opSignal in
             self.dispatch.execute {
               switch opSignal {
-              case .map(let value): self.push(events: value.values.map{ .next($0 ) }, withKey: key)
+              case .push(let value): self.push(events: value.events, withKey: key)
               case .error(let error): self.push(events: [.error(error)], withKey: key)
               case let .terminate(value, term):
-                if let events = value?.values.map({ Event.next($0) }) {
+                if let events = value?.events {
                   self.push(events: events, withKey: key)
                 }
                 if self.pendingTermination == nil {

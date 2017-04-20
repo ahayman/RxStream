@@ -334,9 +334,9 @@ extension Promise {
       case .next, .error: completion(next.signal)
       case .terminate:
         if let prior = prior {
-          completion(.map(.flatten([prior] + concat)))
+          completion(.push(.flatten([prior] + concat)))
         } else {
-          completion(.map(.flatten(concat)))
+          completion(.push(.flatten(concat)))
         }
       }
     }

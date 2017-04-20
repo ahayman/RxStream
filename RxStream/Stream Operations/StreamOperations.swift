@@ -91,7 +91,7 @@ extension Stream {
   func appendMap<U: BaseStream>(stream: U, withMapper mapper: @escaping (T) -> U.Data?) -> U {
     return append(stream: stream) { (next, completion) in
       switch next {
-      case let .next(value): completion((mapper(value) >>? { .map(.value($0)) }) ?? .cancel )
+      case let .next(value): completion((mapper(value) >>? { .push(.value($0)) }) ?? .cancel )
       case .error(let error): completion(.error(error))
       case .terminate(let term): completion(.terminate(nil, term))
       }
@@ -103,7 +103,7 @@ extension Stream {
       switch next {
       case let .next(value):
         mapper(value)
-          .onSuccess{ completion(.map(.value($0))) }
+          .onSuccess{ completion(.push(.value($0))) }
           .onFailure{ completion(.error($0)) }
       case .error(let error): completion(.error(error))
       case .terminate(let term): completion(.terminate(nil, term))
@@ -117,7 +117,7 @@ extension Stream {
       case let .next(value):
         mapper(value) {
           switch $0 {
-          case .some(.success(let value)): completion(.map(.value(value)))
+          case .some(.success(let value)): completion(.push(.value(value)))
           case .some(.failure(let error)): completion(.error(error))
           case .none: completion(.cancel)
           }
@@ -131,7 +131,7 @@ extension Stream {
   func appendFlatMap<U: BaseStream>(stream: U, withFlatMapper mapper: @escaping (T) -> [U.Data]) -> U {
     return append(stream: stream) { (next, completion) in
       switch next {
-      case let .next(value): completion(.map(.flatten(mapper(value))))
+      case let .next(value): completion(.push(.flatten(mapper(value))))
       case .error(let error): completion(.error(error))
       case .terminate(let term): completion(.terminate(nil, term))
       }
@@ -144,7 +144,7 @@ extension Stream {
       switch next {
       case let .next(value):
           reduction = scanner(reduction, value)
-          completion(.map(.value(reduction)))
+          completion(.push(.value(reduction)))
       case .error(let error): completion(.error(error))
       case .terminate(let term): completion(.terminate(nil, term))
       }
@@ -211,7 +211,7 @@ extension Stream {
         } else {
           let filledBuffer = buffer + [value]
           buffer.removeAll(keepingCapacity: true)
-          completion(.map(.value(filledBuffer)))
+          completion(.push(.value(filledBuffer)))
         }
       case .error(let error): completion(.error(error))
       case .terminate(let term): completion(.terminate(partial ? .value(buffer) : nil, term))
@@ -230,7 +230,7 @@ extension Stream {
           completion(.cancel)
         } else {
           let window = buffer.map{ $0 } as U.Data
-          completion(.map(.value(window)))
+          completion(.push(.value(window)))
         }
       case .error(let error): completion(.error(error))
       case .terminate(let term):
@@ -250,7 +250,7 @@ extension Stream {
         if let limit = limit, buffer.count > limit {
           buffer = ((buffer.count - limit)..<buffer.count).map{ buffer[$0] }
         }
-        completion(.map(.value(buffer.map{$0.1})))
+        completion(.push(.value(buffer.map{$0.1})))
       case .error(let error): completion(.error(error))
       case .terminate(let term): completion(.terminate(nil, term))
       }
@@ -260,7 +260,7 @@ extension Stream {
   func appendFilter<U: BaseStream>(stream: U, include: @escaping (T) -> Bool) -> U where U.Data == T {
     return append(stream: stream) { (next, completion) in
       switch next {
-      case let .next(value): completion(include(value) ? .map(.value(value)) : .cancel)
+      case let .next(value): completion(include(value) ? .push(.value(value)) : .cancel)
       case .error, .terminate: completion(next.signal)
       }
     }
@@ -287,7 +287,7 @@ extension Stream {
   func appendStamp<U: BaseStream, V>(stream: U, stamper: @escaping (T) -> V) -> U where U.Data == (value: T, stamp: V) {
     return append(stream: stream) { (next, completion) in
       switch next {
-      case let .next(value): completion(.map(.value(value: value, stamp: stamper(value))))
+      case let .next(value): completion(.push(.value(value: value, stamp: stamper(value))))
       case .error(let error): completion(.error(error))
       case .terminate(let term): completion(.terminate(nil, term))
       }
@@ -346,7 +346,7 @@ extension Stream {
       switch next {
       case .next:
         count += 1
-        completion(.map(.value(count)))
+        completion(.push(.value(count)))
       case .error(let error): completion(.error(error))
       case .terminate(let term): completion(.terminate(nil, term))
       }
@@ -403,7 +403,7 @@ extension Stream {
           return completion(.cancel)
         }
         buffer.append(value)
-        completion(.map(.value(shiftedValue)))
+        completion(.push(.value(shiftedValue)))
       case .error(let error):
         completion(.error(error))
       case .terminate(let term):
@@ -418,7 +418,7 @@ extension Stream {
       switch next {
       case .next(let value):
         if let events = start {
-          completion(.map(.flatten(events + [value])))
+          completion(.push(.flatten(events + [value])))
           start = nil
         } else {
           completion(next.signal)
@@ -471,7 +471,7 @@ extension Stream {
     // Left Stream
     attachChildStream(stream: mergedStream) { (next, completion) in
       switch next {
-      case let .next(value): completion(.map(.value(.left(value))))
+      case let .next(value): completion(.push(.value(.left(value))))
       case .error(let error): completion(.error(error))
       case let .terminate(reason):
         leftTerm = reason
@@ -482,7 +482,7 @@ extension Stream {
     // Right Stream
     return stream.attachChildStream(stream: mergedStream) { (next, completion) in
       switch next {
-      case let .next(value): completion(.map(.value(.right(value))))
+      case let .next(value): completion(.push(.value(.right(value))))
       case .error(let error): completion(.error(error))
       case let .terminate(reason):
         rightTerm = reason
@@ -544,7 +544,7 @@ extension Stream {
       switch next {
       case let .next(value):
         if rightBuffer.count > 0 {
-          completion(.map(.value(value, rightBuffer.removeFirst())))
+          completion(.push(.value(value, rightBuffer.removeFirst())))
         } else {
           if let buffer = buffer, leftBuffer.count >= buffer {
             return completion(.merging)
@@ -568,7 +568,7 @@ extension Stream {
       switch next {
       case let .next(value):
         if leftBuffer.count > 0 {
-          completion(.map(.value(leftBuffer.removeFirst(), value)))
+          completion(.push(.value(leftBuffer.removeFirst(), value)))
         } else {
           if let buffer = buffer, rightBuffer.count >= buffer {
             return completion(.merging)
@@ -617,7 +617,7 @@ extension Stream {
           left = nil
           right = nil
         }
-        completion(.map(.value(value, rightValue)))
+        completion(.push(.value(value, rightValue)))
       case .error(let error): completion(.error(error))
       case let .terminate(term):
         leftTerm = term
@@ -644,7 +644,7 @@ extension Stream {
           left = nil
           right = nil
         }
-        completion(.map(.value(leftValue, value)))
+        completion(.push(.value(leftValue, value)))
       case .error(let error): completion(.error(error))
       case .terminate(let term):
         rightTerm = term
@@ -760,7 +760,7 @@ extension Stream {
       switch next {
       case let .next(value):
         if let object = box.object {
-          completion(.map(.value(object, value)))
+          completion(.push(.value(object, value)))
         } else {
           completion(.terminate(nil, then))
         }
@@ -797,7 +797,7 @@ extension Stream where T: Arithmetic {
       case let .next(value):
         count = count + T(1)
         total = total + value
-        completion(.map(.value(total / count)))
+        completion(.push(.value(total / count)))
       case .error, .terminate: completion(next.signal)
       }
     }
@@ -809,7 +809,7 @@ extension Stream where T: Arithmetic {
       switch next {
       case let .next(value):
         current = value + current
-        completion(.map(.value(current)))
+        completion(.push(.value(current)))
       case .error, .terminate: completion(next.signal)
       }
     }

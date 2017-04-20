@@ -20,8 +20,8 @@ public class Observable<T> : Stream<T> {
 
   override func postProcess<U>(event: Event<U>, withKey: EventKey, producedSignal signal: OpSignal<T>) {
     switch signal {
-    case .map(.value(let value)): self.value = value
-    case .map(.flatten(let values)) where values.count > 0: self.value = values[values.count - 1]
+    case .push(.value(let value)): self.value = value
+    case .push(.flatten(let values)) where values.count > 0: self.value = values[values.count - 1]
     default: break
     }
   }
