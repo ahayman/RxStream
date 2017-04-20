@@ -39,15 +39,11 @@ extension Future {
   @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Void) -> Future<T> {
     return append(stream: Future<T>(op: "onError")) { (next, completion) in
       switch next {
-      case .next: completion([next])
-      case .error(let error):
-        handler(error)
-        completion([next])
-      case .terminate(.error(let error)):
-        handler(error)
-        completion(nil)
-      case .terminate: completion(nil)
+      case .error(let error): handler(error)
+      case .terminate(.error(let error)): handler(error)
+      default: break
       }
+      completion(next.signal)
     }
   }
   
@@ -236,13 +232,12 @@ extension Future {
     let prior = current?.last
     return append(stream: Hot<T>(op: "concat(\(concat.count) values)")) { (next, completion) in
       switch next {
-      case .next: completion([next])
-      case .error(let error): completion([.error(error)])
+      case .next, .error: completion(next.signal)
       case .terminate:
         if let prior = prior {
-          completion([.next(prior)] + concat.map{ .next($0) })
+          completion(.map(.flatten([prior] + concat)))
         } else {
-          completion(concat.map{ .next($0) })
+          completion(.map(.flatten(concat)))
         }
       }
     }
@@ -275,8 +270,8 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func merge<U>(_ stream: Stream<U>) -> Hot<Either<T, U>> {
-    return appendMerge(stream: stream, intoStream: Hot<Either<T, U>>(op: "merge(stream:\(stream))"))
+  @discardableResult public func merge<U>(_ stream: Stream<U>) -> Future<Either<T, U>> {
+    return appendMerge(stream: stream, intoStream: Future<Either<T, U>>(op: "merge(stream:\(stream))"))
   }
   
   /**
@@ -288,8 +283,8 @@ extension Future {
    
    - returns: A new Future Stream
    */
-  @discardableResult public func merge(_ stream: Stream<T>) -> Hot<T> {
-    return appendMerge(stream: stream, intoStream: Hot<T>(op: "merge(stream:\(stream))"))
+  @discardableResult public func merge(_ stream: Stream<T>) -> Future<T> {
+    return appendMerge(stream: stream, intoStream: Future<T>(op: "merge(stream:\(stream))"))
   }
   
   /**

@@ -141,7 +141,7 @@ public class Cold<Request, Response> : Stream<Response> {
   }
   
   /// We return a ColdProcessor to ensure proper load handling for keys
-  override func newDownstreamProcessor<U>(forStream stream: Stream<U>, withProcessor processor: @escaping (Event<Response>, @escaping ([Event<U>]?) -> Void) -> Void) -> StreamProcessor<Response> {
+  override func newDownstreamProcessor<U>(forStream stream: Stream<U>, withProcessor processor: @escaping StreamOp<Response, U>) -> StreamProcessor<Response> {
     return ColdProcessor<Request, Response, U>(stream: stream, processor: processor)
   }
   
@@ -172,7 +172,7 @@ public class Cold<Request, Response> : Stream<Response> {
     return eventToProcess
   }
   
-  override func postProcess<U>(event: Event<U>, withKey key: EventKey, producedEvents events: [Event<Response>], withTermination termination: Termination?) {
+  override func postProcess<U>(event: Event<U>, withKey key: EventKey, producedSignal signal: OpSignal<Response>) {
     decrementLoad(forKey: key.key)
   }
   

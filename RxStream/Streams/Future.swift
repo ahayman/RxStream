@@ -80,9 +80,19 @@ public class Future<T> : Stream<T> {
     return (key, event)
   }
   
-  override func postProcess<U>(event: Event<U>, withKey: EventKey, producedEvents events: [Event<T>], withTermination termination: Termination?) {
-    if self.isActive && pendingTermination == nil {
-      self.terminate(reason: .completed, andPrune: .none, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
+  override func postProcess<U>(event: Event<U>, withKey: EventKey, producedSignal signal: OpSignal<T>) {
+    switch signal {
+    case .map, .error:
+      if self.isActive && pendingTermination == nil {
+        self.terminate(reason: .completed, andPrune: .none, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
+      }
+    case .cancel:
+      if self.isActive && pendingTermination == nil {
+        self.terminate(reason: .completed, andPrune: .none, pushDownstreamTo: StreamType.all())
+      }
+    case .merging:
+      complete = false
+    default: break
     }
   }
   

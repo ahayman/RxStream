@@ -29,13 +29,16 @@ extension Promise {
     let promise = Promise<T>(op: "retryOn")
     var attempt: UInt = 0
     return append(stream: promise) { [weak promise] (next, completion) in
-      guard case let .error(error) = next else { return completion([next]) }
-      attempt += 1
-      if handler(attempt, error) {
-        promise?.retry()
-        completion(nil)
-      } else {
-        completion([next])
+      switch next {
+      case .next, .terminate: completion(next.signal)
+      case .error(let error):
+        attempt += 1
+        if handler(attempt, error) {
+          promise?.retry()
+          completion(.cancel)
+        } else {
+          completion(.error(error))
+        }
       }
     }
   }
@@ -53,14 +56,17 @@ extension Promise {
     let promise = Promise<T>(op: "asyncRetryOn")
     var attempt: UInt = 0
     return append(stream: promise) { [weak promise] (next, completion) in
-      guard case let .error(error) = next else { return completion([next]) }
-      attempt += 1
-      handler(attempt, error) { retry in
-        if retry {
-          promise?.retry()
-          completion(nil)
-        } else {
-          completion([next])
+      switch next {
+      case .next, .terminate: completion(next.signal)
+      case .error(let error):
+        attempt += 1
+        handler(attempt, error) { retry in
+          if retry {
+            promise?.retry()
+            completion(.cancel)
+          } else {
+            completion(.error(error))
+          }
         }
       }
     }
@@ -81,7 +87,7 @@ extension Promise {
     let promise = Promise<T>(op: "retry(limit: \(limit), delay: \(delay ?? -1.0)")
     var count: UInt = 0
     return append(stream: promise) { [weak promise] (next, completion) in
-      guard case .error = next, count < limit else { return completion([next]) }
+      guard case .error = next, count < limit else { return completion(next.signal) }
       count += 1
       if let delay = delay {
         Dispatch.after(delay: delay, on: .main).execute {
@@ -129,14 +135,13 @@ extension Promise {
   @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Void) -> Promise<T> {
     return append(stream: Promise<T>(op: "onError")) { (next, completion) in
       switch next {
-      case .next: completion([next])
       case .error(let error):
         handler(error)
-        completion([next])
+        completion(.error(error))
       case .terminate(.error(let error)):
         handler(error)
-        completion(nil)
-      case .terminate: completion(nil)
+        completion(.terminate(nil, .error(error)))
+      case .next, .terminate: completion(next.signal)
       }
     }
   }
@@ -322,7 +327,19 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func concat(_ concat: [T]) -> Hot<T> {
-    return appendConcat(stream: Hot<T>(op: "concat(\(concat.count) values"), concat: concat)
+    // Future can only emit one value, so we buffer that value and concat on termination.  Normal concat won't work properly if the promise is filled
+    let prior = current?.last
+    return append(stream: Hot<T>(op: "concat(\(concat.count) values)")) { (next, completion) in
+      switch next {
+      case .next, .error: completion(next.signal)
+      case .terminate:
+        if let prior = prior {
+          completion(.map(.flatten([prior] + concat)))
+        } else {
+          completion(.map(.flatten(concat)))
+        }
+      }
+    }
   }
   
   /**

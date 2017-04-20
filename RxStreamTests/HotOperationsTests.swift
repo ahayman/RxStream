@@ -1064,12 +1064,8 @@ class HotTests: XCTestCase {
     
     left.terminate(withReason: .cancelled)
     XCTAssertNil(term)
-    guard
-      let mergeError = error as? MergeError,
-      case let .left(reason) = mergeError,
-      reason == .cancelled
-    else { return XCTFail("Expected Error to be thrown for left stream termination.") }
-    
+    XCTAssertNil(error)
+
     left.push(2)
     XCTAssertEqual(values.count, 4)
     
@@ -1117,12 +1113,8 @@ class HotTests: XCTestCase {
     
     left.terminate(withReason: .cancelled)
     XCTAssertNil(term)
-    guard
-      let mergeError = error as? MergeError,
-      case let .left(reason) = mergeError,
-      reason == .cancelled
-    else { return XCTFail("Expected Error to be thrown for left stream termination.") }
-    
+    XCTAssertNil(error)
+
     left.push(2)
     XCTAssertEqual(values.count, 4)
     
@@ -1331,13 +1323,8 @@ class HotTests: XCTestCase {
     
     right.terminate(withReason: .completed)
     XCTAssertNil(term)
-    guard
-      let mergeError = error as? MergeError,
-      case let .right(reason) = mergeError,
-      reason == .completed
-    else { return XCTFail("Expected Error to be thrown for right stream termination.") }
-    error = nil
-    
+    XCTAssertNil(error)
+
     left.push(4)
     XCTAssertEqual(values.count, 6)
     XCTAssertEqual(values.last?.left, 4)

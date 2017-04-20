@@ -258,7 +258,7 @@ class PromiseOperationsTests: XCTestCase {
     let right = HotInput<String>()
     var term: Termination? = nil
     var error: Error? = nil
-    
+
     left
       .merge(right)
       .on{ values.append($0) }
@@ -268,36 +268,39 @@ class PromiseOperationsTests: XCTestCase {
     completion?(.success(1))
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
-    
-    right.push("first")
-    XCTAssertEqual(values.count, 2)
-    XCTAssertEqual(values.last?.right, "first")
-    
-    right.push("second")
-    XCTAssertEqual(values.count, 3)
-    XCTAssertEqual(values.last?.right, "second")
-    
+
+    XCTAssertNil(error)
+    XCTAssertEqual(term, .completed)
+  }
+
+  func testMergeIntoHotWithSameType() {
+    var values = [Int]()
+    let right = Promise<Int>{ _, result in result(.success(0)) }
+    let left = HotInput<Int>()
+    var term: Termination? = nil
+
+    left
+      .merge(right).replayNext()
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    XCTAssertEqual(values, [0])
     XCTAssertNil(term)
-    guard
-      let mergeError = error as? MergeError,
-      case let .left(reason) = mergeError,
-      reason == .completed
-      else { return XCTFail("Expected Error to be thrown for left promise termination.") }
-    
-    right.push("third")
-    XCTAssertEqual(values.count, 4)
-    XCTAssertEqual(values.last?.right, "third")
-    
-    right.terminate(withReason: .completed)
-    XCTAssertEqual(values.count, 4)
-    
-    right.push("fourth")
-    XCTAssertEqual(values.count, 4)
-    
+
+    left.push(1)
+    XCTAssertEqual(values, [0, 1])
+    XCTAssertNil(term)
+
+    left.push(2)
+    XCTAssertEqual(values, [0, 1, 2])
+    XCTAssertNil(term)
+
+    left.terminate(withReason: .completed)
+    XCTAssertEqual(values, [0, 1, 2])
     XCTAssertEqual(term, .completed)
   }
   
-  func testMergeWithSameType() {
+  func testMergeHotWithSameType() {
     var values = [Int]()
     let left = Promise<Int>{ _, result in result(.success(0)) }
     let right = HotInput<Int>()
@@ -309,18 +312,14 @@ class PromiseOperationsTests: XCTestCase {
       .onTerminate{ term = $0 }
     
     XCTAssertEqual(values, [0])
-    XCTAssertNil(term)
-    
+    XCTAssertEqual(term, .completed)
+
     right.push(1)
-    XCTAssertEqual(values, [0, 1])
-    XCTAssertNil(term)
-    
-    right.push(2)
-    XCTAssertEqual(values, [0, 1, 2])
-    XCTAssertNil(term)
-    
+    XCTAssertEqual(values, [0])
+    XCTAssertEqual(term, .completed)
+
     right.terminate(withReason: .completed)
-    XCTAssertEqual(values, [0, 1, 2])
+    XCTAssertEqual(values, [0])
     XCTAssertEqual(term, .completed)
   }
   
@@ -335,7 +334,7 @@ class PromiseOperationsTests: XCTestCase {
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
     
-    XCTAssertEqual(values, [0], "Both terms are emitted, but only the last term emitted is replayed.")
+    XCTAssertEqual(values, [0], "Both terms are emitted, but only the left term emitted is replayed.")
     XCTAssertEqual(term, .completed)
   }
   
@@ -352,11 +351,11 @@ class PromiseOperationsTests: XCTestCase {
       .onTerminate{ term = $0 }
     
     XCTAssertEqual(values, [0], "Left Completed should replay.")
-    XCTAssertNil(term)
-    
+    XCTAssertEqual(term, .completed)
+
     completion?(.success(1))
     
-    XCTAssertEqual(values, [0, 1], "Right Promise should emit event.")
+    XCTAssertEqual(values, [0], "Right Promise will emit, but downstream promise is completed.")
     XCTAssertEqual(term, .completed)
   }
   
@@ -373,11 +372,11 @@ class PromiseOperationsTests: XCTestCase {
       .onTerminate{ term = $0 }
     
     XCTAssertEqual(values, [0], "Right Completed should replay.")
-    XCTAssertNil(term)
-    
+    XCTAssertEqual(term, .completed)
+
     completion?(.success(1))
     
-    XCTAssertEqual(values, [0, 1], "Left Promise should emit event.")
+    XCTAssertEqual(values, [0], "Left Promise will emit, but down stream promise is completed.")
     XCTAssertEqual(term, .completed)
   }
   
@@ -459,9 +458,9 @@ class PromiseOperationsTests: XCTestCase {
     XCTAssertEqual(values.last?.right, "one")
     
     right.push("two")
-    XCTAssertEqual(values.count, 2)
+    XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
-    XCTAssertEqual(values.last?.right, "two")
+    XCTAssertEqual(values.last?.right, "one")
     
     right.terminate(withReason: .completed)
     XCTAssertEqual(term, .completed)

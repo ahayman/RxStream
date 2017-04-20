@@ -116,23 +116,24 @@ public class Promise<T> : Stream<T> {
   }
   
   /// Added logic will terminate the stream if it's not already terminated and we've received a value the stream is complete
-  override func postProcess<U>(event: Event<U>, withKey: EventKey, producedEvents events: [Event<T>], withTermination termination: Termination?) {
-    guard termination == nil else { return }
+  override func postProcess<U>(event: Event<U>, withKey: EventKey, producedSignal signal: OpSignal<T>) {
     guard self.downStreamPromises == 0 else { return }
     
-    switch event {
-    case .next where self.shouldPrune:
+    switch signal {
+    case .map where self.shouldPrune:
       terminate(reason: .completed, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
     case .error(let error) where self.shouldPrune:
       terminate(reason: .error(error), andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
-    case .terminate(let reason):
+    case .terminate(_, let reason):
       terminate(reason: reason, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
+    case .merging:
+      complete = false
     default: break
     }
   }
   
   /// Create a promise down stream processor if the stream is a Promise, so the termination logic works out.
-  override func newDownstreamProcessor<U>(forStream stream: Stream<U>, withProcessor processor: @escaping (Event<T>, @escaping ([Event<U>]?) -> Void) -> Void) -> StreamProcessor<T> {
+  override func newDownstreamProcessor<U>(forStream stream: Stream<U>, withProcessor processor: @escaping StreamOp<T, U>) -> StreamProcessor<T> {
     if let child = stream as? Promise<U> {
       child.cancelParent = self
       child.retryParent = self

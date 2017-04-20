@@ -8,6 +8,31 @@
 
 import Foundation
 
+enum OpValue<T> {
+  case value(T)
+  case flatten([T])
+
+  var values: [T] {
+    switch self {
+    case .value(let value): return [value]
+    case .flatten(let values): return values
+    }
+  }
+}
+/// Signal returned from stream operations. The Stream processor will use the signal to determine what it should do with the triggering event
+enum OpSignal<T> {
+  /// Map the event to a new value or a flattened
+  case map(OpValue<T>)
+  /// Event triggered an error
+  case error(Error)
+  /// Cancel the event.  Don't terminate or push anything into the down streams.
+  case cancel
+  /// Mainly used my merged Future, used to signal that a merge is pending
+  case merging
+  /// Event triggered termination with optional OpValue to be first pushed
+  case terminate(OpValue<T>?, Termination)
+}
+
 /**
  Stream types are used to detect and alter behavior for specific types.
  Because all streams are generics, determining the underlying types can be difficult
@@ -58,6 +83,7 @@ extension Termination : CustomDebugStringConvertible {
   }
 }
 
+
 /// Defines the current state of the stream, which can be active (the stream is emitting data) or terminated with a reason.
 public enum StreamState : Equatable {
   /// The stream is currently active can can emit data
@@ -90,10 +116,9 @@ enum EventKey {
   }
 }
 
-/// Defines how and if a stream should prune. 
+/// Defines how and if a stream should prune.
 enum Prune : Int {
   case upStream
-  case downStream
   case none
 }
 
@@ -125,6 +150,16 @@ public enum Event<T> : EventValue {
     if case .terminate(let reason) = self { return reason }
     return nil
   }
+
+  /// Convenience function to transform the event into a default OpSignal with the same type
+  var signal: OpSignal<T> {
+    switch self {
+    case .next(let value): return .map(.value(value))
+    case .error(let error): return .error(error)
+    case .terminate(let reason): return .terminate(nil, reason)
+    }
+  }
+
 }
 
 extension Event : CustomDebugStringConvertible {
@@ -138,7 +173,7 @@ extension Event : CustomDebugStringConvertible {
 }
 
 /// Defines work that should be done for an event.  The event is passed in, and the completion handler is called when the work has completed.
-typealias StreamOp<U, T> = (_ next: Event<U>, _ complete: @escaping ([Event<T>]?) -> Void) -> Void
+typealias StreamOp<U, T> = (_ next: Event<U>, _ complete: @escaping (OpSignal<T>) -> Void) -> Void
 
 internal protocol BaseStream : class {
   associatedtype Data
@@ -199,7 +234,16 @@ public class Stream<T> {
   var downStreams = [StreamProcessor<T>]()
   
   /// The amount of work currently in progress.  Mostly, it's used to keep track of running work so that termination events are only processed after
-  private var currentWork: UInt = 0
+  private var currentWork: Int = 0 {
+    didSet {
+      if currentWork <= 0, let term = pendingTermination {
+        if term.callTermHandler == false {
+          onTerminate = nil
+        }
+        terminate(reason: term.reason, andPrune: term.prune, pushDownstreamTo: StreamType.all())
+      }
+    }
+  }
 
   /// The queue contains the prior value, if any, and the current value.  The queue will be `nil` when the stream is first created.
   var current: [T]? = nil
@@ -247,7 +291,7 @@ public class Stream<T> {
   
   fileprivate var nextDispatch: Dispatch?
   
-  /// Convience variable returning whether the stream is currently active
+  /// Convenience variable returning whether the stream is currently active
   public var isActive: Bool { return state == .active }
   
   /** 
@@ -282,12 +326,10 @@ public class Stream<T> {
   func newDownstreamProcessor<U>(forStream stream: Stream<U>, withProcessor processor: @escaping StreamOp<T, U>) -> StreamProcessor<T> {
     return DownstreamProcessor(stream: stream, processor: processor)
   }
-  
-  /// The main function used to attach a stream to a parent stream along with the child's stream work
-  @discardableResult func append<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
-    guard let child = stream as? Stream<U.Data> else { fatalError("Error attaching streams: All Streams must descencend from Stream.") }
+
+  @discardableResult func configureStreamAsChild<U: BaseStream>(stream: U) -> U {
+    guard let child = stream as? Stream<U.Data> else { fatalError("Error attaching streams: All Streams must descend from Stream.") }
     dispatch.execute {
-      
       if let dispatch = self.nextDispatch {
         child.dispatch = dispatch
         self.nextDispatch = nil
@@ -299,10 +341,22 @@ public class Stream<T> {
       child.replay = self.replay
       child.canReplay = self.canReplay
       child.parent = self
-      
+    }
+    return stream
+  }
+
+  @discardableResult func attachChildStream<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
+    guard let child = stream as? Stream<U.Data> else { fatalError("Error attaching streams: All Streams must descend from Stream.") }
+    dispatch.execute {
       self.appendDownStream(processor: self.newDownstreamProcessor(forStream: child, withProcessor: op))
     }
-    
+    return stream
+  }
+
+  /// The main function used to attach a stream to a parent stream along with the child's stream work
+  @discardableResult func append<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
+    configureStreamAsChild(stream: stream)
+    attachChildStream(stream: stream, withOp: op)
     return stream
   }
   
@@ -410,12 +464,7 @@ public class Stream<T> {
    - parameter key: _(Optional)_, the key to restrict the event.
    */
   func process(event: Event<T>, withKey key: EventKey = .none) {
-    self.process(key: key, next: event) { (event, completion) in
-      switch event {
-      case .next, .error: completion([event])
-      case .terminate: completion(nil)
-      }
-    }
+    self.process(key: key, next: event) { (event, completion) in completion(event.signal) }
   }
   
   /**
@@ -435,7 +484,7 @@ public class Stream<T> {
     return (key, event)
   }
   
-  var pendingTermination: Termination? = nil
+  var pendingTermination: (reason: Termination, prune: Prune, callTermHandler: Bool)? = nil
   /**
    This is an internal function used to process event work. It's important that all processing work done for a stream use this function.
    The main point of this is to ensure that work is correctly dispatched and throttled.
@@ -462,62 +511,49 @@ public class Stream<T> {
       // Make sure we're receiving data, otherwise it's a termination event and we should set the terminateWork
       self.currentWork += 1
       
-      if case let .terminate(reason) = event {
-        self.pendingTermination = reason
-      }
-      
       // Abstract out the process work so it can be done inline or applied to a throttle
       let workProcessor: ThrottledWork = { signal in
         self.dispatch.execute {
           // If the throttle signal `.cancel` (not .perform), then we need to decrement current work and process the termination, if any
           guard case .perform(let completion) = signal else {
-            self.currentWork -= 1
-            if self.currentWork == 0, let reason = self.pendingTermination {
-              self.push(events: [.terminate(reason: reason)], withKey: key)
-              self.terminate(reason: reason, andPrune: .downStream, pushDownstreamTo: [])
-              self.pendingTermination = nil
-              self.postProcess(event: event, withKey: key, producedEvents: [], withTermination: reason)
+            let opSignal: OpSignal<T>
+            if self.pendingTermination == nil, case .terminate(let term) = event {
+              self.pendingTermination = (term, .none, false)
+              opSignal = .terminate(nil, term)
             } else {
-              self.postProcess(event: event, withKey: key, producedEvents: [], withTermination: nil)
+              opSignal = .cancel
             }
+            self.currentWork -= 1
+
+            self.postProcess(event: event, withKey: key, producedSignal: opSignal)
             self.printDebug(info: "\(self.descriptor): throttle cancelled \(event)")
             return
           }
-          var termination: Termination? = nil
-          // If this is a termination event, we need to `nil` out the `onTerminate` so it's not called when the termination is pushed.  Otherwise, we'll end up with two termination events processed.
-          if case .terminate = event {
-            self.onTerminate = nil
-          }
-          op(event) { result in
+
+          op(event) { opSignal in
             self.dispatch.execute {
-              var events = result ?? []
-              events = events.takeUntil {
-                guard termination == nil else { return true }
-                switch $0 {
-                case .terminate(let reason): termination  = reason
-                case .error: self.pendingTermination = nil
-                default: break
+              switch opSignal {
+              case .map(let value): self.push(events: value.values.map{ .next($0 ) }, withKey: key)
+              case .error(let error): self.push(events: [.error(error)], withKey: key)
+              case let .terminate(value, term):
+                if let events = value?.values.map({ Event.next($0) }) {
+                  self.push(events: events, withKey: key)
                 }
-                return false
+                if self.pendingTermination == nil {
+                  if case .terminate = event {
+                    self.pendingTermination = (term, .none, false)
+                  } else {
+                    self.pendingTermination = (term, .upStream, true)
+                  }
+                }
+              case .cancel, .merging: break
               }
-              
-              self.push(events: events, withKey: key)
-              termination >>? { self.terminate(reason: $0, andPrune: .upStream, pushDownstreamTo: []) }
-              
+
               self.currentWork -= 1
-              
-              // If all current work is done and the stream is terminated and it hasn't been pushed, we need to push that termination downstream
-              if self.currentWork == 0, let reason = self.pendingTermination {
-                if termination == nil {
-                  termination = reason
-                  self.push(events: [.terminate(reason: reason)], withKey: key)
-                  self.terminate(reason: reason, andPrune: .downStream, pushDownstreamTo: [])
-                }
-                self.pendingTermination = nil
-              }
-              
-              self.postProcess(event: event, withKey: key, producedEvents: events, withTermination: termination)
+
+              self.postProcess(event: event, withKey: key, producedSignal: opSignal)
               self.printDebug(info: "\(self.descriptor): end Processing \(event) ")
+
               completion()
             }
           }
@@ -542,7 +578,7 @@ public class Stream<T> {
    - parameter events: All events returned from the stream processor.
    - parameter termination: _Optional_,  if a termination was processed, it will be returned here.  Note: If this is non-nil, then the stream has been terminated.
    */
-  func postProcess<U>(event: Event<U>, withKey key: EventKey, producedEvents events: [Event<T>], withTermination termination: Termination?) { }
+  func postProcess<U>(event: Event<U>, withKey key: EventKey, producedSignal signal: OpSignal<T>) { }
   
 }
 

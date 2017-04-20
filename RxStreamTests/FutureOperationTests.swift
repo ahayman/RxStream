@@ -252,7 +252,48 @@ class FutureOperationsTests: XCTestCase {
     
     XCTAssertEqual(values, [1])
   }
-  
+
+  func testFutureIntoHotMerge() {
+    var values = [Either<String, Int>]()
+    var completion: ((Result<Int>) -> Void)?
+    let right = Future<Int>{ completion = $0 }
+    let left = HotInput<String>()
+    var term: Termination? = nil
+    var error: Error? = nil
+
+    left
+      .merge(right)
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+      .onError{ error = $0 }
+
+    completion?(.success(1))
+    XCTAssertEqual(values.count, 1)
+    XCTAssertEqual(values.last?.right, 1)
+
+    left.push("first")
+    XCTAssertEqual(values.count, 2)
+    XCTAssertEqual(values.last?.left, "first")
+
+    left.push("second")
+    XCTAssertEqual(values.count, 3)
+    XCTAssertEqual(values.last?.left, "second")
+
+    XCTAssertNil(term)
+    XCTAssertNil(error)
+
+    left.push("third")
+    XCTAssertEqual(values.count, 4)
+    XCTAssertEqual(values.last?.left, "third")
+
+    left.terminate(withReason: .completed)
+    XCTAssertEqual(values.count, 4)
+
+    left.push("fourth")
+    XCTAssertEqual(values.count, 4)
+
+    XCTAssertEqual(term, .completed)  }
+
   func testMerge() {
     var values = [Either<Int, String>]()
     var completion: ((Result<Int>) -> Void)?
@@ -272,31 +313,15 @@ class FutureOperationsTests: XCTestCase {
     XCTAssertEqual(values.last?.left, 1)
     
     right.push("first")
-    XCTAssertEqual(values.count, 2)
-    XCTAssertEqual(values.last?.right, "first")
-    
-    right.push("second")
-    XCTAssertEqual(values.count, 3)
-    XCTAssertEqual(values.last?.right, "second")
-    
-    XCTAssertNil(term)
-    guard
-      let mergeError = error as? MergeError,
-      case let .left(reason) = mergeError,
-      reason == .completed
-    else { return XCTFail("Expected Error to be thrown for left future termination.") }
-    
-    right.push("third")
-    XCTAssertEqual(values.count, 4)
-    XCTAssertEqual(values.last?.right, "third")
-    
-    right.terminate(withReason: .completed)
-    XCTAssertEqual(values.count, 4)
-    
-    right.push("fourth")
-    XCTAssertEqual(values.count, 4)
-    
+    XCTAssertEqual(values.count, 1)
+    XCTAssertEqual(values.last?.left, 1)
     XCTAssertEqual(term, .completed)
+
+    right.terminate(withReason: .completed)
+    XCTAssertEqual(values.count, 1)
+    XCTAssertEqual(values.last?.left, 1)
+    XCTAssertEqual(term, .completed)
+    XCTAssertNil(error)
   }
   
   func testMergeWithSameType() {
@@ -311,18 +336,14 @@ class FutureOperationsTests: XCTestCase {
       .onTerminate{ term = $0 }
 
     XCTAssertEqual(values, [0])
-    XCTAssertNil(term)
+    XCTAssertEqual(term, .completed)
 
     right.push(1)
-    XCTAssertEqual(values, [0, 1])
-    XCTAssertNil(term)
+    XCTAssertEqual(values, [0])
+    XCTAssertEqual(term, .completed)
 
-    right.push(2)
-    XCTAssertEqual(values, [0, 1, 2])
-    XCTAssertNil(term)
-
-    right.terminate(withReason: .completed)
-    XCTAssertEqual(values, [0, 1, 2])
+    right.terminate(withReason: .cancelled)
+    XCTAssertEqual(values, [0])
     XCTAssertEqual(term, .completed)
   }
 
@@ -354,11 +375,11 @@ class FutureOperationsTests: XCTestCase {
       .onTerminate{ term = $0 }
 
     XCTAssertEqual(values, [0], "Left Completed should replay.")
-    XCTAssertNil(term)
+    XCTAssertEqual(term, .completed)
 
     completion?(.success(1))
 
-    XCTAssertEqual(values, [0, 1], "Right Future should emit event.")
+    XCTAssertEqual(values, [0])
     XCTAssertEqual(term, .completed)
   }
 
@@ -375,11 +396,11 @@ class FutureOperationsTests: XCTestCase {
       .onTerminate{ term = $0 }
 
     XCTAssertEqual(values, [0], "Right Completed should replay.")
-    XCTAssertNil(term)
+    XCTAssertEqual(term, .completed)
 
     completion?(.success(1))
 
-    XCTAssertEqual(values, [0, 1], "Left Future should emit event.")
+    XCTAssertEqual(values, [0])
     XCTAssertEqual(term, .completed)
   }
 
@@ -459,7 +480,7 @@ class FutureOperationsTests: XCTestCase {
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
     XCTAssertEqual(values.last?.right, "one")
-    XCTAssertNil(term)
+    XCTAssertEqual(term, .completed)
 
     right.push("two")
     XCTAssertEqual(values.count, 1)

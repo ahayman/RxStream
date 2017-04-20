@@ -77,7 +77,7 @@ class ObservableOperationsTests: XCTestCase {
     XCTAssertEqual(terminations.count, 1, "The stream should only terminate once.")
     
     stream.terminate(withReason: .completed)
-    XCTAssertEqual(terminations.last, Termination.completed, "The stream should only terminate once.")
+    XCTAssertEqual(terminations.last, .completed, "The stream should only terminate once.")
     XCTAssertEqual(terminations.count, 1, "The stream should only terminate once.")
   }
   
@@ -1041,12 +1041,8 @@ class ObservableOperationsTests: XCTestCase {
     
     left.terminate(withReason: .cancelled)
     XCTAssertNil(term)
-    guard
-      let mergeError = error as? MergeError,
-      case let .left(reason) = mergeError,
-      reason == .cancelled
-    else { return XCTFail("Expected Error to be thrown for left stream termination.") }
-    
+    XCTAssertNil(error)
+
     left.set(2)
     XCTAssertEqual(values.count, 4)
     
@@ -1094,12 +1090,8 @@ class ObservableOperationsTests: XCTestCase {
     
     left.terminate(withReason: .cancelled)
     XCTAssertNil(term)
-    guard
-      let mergeError = error as? MergeError,
-      case let .left(reason) = mergeError,
-      reason == .cancelled
-    else { return XCTFail("Expected Error to be thrown for left stream termination.") }
-    
+    XCTAssertNil(error)
+
     left.set(2)
     XCTAssertEqual(values.count, 4)
     
@@ -1308,13 +1300,8 @@ class ObservableOperationsTests: XCTestCase {
     
     right.terminate(withReason: .completed)
     XCTAssertNil(term)
-    guard
-      let mergeError = error as? MergeError,
-      case let .right(reason) = mergeError,
-      reason == .completed
-    else { return XCTFail("Expected Error to be thrown for right stream termination.") }
-    error = nil
-    
+    XCTAssertNil(error)
+
     left.set(4)
     XCTAssertEqual(values.count, 6)
     XCTAssertEqual(values.last?.left, 4)
