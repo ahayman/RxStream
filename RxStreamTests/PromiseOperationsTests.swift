@@ -466,28 +466,6 @@ class PromiseOperationsTests: XCTestCase {
     XCTAssertEqual(term, .completed)
   }
   
-  func testUsing() {
-    var values = [Int]()
-    var completion: ((Result<Int>) -> Void)?
-    let promise = Promise<Int>{ _, result in completion = result }
-    var term: Termination? = nil
-    var object: TestClass? = TestClass()
-    
-    promise
-      .using(object!)
-      .on{ values.append($0.1) }
-      .onTerminate{ term = $0 }
-    
-    XCTAssertNotNil(completion)
-    object = nil
-    
-    wait(for: 0.1) // Allow the object to deinit
-    
-    completion?(.success(1))
-    XCTAssertEqual(values, [])
-    XCTAssertEqual(term, .cancelled)
-  }
-  
   func testLifeOf() {
     var values = [Int]()
     var completion: ((Result<Int>) -> Void)?

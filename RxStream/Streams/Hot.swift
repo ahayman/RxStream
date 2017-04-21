@@ -48,7 +48,7 @@ public class HotInput<T> : Hot<T> {
   
 }
 
-public typealias HotTask<T> = ((Event<T>) -> Void) -> Void
+public typealias HotTask<T> = (@escaping (Event<T>) -> Void) -> Void
 
 /**
  A HotProducer takes a task that generates events to push into the hot stream.

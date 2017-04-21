@@ -683,7 +683,7 @@ extension Cold {
    - returns: A new Cold Stream
    */
   @discardableResult public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Cold<Request, (U, Response)> {
-    return appendUsing(stream: newSubStream("using(\(object), then: \(then))"), object: object, then: then)
+    return appendUsing(stream: newSubStream("using(\(object), then: \(then))"), object: object, then: then).canReplay(false)
   }
   
   /**
@@ -700,7 +700,7 @@ extension Cold {
    - returns: A new Cold Stream
    */
   @discardableResult public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Cold<Request, Response> {
-    return appendUsing(stream: newSubStream("lifeOf(\(object), then: \(then))"), object: object, then: then).map{ $0.1 }
+    return appendLifeOf(stream: newSubStream("lifeOf(\(object), then: \(then))"), object: object, then: then)
   }
   
   /**

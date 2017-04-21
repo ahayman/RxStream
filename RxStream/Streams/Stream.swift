@@ -293,8 +293,12 @@ public class Stream<T> {
   */
   private func push(events: [Event<T>], withKey key: EventKey) {
     guard self.isActive else { return }
-    
-    var values = [T]()
+
+    // update internal state with values from event
+    if self.canReplay, let values = events.oMap({ $0.eventValue }).filled {
+      self.current = values
+    }
+
     for event in events {
       printDebug(info: "\(descriptor): push event: \(event)")
     
@@ -302,13 +306,9 @@ public class Stream<T> {
       for processor in self.downStreams {
         processor.process(next: event, withKey: key)
       }
-      event.eventValue >>? { values.append($0) }
     }
     
-    // update internal state
-    if values.count > 0, self.canReplay {
-      self.current = values
-    }
+
   }
   
   /**

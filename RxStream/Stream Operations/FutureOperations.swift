@@ -50,21 +50,6 @@ extension Future {
   /**
    ## Branching
    
-   Attach an observation handler to the stream to observe transitions to new values. The handler includes the old value (if any) along with the new one.
-   
-   - parameter handler: The handler used to observe transitions between values.
-   - parameter prior: The last value emitted from the stream
-   - parameter next: The next value in the stream
-   
-   - returns: A new Future Stream
-   */
-  @discardableResult public func onTransition(_ handler: @escaping (_ prior: T?, _ next: T) -> Void) -> Future<T> {
-    return appendTransition(stream: Future<T>(op: "onTransition"), handler: handler)
-  }
-  
-  /**
-   ## Branching
-   
    Attach an observation handler to observe termination events for the stream.
     
    - parameter handler: The handler used to observe the stream's termination.
@@ -336,23 +321,6 @@ extension Future {
   /**
    ## Branching
    
-   Keep a weak reference to an object, emitting both the object and the current value as a tuple.
-   Terminate the stream on the next event that finds object `nil`.
-   
-   - parameter object: The object to keep a week reference.  The stream will terminate on the next even where the object is `nil`.
-   - parameter then: The termination to apply after the reference has been found `nil`.
-   
-   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
-   
-   - returns: A new Future Stream
-   */
-  @discardableResult public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Future<(U, T)> {
-    return appendUsing(stream: Future<(U, T)>(op: "using(\(object), then: \(then))"), object: object, then: then)
-  }
-  
-  /**
-   ## Branching
-   
    Tie the lifetime of the stream to that of the object.
    Terminate the stream on the next event that finds object `nil`.
    
@@ -365,7 +333,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Future<T> {
-    return appendUsing(stream: Future<(U, T)>(op: "lifeOf(\(object), then: \(then))"), object: object, then: then).map{ $0.1 }
+    return appendLifeOf(stream: Future<T>(op: "lifeOf(\(object), then: \(then))"), object: object, then: then)
   }
   
 }

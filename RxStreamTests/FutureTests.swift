@@ -70,5 +70,46 @@ class FutureTests: XCTestCase {
     XCTAssertEqual(terminations, [.error(TestError())])
     XCTAssertEqual(future.state, .terminated(reason: .error(TestError())))
   }
+
+  func testPreCompleteValue() {
+    let future = Future.completed(10)
+    var values = [Int]()
+
+    future.on{ values.append($0) }
+    XCTAssertEqual(values, [10])
+  }
+
+  func testPreCompletedError() {
+    let future = Future<Int>.completed(TestError())
+    var errors = [Error]()
+
+    future.onError{ errors.append($0) }
+    XCTAssertEqual(errors.count, 1)
+  }
+
+  func testFutureInputValue() {
+    let future = FutureInput<Int>()
+    var values = [Int]()
+
+    future.on{ values.append($0) }
+
+    XCTAssertEqual(values, [])
+
+    future.complete(10)
+
+    XCTAssertEqual(values, [10])
+  }
+
+  func testFutureInputError() {
+    let future = FutureInput<Int>()
+    var errors = [Error]()
+
+    future.onError{ errors.append($0) }
+
+    XCTAssertEqual(errors.count, 0)
+
+    future.complete(TestError())
+    XCTAssertEqual(errors.count, 1)
+  }
     
 }

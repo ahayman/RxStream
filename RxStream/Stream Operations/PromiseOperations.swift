@@ -127,23 +127,12 @@ extension Promise {
    - parameter handler: Handler will be called when an error is received.
    - parameter error: The error thrown by the stream
 
-   - note: The behavior of this operation is slightly different from other streams in that an error is _always_ reported, whether it is terminating or not.  Other streams only report non-terminating errors.
    - warning: It is possible for this to be called multiple times _if_ a retry operation is placed after this one.  Because a retry can re-initiate a task, that task may again return an error.  Use `onTerminate` and check for an error condition if you need to guarantee only one call.
 
    - returns: a new Future stream
    */
   @discardableResult public func onError(_ handler: @escaping (_ error: Error) -> Void) -> Promise<T> {
-    return append(stream: Promise<T>(op: "onError")) { (next, completion) in
-      switch next {
-      case .error(let error):
-        handler(error)
-        completion(.error(error))
-      case .terminate(.error(let error)):
-        handler(error)
-        completion(.terminate(nil, .error(error)))
-      case .next, .terminate: completion(next.signal)
-      }
-    }
+    return appendOnError(stream: Promise<T>(op: "onError"), handler: handler)
   }
 
   /**
@@ -509,24 +498,6 @@ extension Promise {
   /**
    ## Branching
    
-   Keep a weak reference to an object, emitting both the object and the current value as a tuple.
-   Terminate the stream on the next event that finds object `nil`.
-   
-   - parameter object: The object to keep a week reference.  The stream will terminate on the next even where the object is `nil`.
-   - parameter then: The termination to apply after the reference has been found `nil`.
-   
-   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
-   - warning: This stream will return a stream that _cannot_ be replayed.  This prevents the stream of retaining the object and extending its lifetime.
-   
-   - returns: A new Promise Stream
-   */
-  @discardableResult public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Promise<(U, T)> {
-    return appendUsing(stream: Promise<(U, T)>(op: "using(\(object), then: \(then))"), object: object, then: then)
-  }
-  
-  /**
-   ## Branching
-   
    Tie the lifetime of the stream to that of the object.
    Terminate the stream on the next event that finds object `nil`.
    
@@ -538,7 +509,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Promise<T> {
-    return appendUsing(stream: Promise<(U, T)>(op: "lifeOf(\(object), then: \(then))"), object: object, then: then).map{ $0.1 }
+    return appendLifeOf(stream: Promise<T>(op: "lifeOf(\(object), then: \(then))"), object: object, then: then)
   }
   
   /**
