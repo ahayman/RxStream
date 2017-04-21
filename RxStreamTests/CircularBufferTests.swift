@@ -107,5 +107,14 @@ class CircularBufferTests: XCTestCase {
     XCTAssertEqual(buffer[1], 5)
     XCTAssertEqual(buffer[2], 6)
   }
+  
+  func testReversal() {
+    let buffer = CircularBuffer(size: 3, data: [0, 1, 2])
+    var results = [Int]()
+    for i in buffer.reversed() {
+      results.append(i)
+    }
+    XCTAssertEqual(results, [2, 1, 0])
+  }
     
 }

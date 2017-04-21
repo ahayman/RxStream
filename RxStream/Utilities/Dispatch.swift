@@ -223,12 +223,15 @@ open class CustomQueue {
 }
 
 /// Represents the Priority for a background queue. Note: Default is not represented here.  Use the Queue enum case .Background for a .Default priority background queue.
-public enum Priority {
+public enum Priority : Equatable {
+  /// Same as: DispatchQoS.bakground
   case background
+  /// Same as: DispatchQoS.utility
   case low
+  /// Same as: DispatchQoS.userInitiated
   case high
   
-  fileprivate var priorityT: DispatchQoS {
+  var qos: DispatchQoS {
     switch self {
     case .background: return DispatchQoS.background
     case .low: return DispatchQoS.utility
@@ -236,10 +239,16 @@ public enum Priority {
     }
   }
 }
+public func == (lhs: Priority, rhs: Priority) -> Bool {
+  switch (lhs, rhs) {
+  case (.background, .background), (.low, .low), (.high, .high): return true
+  default: return false
+  }
+}
 
 /** This represents a Queue that can be dispatched onto.
 */
-public enum Queue {
+public enum Queue : Equatable {
   /// The main queue
   case main
   /// The background, global queue at default priority. Saves us from always specifying a priority when dispatching in the background.
@@ -254,7 +263,7 @@ public enum Queue {
     switch self {
     case .main: return DispatchQueue.main
     case .background: return DispatchQueue.global(qos: .background)
-    case let .priorityBackground(priority): return DispatchQueue.global(qos: priority.priorityT.qosClass)
+    case let .priorityBackground(priority): return DispatchQueue.global(qos: priority.qos.qosClass)
     case let .custom(queue): return queue.queueT
     }
   }
@@ -272,5 +281,14 @@ public enum Queue {
         return false
       }
     }
+  }
+}
+public func ==(lhs: Queue, rhs: Queue) -> Bool {
+  switch (lhs, rhs) {
+  case (.main, .main): return true
+  case (.background, .background): return true
+  case let (.priorityBackground(lPriority), .priorityBackground(rPriority)): return lPriority == rPriority
+  case let (.custom(lCustom), .custom(rCustom)): return lCustom.key == rCustom.key
+  default: return false
   }
 }

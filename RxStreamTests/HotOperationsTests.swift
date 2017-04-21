@@ -51,6 +51,29 @@ class HotOperationsTests: XCTestCase {
     stream.push(TestError())
     XCTAssertEqual(errors.count, 2)
   }
+
+  func testMapError() {
+    var errors = [Error]()
+    var terms = [Termination]()
+    let stream = HotInput<Int>()
+
+    stream
+      .onError{ errors.append($0)}
+      .mapError{ _ in return errors.count == 2 ? .completed : nil }
+      .onTerminate{ terms.append($0) }
+
+    stream.push(0)
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+
+    stream.push(TestError())
+    XCTAssertEqual(errors.count, 1)
+    XCTAssertEqual(terms, [])
+
+    stream.push(TestError())
+    XCTAssertEqual(errors.count, 2)
+    XCTAssertEqual(terms, [.completed])
+  }
   
   func testOnTransition() {
     var prior: Int? = nil
@@ -838,7 +861,22 @@ class HotOperationsTests: XCTestCase {
     XCTAssertEqual(values.last?.0, "World")
     XCTAssertEqual(values.last?.1, 2)
   }
-  
+
+  func testCount() {
+    var count: UInt = 0
+    let stream = HotInput<Int>()
+    stream.count().on{ count = $0 }
+
+    stream.push(1)
+    XCTAssertEqual(count, 1)
+
+    stream.push(1)
+    XCTAssertEqual(count, 2)
+
+    stream.push(1)
+    XCTAssertEqual(count, 3)
+  }
+
   func testMin() {
     var minValues = [Int]()
     var minComparable = [Int]()

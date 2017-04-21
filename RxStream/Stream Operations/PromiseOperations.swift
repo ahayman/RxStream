@@ -138,21 +138,6 @@ extension Promise {
   /**
    ## Branching
    
-   Attach an observation handler to the stream to observe transitions to new values. The handler includes the old value (if any) along with the new one.
-   
-   - parameter handler: The handler used to observe transitions between values.
-   - parameter prior: The last value emitted from the stream
-   - parameter next: The next value in the stream
-   
-   - returns: A new Promise Stream
-   */
-  @discardableResult public func onTransition(_ handler: @escaping (_ prior: T?, _ next: T) -> Void) -> Promise<T> {
-    return appendTransition(stream: Promise<T>(op: "onTransition"), handler: handler)
-  }
-  
-  /**
-   ## Branching
-   
    Attach an observation handler to observe termination events for the stream.
     
    - parameter handler: The handler used to observe the stream's termination.
@@ -430,7 +415,7 @@ extension Promise {
    - parameter handler: Takes the next value and returns `false` to terminate the stream or `true` to remain active.
    - parameter value: The current value being passed down the stream.
    
-   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
+   - warning: Be aware that terminations propagate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
    
    - returns: A new Promise Stream
    */
@@ -449,7 +434,7 @@ extension Promise {
    - parameter handler: Takes the next value and returns `true` to terminate the stream or `false` to remain active.
    - parameter value: The current value being passed down the stream.
    
-   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
+   - warning: Be aware that terminations propagate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
    
    - returns: A new Promise Stream
    */

@@ -69,6 +69,15 @@ public class ObservableInput<T> : Observable<T> {
   public init(_ value: T) {
     super.init(value, op: "Input")
   }
+
+  /**
+  This will push an error down into the observable stream.
+  - note: It will _not_ set the observable value to the error.
+  The error will simply be pushed down in case there are observers for it.
+  */
+  public func push(error: Error) {
+    self.process(event: .error(error))
+  }
   
   public func terminate(withReason reason: Termination) {
     self.process(event: .terminate(reason: reason))

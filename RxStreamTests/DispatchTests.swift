@@ -7,7 +7,7 @@
 //
 
 import XCTest
-import Rx
+@testable import Rx
 
 private class WeakBox<T: AnyObject> {
   weak var value: T?
@@ -51,6 +51,67 @@ class DispatchTests: XCTestCase {
       }
     }
     
+    waitForExpectations(timeout: 5.0)
+  }
+
+  func testInline() {
+    var executed: Bool = false
+
+    Dispatch.inline.execute {
+      executed = true
+    }
+
+    XCTAssertTrue(executed)
+  }
+
+  func testInlineReentry() {
+    var outer = false
+    var inner = false
+
+    Dispatch.inline.execute{
+      outer = true
+      Dispatch.inline.execute{
+        inner = true
+      }
+    }
+
+    XCTAssertTrue(outer)
+    XCTAssertTrue(inner)
+  }
+
+  func testPriorityLow() {
+    let expectMain = expectation(description: "dispatched in background.")
+
+    Dispatch.async(on: .priorityBackground(.low)).execute {
+      if !Thread.isMainThread {
+        expectMain.fulfill()
+      }
+    }
+
+    waitForExpectations(timeout: 5.0)
+  }
+
+  func testPriorityBackground() {
+    let expectMain = expectation(description: "dispatched in background.")
+
+    Dispatch.async(on: .priorityBackground(.background)).execute {
+      if !Thread.isMainThread {
+        expectMain.fulfill()
+      }
+    }
+
+    waitForExpectations(timeout: 5.0)
+  }
+
+  func testPriorityHigh() {
+    let expectMain = expectation(description: "dispatched in background.")
+
+    Dispatch.async(on: .priorityBackground(.high)).execute {
+      if !Thread.isMainThread {
+        expectMain.fulfill()
+      }
+    }
+
     waitForExpectations(timeout: 5.0)
   }
   
@@ -116,6 +177,20 @@ class DispatchTests: XCTestCase {
     }
     waitForExpectations(timeout: 5.0)
   }
+
+  func testConcurrentSyncReentry() {
+    let dispatch = Dispatch.sync(on: .custom(CustomQueue(type: .concurrent, name: "TestConcurrentQueue")))
+    let outerDispatch = expectation(description: "Outer dispatch executed.")
+    let innerDispatch = expectation(description: "Inner dispatch executed without locking.")
+    dispatch.execute {
+      outerDispatch.fulfill()
+      // Re-entry
+      dispatch.execute {
+        innerDispatch.fulfill()
+      }
+    }
+    waitForExpectations(timeout: 5.0)
+  }
   
   func testReferenceCycleBreak() {
     var chains = [WeakBox<ExecutionChain>]()
@@ -147,5 +222,45 @@ class DispatchTests: XCTestCase {
     XCTAssertNil(chains[2].value)
     XCTAssertNil(chains[3].value)
   }
-  
+
+  func testDispatchQueueAccess() {
+    XCTAssertNil(Dispatch.inline.queue)
+
+    var queue = Dispatch.async(on: .main).queue
+    XCTAssertNotNil(queue)
+    XCTAssertEqual(queue, .main)
+
+    queue = Dispatch.sync(on: .main).queue
+    XCTAssertNotNil(queue)
+    XCTAssertEqual(queue, .main)
+    XCTAssertNotEqual(queue, .background)
+
+    queue = Dispatch.sync(on: .background).queue
+    XCTAssertNotNil(queue)
+    XCTAssertEqual(queue, .background)
+
+    queue = Dispatch.sync(on: .priorityBackground(.low)).queue
+    XCTAssertNotNil(queue)
+    XCTAssertEqual(queue, .priorityBackground(.low))
+
+    queue = Dispatch.sync(on: .priorityBackground(.high)).queue
+    XCTAssertNotNil(queue)
+    XCTAssertEqual(queue, .priorityBackground(.high))
+
+    queue = Dispatch.sync(on: .priorityBackground(.background)).queue
+    XCTAssertNotNil(queue)
+    XCTAssertEqual(queue, .priorityBackground(.background))
+
+    let custom = CustomQueue(type: .serial, name: "TestCustomQueue")
+    queue = Dispatch.sync(on: .custom(custom)).queue
+    XCTAssertNotNil(queue)
+    XCTAssertEqual(queue, .custom(custom))
+  }
+
+  func testPriorityQOS() {
+    XCTAssertEqual(Priority.background.qos, DispatchQoS.background)
+    XCTAssertEqual(Priority.high.qos, DispatchQoS.userInitiated)
+    XCTAssertEqual(Priority.low.qos, DispatchQoS.utility)
+  }
+
 }

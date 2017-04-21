@@ -132,7 +132,46 @@ class ObservableOperationsTests: XCTestCase {
     XCTAssertEqual(terminations.count, 1, "The stream should only terminate once.")
     XCTAssertEqual(stream.state, .terminated(reason: .completed))
   }
-  
+
+  func testOnError() {
+    var errors = [Error]()
+    let stream = ObservableInput<Int>(0)
+
+    stream.onError{ errors.append($0)}
+
+    stream.set(0)
+    XCTAssertEqual(errors.count, 0)
+
+    stream.push(error: TestError())
+    XCTAssertEqual(errors.count, 1)
+
+    stream.push(error: TestError())
+    XCTAssertEqual(errors.count, 2)
+  }
+
+  func testMapError() {
+    var errors = [Error]()
+    var terms = [Termination]()
+    let stream = ObservableInput<Int>(0)
+
+    stream
+      .onError{ errors.append($0)}
+      .mapError{ _ in return errors.count == 2 ? .completed : nil }
+      .onTerminate{ terms.append($0) }
+
+    stream.set(0)
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terms, [])
+
+    stream.push(error: TestError())
+    XCTAssertEqual(errors.count, 1)
+    XCTAssertEqual(terms, [])
+
+    stream.push(error: TestError())
+    XCTAssertEqual(errors.count, 2)
+    XCTAssertEqual(terms, [.completed])
+  }
+
   func testMap() {
     var mapped: String? = nil
     var mapCount = 0
@@ -1104,6 +1143,63 @@ class ObservableOperationsTests: XCTestCase {
     
     XCTAssertEqual(term, .completed)
   }
+
+  func testHotZip() {
+    var values = [(left: Int, right: String)]()
+    let left = ObservableInput<Int>(0)
+    let right = HotInput<String>()
+    var term: Termination? = nil
+
+    left
+      .zip(right)
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    left.set(1)
+    XCTAssertEqual(values.count, 0)
+
+    left.set(2)
+    XCTAssertEqual(values.count, 0)
+
+    right.push("one")
+    XCTAssertEqual(values.count, 1)
+    XCTAssertEqual(values.last?.left, 1)
+    XCTAssertEqual(values.last?.right, "one")
+
+    right.push("two")
+    XCTAssertEqual(values.count, 2)
+    XCTAssertEqual(values.last?.left, 2)
+    XCTAssertEqual(values.last?.right, "two")
+
+    right.push("three")
+    XCTAssertEqual(values.count, 2)
+    XCTAssertEqual(values.last?.left, 2)
+    XCTAssertEqual(values.last?.right, "two")
+
+    right.push("four")
+    XCTAssertEqual(values.count, 2)
+    XCTAssertEqual(values.last?.left, 2)
+    XCTAssertEqual(values.last?.right, "two")
+
+    right.push("five")
+    XCTAssertEqual(values.count, 2)
+    XCTAssertEqual(values.last?.left, 2)
+    XCTAssertEqual(values.last?.right, "two")
+
+    left.set(3)
+    XCTAssertEqual(values.count, 3)
+    XCTAssertEqual(values.last?.left, 3)
+    XCTAssertEqual(values.last?.right, "three")
+
+    left.set(4)
+    XCTAssertEqual(values.count, 4)
+    XCTAssertEqual(values.last?.left, 4)
+    XCTAssertEqual(values.last?.right, "four")
+
+    left.terminate(withReason: .completed)
+    XCTAssertEqual(values.count, 4)
+    XCTAssertEqual(term, .completed)
+  }
   
   func testZip() {
     var values = [(left: Int, right: String)]()
@@ -1312,6 +1408,63 @@ class ObservableOperationsTests: XCTestCase {
     XCTAssertEqual(term, .completed)
     XCTAssertNil(error)
   }
+
+  func testCombineHot() {
+    var values = [(left: Int, right: String)]()
+    let left = ObservableInput<Int>(0)
+    let right = HotInput<String>()
+    var term: Termination? = nil
+    var error: Error? = nil
+
+    left
+      .combine(latest: false, stream: right)
+      .on{ values.append($0) }
+      .onError{ error = $0 }
+      .onTerminate{ term = $0 }
+
+    left.set(1)
+    XCTAssertEqual(values.count, 0)
+
+    left.set(2)
+    XCTAssertEqual(values.count, 0)
+
+    right.push("one")
+    XCTAssertEqual(values.count, 1)
+    XCTAssertEqual(values.last?.left, 2)
+    XCTAssertEqual(values.last?.right, "one")
+
+    right.push("two")
+    XCTAssertEqual(values.count, 1)
+    XCTAssertEqual(values.last?.left, 2)
+    XCTAssertEqual(values.last?.right, "one")
+
+    right.push("three")
+    XCTAssertEqual(values.count, 1)
+    XCTAssertEqual(values.last?.left, 2)
+    XCTAssertEqual(values.last?.right, "one")
+
+    left.set(3)
+    XCTAssertEqual(values.count, 2)
+    XCTAssertEqual(values.last?.left, 3)
+    XCTAssertEqual(values.last?.right, "three")
+
+    right.push("four")
+    XCTAssertEqual(values.count, 2)
+    XCTAssertEqual(values.last?.left, 3)
+    XCTAssertEqual(values.last?.right, "three")
+
+    right.terminate(withReason: .completed)
+    XCTAssertEqual(term, .completed)
+    XCTAssertNil(error)
+
+    left.set(4)
+    XCTAssertEqual(values.count, 2)
+
+    left.terminate(withReason: .cancelled)
+    XCTAssertEqual(values.count, 2)
+    XCTAssertEqual(term, .completed)
+    XCTAssertNil(error)
+  }
   
   func testCombine() {
     var values = [(left: Int, right: String)]()
@@ -1368,6 +1521,21 @@ class ObservableOperationsTests: XCTestCase {
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(term, .completed)
     XCTAssertNil(error)
+  }
+
+  func testCount() {
+    var count: UInt = 0
+    let stream = ObservableInput(0)
+    stream.count().on{ count = $0 }
+
+    stream.set(1)
+    XCTAssertEqual(count, 1)
+
+    stream.set(1)
+    XCTAssertEqual(count, 2)
+
+    stream.set(1)
+    XCTAssertEqual(count, 3)
   }
   
   func testAverage() {
@@ -1518,7 +1686,63 @@ class ObservableOperationsTests: XCTestCase {
     XCTAssertEqual(values, [1, 3, 7])
     XCTAssertEqual(term, .cancelled)
   }
-  
+
+  func testUntilTermination(){
+    var values = [Int]()
+    let stream = ObservableInput<Int>(0)
+    var term: Termination? = nil
+
+    stream
+      .until{ value -> Termination? in
+        return value == 10 ? .completed : nil
+      }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    stream.set(1)
+    XCTAssertEqual(values, [1])
+
+    stream.set(3)
+    XCTAssertEqual(values, [1, 3])
+
+    stream.set(7)
+    XCTAssertEqual(values, [1, 3, 7])
+
+    stream.set(11)
+    XCTAssertEqual(values, [1, 3, 7, 11])
+
+    stream.set(10)
+    XCTAssertEqual(values, [1, 3, 7, 11])
+    XCTAssertEqual(term, .completed)
+  }
+
+  func testUntilTransitionTermination() {
+    var values = [Int]()
+    let stream = ObservableInput<Int>(0)
+    var term: Termination? = nil
+
+    stream
+      .until{ (prior, next) -> Termination? in
+        guard let prior = prior else { return nil }
+        return prior == next ? .completed : nil
+      }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    stream.set(1)
+    XCTAssertEqual(values, [1])
+
+    stream.set(3)
+    XCTAssertEqual(values, [1, 3])
+
+    stream.set(7)
+    XCTAssertEqual(values, [1, 3, 7])
+
+    stream.set(7)
+    XCTAssertEqual(values, [1, 3, 7])
+    XCTAssertEqual(term, .completed)
+  }
+
   func testNext() {
     var values = [Int]()
     let stream = ObservableInput<Int>(0)
@@ -1603,5 +1827,41 @@ class ObservableOperationsTests: XCTestCase {
     XCTAssertEqual(values, [1, 2, 3])
     XCTAssertEqual(term, .cancelled)
   }
-  
+
+  func testHot() {
+    let stream = ObservableInput<Int>(0)
+    var values = [Int]()
+
+    stream.hot().on{ values.append($0) }
+
+    XCTAssertEqual(values, [])
+
+    stream.set(1)
+    XCTAssertEqual(values, [1])
+
+    stream.set(2)
+    XCTAssertEqual(values, [1, 2])
+
+    stream.set(3)
+    XCTAssertEqual(values, [1, 2, 3])
+  }
+
+  func testObservable() {
+    let stream = ObservableInput<Int>(0)
+    var values = [Int]()
+
+    stream.observable().on{ values.append($0) }
+
+    XCTAssertEqual(values, [])
+
+    stream.set(1)
+    XCTAssertEqual(values, [1])
+
+    stream.set(2)
+    XCTAssertEqual(values, [1, 2])
+
+    stream.set(3)
+    XCTAssertEqual(values, [1, 2, 3])
+  }
+
 }
