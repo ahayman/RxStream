@@ -164,7 +164,7 @@ public class Stream<T> {
    
    - note: This discussion really only applies when you care how multiple chains are processed.  99% of the time you don't need to worry abou it since an individual chain will always process in order and that covers the majority use cases.
    */
-  internal(set) public var dispatch = Dispatch.inline
+  internal(set) public var dispatch: Dispatch?
   
   fileprivate var nextDispatch: Dispatch?
   
@@ -206,7 +206,8 @@ public class Stream<T> {
 
   @discardableResult func configureStreamAsChild<U: BaseStream>(stream: U) -> U {
     guard let child = stream as? Stream<U.Data> else { fatalError("Error attaching streams: All Streams must descend from Stream.") }
-    dispatch.execute {
+
+    let work = {
       if let dispatch = self.nextDispatch {
         child.dispatch = dispatch
         self.nextDispatch = nil
@@ -219,14 +220,29 @@ public class Stream<T> {
       child.canReplay = self.canReplay
       child.parent = self
     }
+
+    if let dispatch = self.dispatch {
+      dispatch.execute(work)
+    } else {
+      work()
+    }
+
     return stream
   }
 
   @discardableResult func attachChildStream<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
     guard let child = stream as? Stream<U.Data> else { fatalError("Error attaching streams: All Streams must descend from Stream.") }
-    dispatch.execute {
+
+    let work = {
       self.appendDownStream(processor: self.newDownstreamProcessor(forStream: child, withProcessor: op))
     }
+
+    if let dispatch = self.dispatch {
+      dispatch.execute(work)
+    } else {
+      work()
+    }
+
     return stream
   }
 
@@ -276,13 +292,19 @@ public class Stream<T> {
    This will cause a chain to unravel itself if one of the elements terminates itself.
    */
   func prune(_ prune: Prune, withReason reason: Termination) {
-    dispatch.execute {
+    let work = {
       guard prune != .none else { return }
       self.downStreams = self.downStreams.filter{ !$0.shouldPrune }
       if case .upStream = prune {
         self.terminate(reason: reason, andPrune: .none, pushDownstreamTo: [])
         self.parent?.prune(prune, withReason: reason)
       }
+    }
+
+    if let dispatch = self.dispatch {
+      dispatch.execute(work)
+    } else {
+      work()
     }
   }
   
@@ -316,7 +338,7 @@ public class Stream<T> {
    the termination into those downstreams.
    */
   func terminate(reason: Termination, andPrune prune: Prune, pushDownstreamTo types: [StreamType]) {
-    dispatch.execute {
+    let work = {
       self.printDebug(info: "\(self.descriptor): Terminating with \(reason)")
       if self.isActive {
         self.state = .terminated(reason: reason)
@@ -330,6 +352,12 @@ public class Stream<T> {
         }
       }
       self.prune(prune, withReason: reason)
+    }
+
+    if let dispatch = self.dispatch {
+      dispatch.execute(work)
+    } else {
+      work()
     }
   }
   
@@ -381,7 +409,8 @@ public class Stream<T> {
    */
   func process<U>(key: EventKey, next: Event<U>, withOp op: @escaping StreamOp<U, T>) {
     guard isActive && pendingTermination == nil else { return }
-    dispatch.execute {
+
+    let work = {
       self.printDebug(info: "\(self.descriptor): begin processing \(next)")
       guard let (key, event) = self.preProcess(event: next, withKey: key) else { return }
       
@@ -390,7 +419,7 @@ public class Stream<T> {
       
       // Abstract out the process work so it can be done inline or applied to a throttle
       let workProcessor: ThrottledWork = { signal in
-        self.dispatch.execute {
+        let throttleWork = {
           // If the throttle signal `.cancel` (not .perform), then we need to decrement current work and process the termination, if any
           guard case .perform(let completion) = signal else {
             let opSignal: OpSignal<T>
@@ -408,7 +437,7 @@ public class Stream<T> {
           }
 
           op(event) { opSignal in
-            self.dispatch.execute {
+            let signalWork = {
               switch opSignal {
               case .push(let value): self.push(events: value.events, withKey: key)
               case .error(let error): self.push(events: [.error(error)], withKey: key)
@@ -433,7 +462,20 @@ public class Stream<T> {
 
               completion()
             }
+
+            if let dispatch = self.dispatch {
+              dispatch.execute(signalWork)
+            } else {
+              signalWork()
+            }
+
           }
+        }
+
+        if let dispatch = self.dispatch {
+          dispatch.execute(throttleWork)
+        } else {
+          throttleWork()
         }
       }
       
@@ -442,6 +484,12 @@ public class Stream<T> {
       } else {
         workProcessor(.perform{ })
       }
+    }
+
+    if let dispatch = self.dispatch {
+      dispatch.execute(work)
+    } else {
+      work()
     }
   }
   

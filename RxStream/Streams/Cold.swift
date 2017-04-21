@@ -176,14 +176,22 @@ public class Cold<Request, Response> : Stream<Response> {
     decrementLoad(forKey: key.key)
   }
   
-  private func make(request: Request, withKey key: String, withTask task: ColdTask) {
-    var key: String? = key
-    task(self.stateObservable, request) {
-      guard let requestKey = key else { return }
-      key = nil
-      $0
-        .onFailure{ self.process(event: .error($0), withKey: .keyed(requestKey)) }
-        .onSuccess{ self.process(event: .next($0), withKey: .keyed(requestKey)) }
+  private func make(request: Request, withKey key: String, withTask task: @escaping ColdTask) {
+    let work = {
+      var key: String? = key
+      task(self.stateObservable, request) {
+        guard let requestKey = key else { return }
+        key = nil
+        $0
+          .onFailure { self.process(event: .error($0), withKey: .keyed(requestKey)) }
+          .onSuccess { self.process(event: .next($0), withKey: .keyed(requestKey)) }
+      }
+    }
+
+    if let dispatch = self.dispatch {
+      dispatch.execute(work)
+    } else {
+      work()
     }
   }
   

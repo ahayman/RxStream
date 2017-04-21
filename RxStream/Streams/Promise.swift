@@ -143,7 +143,7 @@ public class Promise<T> : Stream<T> {
   
   /// Used to run the task and process the value the task returns.
   private func run(task: @escaping PromiseTask<T>) {
-    dispatch.execute {
+    let work = {
       var complete = false
       task(self.stateObservable) { [weak self] completion in
         guard let me = self, !complete, me.isActive else { return }
@@ -152,6 +152,12 @@ public class Promise<T> : Stream<T> {
           .onFailure{ me.process(event: .error($0)) }
           .onSuccess{ me.process(event: .next($0)) }
       }
+    }
+
+    if let dispatch = self.dispatch {
+      dispatch.execute(work)
+    } else {
+      work()
     }
   }
   
