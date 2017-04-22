@@ -53,9 +53,9 @@ class ObservableTests: XCTestCase {
     var observed = [String]()
     
     let lastObserved = observable
-      .replayNext()
       .map{ "\($0)" }
       .on{ observed.append($0) }
+      .replay()
     
     XCTAssertEqual(observable.value, 0)
     XCTAssertEqual(lastObserved.value, "0")

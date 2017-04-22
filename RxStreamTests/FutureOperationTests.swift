@@ -20,10 +20,12 @@ class FutureOperationsTests: XCTestCase {
     var onCount = 0
     let future = Future<Int>{ $0(.success(0)) }
     
-    future.on {
-      value = $0
-      onCount += 1
-    }
+    future
+      .on {
+        value = $0
+        onCount += 1
+      }
+      .replay()
     
     XCTAssertEqual(value, 0)
     XCTAssertEqual(onCount, 1)
@@ -33,9 +35,9 @@ class FutureOperationsTests: XCTestCase {
     var terminations = [Termination]()
     let future = Future<Int>{ $0(.success(0)) }
     
-    future.onTerminate{
-      terminations.append($0)
-    }
+    future
+      .onTerminate{ terminations.append($0) }
+      .replay()
     
     XCTAssertEqual(terminations.count, 1, "The future should only terminate once.")
   }
@@ -58,6 +60,7 @@ class FutureOperationsTests: XCTestCase {
         onCount += 1
         mapped = $0
       }
+      .replay()
     
     XCTAssertEqual(mapped, "0")
     XCTAssertEqual(mapCount, 1)
@@ -73,6 +76,7 @@ class FutureOperationsTests: XCTestCase {
       .resultMap{ return .success("\($0)") }
       .on{ mapped.append($0) }
       .onError{ error = $0 }
+      .replay()
     
     XCTAssertEqual(mapped, ["0"])
     XCTAssertNil(error)
@@ -96,6 +100,7 @@ class FutureOperationsTests: XCTestCase {
         onCount += 1
       }
       .onError{ error = $0 }
+      .replay()
     
     XCTAssertEqual(mapCount, 1)
     XCTAssertEqual(onCount, 0)
@@ -114,6 +119,7 @@ class FutureOperationsTests: XCTestCase {
     future
       .flatMap { $0.components(separatedBy: " ") }
       .on { mapped.append($0) }
+      .replay()
     
     guard mapped.count == 8 else { return XCTFail("Didn't receive expected mapped output count. Expected 8, received \(mapped.count)") }
     XCTAssertEqual(mapped[0], "Test")
@@ -133,7 +139,8 @@ class FutureOperationsTests: XCTestCase {
     future
       .flatten()
       .on { mapped.append($0) }
-    
+      .replay()
+
     guard mapped.count == 5 else { return XCTFail("Didn't receive expected mapped output count. Expected 5, received \(mapped.count)") }
     for i in 0..<5 {
       XCTAssertEqual(mapped[i], i)
@@ -147,6 +154,7 @@ class FutureOperationsTests: XCTestCase {
     future
       .filter { !$0.contains("a") } //Filter out strings that contain a
       .on{ values.append($0) }
+      .replay()
     
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, "hello")
@@ -159,7 +167,8 @@ class FutureOperationsTests: XCTestCase {
     future
       .filter { !$0.contains("a") } //Filter out strings that contain a
       .on{ values.append($0) }
-    
+      .replay()
+
     XCTAssertEqual(values.count, 0)
   }
   
@@ -167,7 +176,10 @@ class FutureOperationsTests: XCTestCase {
     var values = [(Int, String)]()
     let future = Future<Int>{ $0(.success(0)) }
     
-    future.stamp{ "\($0)" }.on{ values.append($0) }
+    future
+      .stamp{ "\($0)" }
+      .on{ values.append($0) }
+      .replay()
     
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, 0)
@@ -178,7 +190,10 @@ class FutureOperationsTests: XCTestCase {
     var values = [(Int, Date)]()
     let future = Future<Int>{ $0(.success(0)) }
     
-    future.timeStamp().on{ values.append($0) }
+    future
+      .timeStamp()
+      .on{ values.append($0) }
+      .replay()
     
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, 0)
@@ -189,7 +204,10 @@ class FutureOperationsTests: XCTestCase {
     var values = [Int]()
     let future = Future<Int>{ $0(.success(0)) }
     
-    future.delay(0.01).on{ values.append($0) }
+    future
+      .delay(0.01)
+      .on{ values.append($0) }
+      .replay()
     
     XCTAssertEqual(values.count, 0)
     
@@ -206,6 +224,7 @@ class FutureOperationsTests: XCTestCase {
     future
       .start(with: [-3, -2, -1])
       .on{ values.append($0) }
+      .replay()
     
     XCTAssertEqual(values, [-3, -2, -1, 0])
   }
@@ -217,6 +236,7 @@ class FutureOperationsTests: XCTestCase {
     future
       .concat([98, 99, 100])
       .on{ values.append($0) }
+      .replay()
     
     XCTAssertEqual(values, [0, 98, 99, 100])
   }
@@ -242,13 +262,17 @@ class FutureOperationsTests: XCTestCase {
     future
       .defaultValue(0)
       .on{ values.append($0) }
+      .replay()
     
     XCTAssertEqual(values, [0])
     
     future = Future<Int>{ $0(.success(1)) }
     values = []
     
-    future.defaultValue(0).on{ values.append($0) }
+    future
+      .defaultValue(0)
+      .on{ values.append($0) }
+      .replay()
     
     XCTAssertEqual(values, [1])
   }
@@ -334,6 +358,7 @@ class FutureOperationsTests: XCTestCase {
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
+      .replay()
 
     XCTAssertEqual(values, [0])
     XCTAssertEqual(term, .completed)
@@ -357,6 +382,7 @@ class FutureOperationsTests: XCTestCase {
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
+      .replay()
 
     XCTAssertEqual(values, [0], "Both terms are emitted, but only the last term emitted is replayed.")
     XCTAssertEqual(term, .completed)
@@ -373,6 +399,7 @@ class FutureOperationsTests: XCTestCase {
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
+      .replay()
 
     XCTAssertEqual(values, [0], "Left Completed should replay.")
     XCTAssertEqual(term, .completed)
@@ -394,6 +421,7 @@ class FutureOperationsTests: XCTestCase {
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
+      .replay()
 
     XCTAssertEqual(values, [0], "Right Completed should replay.")
     XCTAssertEqual(term, .completed)
@@ -414,6 +442,7 @@ class FutureOperationsTests: XCTestCase {
       .zip(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
+      .replay()
     
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
@@ -432,6 +461,7 @@ class FutureOperationsTests: XCTestCase {
       .zip(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
+      .replay()
 
     XCTAssertEqual(values.count, 0)
 
@@ -454,6 +484,7 @@ class FutureOperationsTests: XCTestCase {
       .zip(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
+      .replay()
 
     XCTAssertEqual(values.count, 0)
 
@@ -475,6 +506,7 @@ class FutureOperationsTests: XCTestCase {
       .combine(stream: right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
+      .replay()
 
     right.push("one")
     XCTAssertEqual(values.count, 1)

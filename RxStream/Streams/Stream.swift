@@ -59,6 +59,7 @@ extension Stream : BaseStream { }
 
 protocol ParentStream : class {
   func prune(_ prune: Prune, withReason reason: Termination)
+  func replayLast()
 }
 
 /// Indirection because we can't store class variables in a Generic
@@ -124,10 +125,7 @@ public class Stream<T> {
 
   /// The queue contains the prior value, if any, and the current value.  The queue will be `nil` when the stream is first created.
   var current: [T]? = nil
-  
-  /// If this is set `true`, the next stream attached will have the current values replayed into it, if any.
-  var replay: Bool = false
-  
+
   /// If this is set `true`, the stream can replay values.  Otherwise, it cannot.  If a stream cannot replay values, then setting `replay == true` will do nothing.
   fileprivate(set) public var canReplay: Bool = true {
     didSet { if !canReplay { current = nil } }
@@ -135,12 +133,15 @@ public class Stream<T> {
   
   /// Defines the parent stream to which this stream is attached.  Currently used for pruning when a child is terminated.
   weak var parent: ParentStream? = nil
+
+  /// Secondary parent stream for merged streams representing the right side parent
+  weak var rParent: ParentStream? = nil
   
   /// Determines whether the stream will persist even after all down streams have terminated.
   fileprivate var persist: Bool = false
   
   /// When the stream is terminated, this will contain the Terminate reason.  It's primarily used to replay terminate events downstream when a stream is attached.
-  private var termination: Termination? {
+  var termination: Termination? {
     guard case let .terminated(terminate) = state else { return nil }
     return terminate
   }
@@ -204,21 +205,24 @@ public class Stream<T> {
     return DownstreamProcessor(stream: stream, processor: processor)
   }
 
-  @discardableResult func configureStreamAsChild<U: BaseStream>(stream: U) -> U {
+  @discardableResult func configureStreamAsChild<U: BaseStream>(stream: U, leftParent: Bool) -> U {
     guard let child = stream as? Stream<U.Data> else { fatalError("Error attaching streams: All Streams must descend from Stream.") }
 
     let work = {
-      if let dispatch = self.nextDispatch {
-        child.dispatch = dispatch
-        self.nextDispatch = nil
+      if leftParent {
+        if let dispatch = self.nextDispatch {
+          child.dispatch = dispatch
+          self.nextDispatch = nil
+        }
+        if let throttle = self.nextThrottle {
+          child.throttle = throttle
+          self.nextThrottle = nil
+        }
+        child.canReplay = self.canReplay
+        child.parent = self
+      } else {
+        child.rParent = self
       }
-      if let throttle = self.nextThrottle {
-        child.throttle = throttle
-        self.nextThrottle = nil
-      }
-      child.replay = self.replay
-      child.canReplay = self.canReplay
-      child.parent = self
     }
 
     if let dispatch = self.dispatch {
@@ -233,14 +237,12 @@ public class Stream<T> {
   @discardableResult func attachChildStream<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
     guard let child = stream as? Stream<U.Data> else { fatalError("Error attaching streams: All Streams must descend from Stream.") }
 
-    let work = {
-      self.appendDownStream(processor: self.newDownstreamProcessor(forStream: child, withProcessor: op))
-    }
-
     if let dispatch = self.dispatch {
-      dispatch.execute(work)
+      dispatch.execute{
+        self.downStreams.append(self.newDownstreamProcessor(forStream: child, withProcessor: op))
+      }
     } else {
-      work()
+      self.downStreams.append(self.newDownstreamProcessor(forStream: child, withProcessor: op))
     }
 
     return stream
@@ -248,43 +250,11 @@ public class Stream<T> {
 
   /// The main function used to attach a stream to a parent stream along with the child's stream work
   @discardableResult func append<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
-    configureStreamAsChild(stream: stream)
+    configureStreamAsChild(stream: stream, leftParent: true)
     attachChildStream(stream: stream, withOp: op)
     return stream
   }
-  
-  /**
-   Used internally by concrete subclasses to append downstream processors.
-   A processor will normally be a closure that captures the subclassed `Stream`, processes the data (possibly transforms it), and passes it on to the down stream.
-   Using a closure will erase/hide the subclass type in the closure, which is the easiest way to store it.
-   
-   - parameter replay: Defines whether items in the current queue should be replayed into the processor.
-   - parameter processor: The processor should take an event, process it and pass it into a capture downstream
-   - note: Termination will always replay. We don't want an active downstream that's attached to an inactive one.
-   */
-  private func appendDownStream(processor: StreamProcessor<T>) {
-    let replay = self.replay
-    self.replay = false
-    
-    // If replay is specified, and there are items in the queue, pass those into the processor
-    if
-      self.canReplay,
-      replay,
-      let current = self.current
-    {
-      for event in current {
-        processor.process(next: .next(event), withKey: .none)
-      }
-    }
-    
-    // If this stream is terminated, pass that into the processor, else append the processor
-    if let termination = self.termination {
-      processor.process(next: .terminate(reason: termination), withKey: .none)
-    } else {
-      self.downStreams.append(processor)
-    }
-  }
-  
+
   /**
    The prune function should only be called from a down stream that has terminated on it's own (not a termination pushed from upstream).  
    It's intended for downstreams to notify their parent they are no longer active.
@@ -314,7 +284,6 @@ public class Stream<T> {
    - warning: if the stream is not active, the event will be ignored.
   */
   private func push(events: [Event<T>], withKey key: EventKey) {
-    guard self.isActive else { return }
 
     // update internal state with values from event
     if self.canReplay, let values = events.oMap({ $0.eventValue }).filled {
@@ -504,7 +473,36 @@ public class Stream<T> {
    - parameter termination: _Optional_,  if a termination was processed, it will be returned here.  Note: If this is non-nil, then the stream has been terminated.
    */
   func postProcess<U>(event: Event<U>, withKey key: EventKey, producedSignal signal: OpSignal<T>) { }
-  
+
+  /// This will attempt to replay the last events, if any are found.  Otherwise, it will pass the request to it's parent.
+  func replayLast() {
+    let work = {
+      guard self.canReplay else { return }
+
+      var events = self.current?.map{ Event.next($0) } ?? []
+      self.termination >>? { events.append(.terminate(reason: $0)) }
+
+      guard events.count > 0 else {
+        self.parent?.replayLast()
+        self.rParent?.replayLast()
+        return
+      }
+
+      for event in events {
+        self.printDebug(info: "\(self.descriptor): Replay push event: \(event)")
+
+        for processor in self.downStreams {
+          processor.process(next: event, withKey: .none)
+        }
+      }
+    }
+
+    if let dispatch = self.dispatch {
+      dispatch.execute(work)
+    } else {
+      work()
+    }
+  }
 }
 
 // MARK: Mutating Functions
@@ -551,6 +549,14 @@ extension Stream {
     self.nextThrottle = throttle
     return self
   }
+
+  /**
+  This will crawl up the processing chain until it finds a valid last value and replay that value down the proessing chain.
+  */
+  @discardableResult public func replay() -> Self {
+    replayLast()
+    return self
+  }
   
   /**
    This will apply a throttle to the _current_ stream.
@@ -561,15 +567,6 @@ extension Stream {
    */
   @discardableResult public func throttled(_ throttle: Throttle) -> Self {
     self.throttle = throttle
-    return self
-  }
-  
-  /**
-   This will cause the last value pushed into the next stream attached to this one.
-   - note: The replay will chain, so that the attached stream will also replay it's value into the next stream attached to it.  This causes the replay to propogate down the chain.
-  */
-  public func replayNext(_ replay: Bool = true) -> Self {
-    self.replay = true
     return self
   }
   

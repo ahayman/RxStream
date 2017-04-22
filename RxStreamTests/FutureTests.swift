@@ -75,7 +75,7 @@ class FutureTests: XCTestCase {
     let future = Future.completed(10)
     var values = [Int]()
 
-    future.on{ values.append($0) }
+    future.on{ values.append($0) }.replay()
     XCTAssertEqual(values, [10])
   }
 
@@ -83,7 +83,7 @@ class FutureTests: XCTestCase {
     let future = Future<Int>.completed(TestError())
     var errors = [Error]()
 
-    future.onError{ errors.append($0) }
+    future.onError{ errors.append($0) }.replay()
     XCTAssertEqual(errors.count, 1)
   }
 

@@ -108,3 +108,15 @@ I should note a peculiar behavior of Promise.  Because a Promise can’t be cert
 1. A `Promise` can have branching processing chains just like any other stream. This means that one branch my terminate successfully, while another might end up retrying because of a processing error.  In normal use, this is probably not a problem, but it’s something you should be aware of.
 2. If you were to create a series of `onTerminate` observers, the observers would be executed in the reverse order they were added.  Again, this is because a Promise terminates from the bottom up.  Again, it’s unlikely this will ever present itself as a problem, but it’s something I should note.
 
+### Replaying Value
+
+When you receive a Promise, you can never know whether the Promise has been completed or not, so it's usually a good idea to call `replay()` at the end of your processing chain in order to ensure that the Promise's value is replayed into the processing chain if the Future has already been filled.  If it hasn't been filled, calling `replay()` will do nothing.
+
+### Merge Operations
+
+Just as any stream, both Future and Promise can be merged into other streams. It's important to understand how a Future and Promise work before you attempt merging them into each other or another type of stream.  
+
+Because merge operations always return the left-hand Stream type (the stream being merged into, or the stream on which `merge/combine/zip` is called), then merging _any_ stream into a Future or Promise will return a Future or Promise.  This creates very specific behavior:
+
+ - `merge(_)` - Merge operations will emit 1 value from _either_ stream and then complete.  
+ - `combine(_)` and `zip(_)`: Both combine and zip will end up doing the exact same thing.  They will emit 1 combination of values, 1 from each stream and then complete.  

@@ -20,12 +20,6 @@ public class Future<T> : Stream<T> {
   private var lock: Future<T>?
   private var complete: Bool = false
 
-  // A Future will always replay it's value into new streams because there is ever only 1 value.
-  override var replay: Bool {
-    get { return true }
-    set { }
-  }
-
   /// Allows for the creation of a `Future` that already has a value filled.
   public class func completed(_ value: T) -> Future<T> {
     let future = Future<T>(op: "CompletedValue")

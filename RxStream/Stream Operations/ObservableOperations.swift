@@ -41,19 +41,19 @@ extension Observable {
   
   /**
    ## Branching
-   
+
    This will call the handler when the stream receives a _non-terminating_ error.
    The handler can optionally return a Termination, which will cause the stream to terminate.
-   
+
    - parameter handler: Receives an error and can optionally return a Termination.  If `nil` is returned, the stream will continue to be active.
    - parameter error: The error thrown by the stream
-   
+
    - returns: a new Observable stream
    */
   @discardableResult public func mapError(_ handler: @escaping (_ error: Error) -> Termination?) -> Observable<T> {
     return appendMapError(stream: Observable<T>(self.value, op: "mapError"), handler: handler)
   }
-  
+
   /**
    ## Branching
    
@@ -82,8 +82,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func onTransition(_ handler: @escaping (_ prior: T?, _ next: T) -> Void) -> Observable<T> {
-    let replay = self.replay
-    return replayNext(true).appendTransition(stream: Observable<T>(self.value, op: "onTransition"), handler: handler).replayNext(replay)
+    return appendTransition(stream: Observable<T>(self.value, op: "onTransition"), handler: handler)
   }
   
   /**
@@ -391,8 +390,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func distinct(_ isDistinct: @escaping (_ prior: T, _ next: T) -> Bool) -> Observable<T> {
-    let replay = self.replay
-    return replayNext(true).appendDistinct(stream: Observable<T>(self.value, op: "distinct"), isDistinct: isDistinct).replayNext(replay)
+    return appendDistinct(stream: Observable<T>(self.value, op: "distinct"), isDistinct: isDistinct)
   }
  
   /**
@@ -412,8 +410,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func min(lessThan: @escaping (_ isValue: T, _ lessThan: T) -> Bool) -> Observable<T> {
-    let replay = self.replay
-    return replayNext(true).appendMin(stream: Observable<T>(self.value, op: "min"), lessThan: lessThan).replayNext(replay)
+    return appendMin(stream: Observable<T>(self.value, op: "min"), lessThan: lessThan)
   }
   
   /**
@@ -433,8 +430,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func max(greaterThan: @escaping (_ isValue: T, _ greaterThan: T) -> Bool) -> Observable<T> {
-    let replay = self.replay
-    return replayNext(true).appendMax(stream: Observable<T>(self.value, op: "max"), greaterThan: greaterThan).replayNext(replay)
+    return appendMax(stream: Observable<T>(self.value, op: "max"), greaterThan: greaterThan)
   }
   
   /**
@@ -457,10 +453,12 @@ extension Observable {
    */
   @discardableResult public func countStamp() -> Observable<(value: T, stamp: UInt)> {
     var count: UInt = 0
-    return stamp{ _ in
+    let stream: Observable<(value: T, stamp: UInt)> = stamp{ _ in
       count += 1
       return count
-    }.replayNext()
+    }
+    stream.current = [stream.value]
+    return stream
   }
   
   /**
@@ -828,8 +826,7 @@ extension Observable where T : Arithmetic {
    - returns: A new Observable Stream
    */
   @discardableResult public func average() -> Observable<T> {
-    let replay = self.replay
-    return replayNext(true).appendAverage(stream: Observable<T>(self.value, op: "average")).replayNext(replay)
+    return appendAverage(stream: Observable<T>(self.value, op: "average"))
   }
   
   /**
@@ -842,8 +839,7 @@ extension Observable where T : Arithmetic {
    - returns: A new Observable Stream
    */
   @discardableResult public func sum() -> Observable<T> {
-    let replay = self.replay
-    return replayNext(true).appendSum(stream: Observable<T>(self.value, op: "sum")).replayNext(replay)
+    return appendSum(stream: Observable<T>(self.value, op: "sum"))
   }
   
 }
@@ -861,8 +857,7 @@ extension Observable where T : Equatable {
    - returns: A new Observable Stream
    */
   @discardableResult public func distinct() -> Observable<T> {
-    let replay = self.replay
-    return replayNext(true).appendDistinct(stream: Observable<T>(self.value, op: "distinct"), isDistinct: { $0 != $1 }).replayNext(replay)
+    return appendDistinct(stream: Observable<T>(self.value, op: "distinct"), isDistinct: { $0 != $1 })
   }
 }
 
@@ -878,8 +873,7 @@ extension Observable where T : Comparable {
    - returns: A new Observable Stream
    */
   @discardableResult public func min() -> Observable<T> {
-    let replay = self.replay
-    return replayNext(true).appendMin(stream: Observable<T>(self.value, op: "min")) { $0 < $1 }.replayNext(replay)
+    return appendMin(stream: Observable<T>(self.value, op: "min")) { $0 < $1 }
   }
   
   /**
@@ -892,7 +886,6 @@ extension Observable where T : Comparable {
    - returns: A new Observable Stream
    */
   @discardableResult public func max() -> Observable<T> {
-    let replay = self.replay
-    return replayNext(true).appendMax(stream: Observable<T>(self.value, op: "max")) { $0 > $1 }.replayNext(replay)
+    return appendMax(stream: Observable<T>(self.value, op: "max")) { $0 > $1 }
   }
 }

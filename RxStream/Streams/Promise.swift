@@ -45,12 +45,6 @@ public class Promise<T> : Stream<T> {
     didSet { stateObservable.set(state) }
   }
 
-  // A Promise always replays an existing value into new streams since it can only have 1 value.
-  override var replay: Bool {
-    get { return true }
-    set { }
-  }
-
   /// Once completed, the promise shouldn't accept or process any more f
   private(set) fileprivate var complete: Bool = false
   
@@ -117,6 +111,9 @@ public class Promise<T> : Stream<T> {
   
   /// Added logic will terminate the stream if it's not already terminated and we've received a value the stream is complete
   override func postProcess<U>(event: Event<U>, withKey: EventKey, producedSignal signal: OpSignal<T>) {
+    if case .merging = signal {
+      complete = false
+    }
     guard self.downStreamPromises == 0 else { return }
     
     switch signal {
@@ -126,8 +123,6 @@ public class Promise<T> : Stream<T> {
       terminate(reason: .error(error), andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
     case .terminate(_, let reason):
       terminate(reason: reason, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
-    case .merging:
-      complete = false
     default: break
     }
   }
@@ -209,5 +204,5 @@ public class Promise<T> : Stream<T> {
     self.reuse = reuse
     return self
   }
-  
+
 }

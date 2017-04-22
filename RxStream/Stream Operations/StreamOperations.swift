@@ -466,7 +466,8 @@ extension Stream {
     var rightTerm: Termination? = nil
     var leftTerm: Termination? = nil
 
-    configureStreamAsChild(stream: mergedStream)
+    configureStreamAsChild(stream: mergedStream, leftParent: true)
+    stream.configureStreamAsChild(stream: mergedStream, leftParent: false)
 
     // Left Stream
     attachChildStream(stream: mergedStream) { (next, completion) in
@@ -501,7 +502,8 @@ extension Stream {
     var rightTerm: Termination? = nil
     var leftTerm: Termination? = nil
 
-    configureStreamAsChild(stream: mergedStream)
+    configureStreamAsChild(stream: mergedStream, leftParent: true)
+    stream.configureStreamAsChild(stream: mergedStream, leftParent: false)
 
     //Left Stream
     attachChildStream(stream: mergedStream) { (next, completion) in
@@ -537,7 +539,8 @@ extension Stream {
     var rightTerm: Termination? = nil
     var leftTerm: Termination? = nil
 
-    configureStreamAsChild(stream: mergedStream)
+    configureStreamAsChild(stream: mergedStream, leftParent: true)
+    stream.configureStreamAsChild(stream: mergedStream, leftParent: false)
 
     // Left Stream
     attachChildStream(stream: mergedStream) { (next, completion) in
@@ -601,7 +604,8 @@ extension Stream {
     var rightTerm: Termination? = nil
     var leftTerm: Termination? = nil
 
-    configureStreamAsChild(stream: mergedStream)
+    configureStreamAsChild(stream: mergedStream, leftParent: true)
+    stream.configureStreamAsChild(stream: mergedStream, leftParent: false)
 
     // Left Stream
     attachChildStream(stream: mergedStream) { (next, completion) in

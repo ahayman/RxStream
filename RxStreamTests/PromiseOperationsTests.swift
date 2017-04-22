@@ -21,7 +21,7 @@ class PromiseOperationsTests: XCTestCase {
     promise.on {
       value = $0
       onCount += 1
-    }
+    }.replay()
     
     XCTAssertEqual(value, 0)
     XCTAssertEqual(onCount, 1)
@@ -31,9 +31,11 @@ class PromiseOperationsTests: XCTestCase {
     var terminations = [Termination]()
     let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    promise.onTerminate{
-      terminations.append($0)
-    }
+    promise
+      .onTerminate{
+        terminations.append($0)
+      }
+      .replay()
     
     XCTAssertEqual(terminations.count, 1, "The promise should only terminate once.")
   }
@@ -55,7 +57,8 @@ class PromiseOperationsTests: XCTestCase {
       .on{
         onCount += 1
         mapped = $0
-    }
+      }
+      .replay()
     
     XCTAssertEqual(mapped, "0")
     XCTAssertEqual(mapCount, 1)
@@ -71,6 +74,7 @@ class PromiseOperationsTests: XCTestCase {
       .resultMap{ return .success("\($0)") }
       .on{ mapped.append($0) }
       .onError{ error = $0 }
+      .replay()
 
     XCTAssertEqual(mapped, ["0"])
     XCTAssertNil(error)
@@ -94,7 +98,8 @@ class PromiseOperationsTests: XCTestCase {
         onCount += 1
       }
       .onError{ error = $0 }
-    
+      .replay()
+
     XCTAssertEqual(mapCount, 1)
     XCTAssertEqual(onCount, 0)
     XCTAssertNil(mapped)
@@ -112,6 +117,7 @@ class PromiseOperationsTests: XCTestCase {
     promise
       .flatMap { $0.components(separatedBy: " ") }
       .on { mapped.append($0) }
+      .replay()
     
     guard mapped.count == 8 else { return XCTFail("Didn't receive expected mapped output count. Expected 8, received \(mapped.count)") }
     XCTAssertEqual(mapped[0], "Test")
@@ -131,7 +137,8 @@ class PromiseOperationsTests: XCTestCase {
     promise
       .flatten()
       .on { mapped.append($0) }
-    
+      .replay()
+
     guard mapped.count == 5 else { return XCTFail("Didn't receive expected mapped output count. Expected 5, received \(mapped.count)") }
     for i in 0..<5 {
       XCTAssertEqual(mapped[i], i)
@@ -145,6 +152,7 @@ class PromiseOperationsTests: XCTestCase {
     promise
       .filter { !$0.contains("a") } //Filter out strings that contain a
       .on{ values.append($0) }
+      .replay()
     
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, "hello")
@@ -157,7 +165,8 @@ class PromiseOperationsTests: XCTestCase {
     promise
       .filter { !$0.contains("a") } //Filter out strings that contain a
       .on{ values.append($0) }
-    
+      .replay()
+
     XCTAssertEqual(values.count, 0)
   }
   
@@ -165,8 +174,11 @@ class PromiseOperationsTests: XCTestCase {
     var values = [(Int, String)]()
     let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    promise.stamp{ "\($0)" }.on{ values.append($0) }
-    
+    promise
+      .stamp{ "\($0)" }
+      .on{ values.append($0) }
+      .replay()
+
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, 0)
     XCTAssertEqual(values.last?.1, "0")
@@ -176,8 +188,11 @@ class PromiseOperationsTests: XCTestCase {
     var values = [(Int, Date)]()
     let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    promise.timeStamp().on{ values.append($0) }
-    
+    promise
+      .timeStamp()
+      .on{ values.append($0) }
+      .replay()
+
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, 0)
     XCTAssertEqualWithAccuracy(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
@@ -187,8 +202,11 @@ class PromiseOperationsTests: XCTestCase {
     var values = [Int]()
     let promise = Promise<Int>{ _, result in result(.success(0)) }
     
-    promise.delay(0.01).on{ values.append($0) }
-    
+    promise
+      .delay(0.01)
+      .on{ values.append($0) }
+      .replay()
+
     XCTAssertEqual(values.count, 0)
     
     wait(for: 0.1)
@@ -204,7 +222,8 @@ class PromiseOperationsTests: XCTestCase {
     promise
       .start(with: [-3, -2, -1])
       .on{ values.append($0) }
-    
+      .replay()
+
     XCTAssertEqual(values, [-3, -2, -1, 0])
   }
   
@@ -215,7 +234,8 @@ class PromiseOperationsTests: XCTestCase {
     promise
       .concat([98, 99, 100])
       .on{ values.append($0) }
-    
+      .replay()
+
     XCTAssertEqual(values, [0, 98, 99, 100])
   }
   
@@ -227,7 +247,8 @@ class PromiseOperationsTests: XCTestCase {
     promise
       .concat([98, 99, 100])
       .on{ values.append($0) }
-    
+      .replay()
+
     completion?(.success(0))
     
     XCTAssertEqual(values, [0, 98, 99, 100])
@@ -240,13 +261,17 @@ class PromiseOperationsTests: XCTestCase {
     promise
       .defaultValue(0)
       .on{ values.append($0) }
-    
+      .replay()
+
     XCTAssertEqual(values, [0])
     
     promise = Promise<Int>{ _, result in result(.success(1)) }
     values = []
     
-    promise.defaultValue(0).on{ values.append($0) }
+    promise
+      .defaultValue(0)
+      .on{ values.append($0) }
+      .replay()
     
     XCTAssertEqual(values, [1])
   }
@@ -264,7 +289,8 @@ class PromiseOperationsTests: XCTestCase {
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
       .onError{ error = $0 }
-    
+      .replay()
+
     completion?(.success(1))
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
@@ -280,9 +306,10 @@ class PromiseOperationsTests: XCTestCase {
     var term: Termination? = nil
 
     left
-      .merge(right).replayNext()
+      .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
+      .replay()
 
     XCTAssertEqual(values, [0])
     XCTAssertNil(term)
@@ -310,7 +337,8 @@ class PromiseOperationsTests: XCTestCase {
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-    
+      .replay()
+
     XCTAssertEqual(values, [0])
     XCTAssertEqual(term, .completed)
 
@@ -333,7 +361,8 @@ class PromiseOperationsTests: XCTestCase {
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-    
+      .replay()
+
     XCTAssertEqual(values, [0], "Both terms are emitted, but only the left term emitted is replayed.")
     XCTAssertEqual(term, .completed)
   }
@@ -349,7 +378,8 @@ class PromiseOperationsTests: XCTestCase {
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-    
+      .replay()
+
     XCTAssertEqual(values, [0], "Left Completed should replay.")
     XCTAssertEqual(term, .completed)
 
@@ -370,7 +400,8 @@ class PromiseOperationsTests: XCTestCase {
       .merge(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-    
+      .replay()
+
     XCTAssertEqual(values, [0], "Right Completed should replay.")
     XCTAssertEqual(term, .completed)
 
@@ -386,11 +417,14 @@ class PromiseOperationsTests: XCTestCase {
     let right = Promise<String>{ _, result in result(.success("one")) }
     var term: Termination? = nil
     
+    Rx.Stream<Int>.debugPrinter = { print($0) }
+    
     left
       .zip(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-    
+      .replay()
+
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
     XCTAssertEqual(values.last?.right, "one")
@@ -408,7 +442,8 @@ class PromiseOperationsTests: XCTestCase {
       .zip(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-    
+      .replay()
+
     XCTAssertEqual(values.count, 0)
     
     completion?(.success("one"))
@@ -430,7 +465,8 @@ class PromiseOperationsTests: XCTestCase {
       .zip(right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-    
+      .replay()
+
     XCTAssertEqual(values.count, 0)
     
     completion?(.success(1))
@@ -451,7 +487,8 @@ class PromiseOperationsTests: XCTestCase {
       .combine(stream: right)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-    
+      .replay()
+
     right.push("one")
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
@@ -477,7 +514,8 @@ class PromiseOperationsTests: XCTestCase {
       .lifeOf(object!)
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
-    
+      .replay()
+
     XCTAssertNotNil(completion)
     object = nil
     

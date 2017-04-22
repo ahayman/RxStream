@@ -301,19 +301,7 @@ extension Promise {
    - returns: A new Promise Stream
    */
   @discardableResult public func concat(_ concat: [T]) -> Hot<T> {
-    // Future can only emit one value, so we buffer that value and concat on termination.  Normal concat won't work properly if the promise is filled
-    let prior = current?.last
-    return append(stream: Hot<T>(op: "concat(\(concat.count) values)")) { (next, completion) in
-      switch next {
-      case .next, .error: completion(next.signal)
-      case .terminate:
-        if let prior = prior {
-          completion(.push(.flatten([prior] + concat)))
-        } else {
-          completion(.push(.flatten(concat)))
-        }
-      }
-    }
+    return appendConcat(stream: Hot<T>(op: "concat(\(concat.count) values)"), concat: concat)
   }
   
   /**

@@ -42,11 +42,13 @@ class ObservableOperationsTests: XCTestCase {
     var onCount = 0
     let stream = ObservableInput<Int>(0)
     
-    stream.onTransition {
-      prior = $0
-      value = $1
-      onCount += 1
-    }
+    stream
+      .onTransition {
+        prior = $0
+        value = $1
+        onCount += 1
+      }
+      .replay()
     
     stream.set(1)
     XCTAssertEqual(prior, 0)
@@ -713,8 +715,8 @@ class ObservableOperationsTests: XCTestCase {
     var distinctEquality = [String]()
     let stream = ObservableInput<String>("")
     
-    stream.distinct{ $0 != $1 }.on{ distinct.append($0) }
-    stream.distinct().on{ distinctEquality.append($0) }
+    stream.distinct{ $0 != $1 }.on{ distinct.append($0) }.replay()
+    stream.distinct().on{ distinctEquality.append($0) }.replay()
     
     XCTAssertEqual(distinct.count, 1)
     XCTAssertEqual(distinctEquality.count, 1)
@@ -850,7 +852,10 @@ class ObservableOperationsTests: XCTestCase {
     var values = [(String, UInt)]()
     let stream = ObservableInput<String>("Hello")
     
-    stream.countStamp().on{ values.append($0) }
+    stream
+      .countStamp()
+      .on{ values.append($0) }
+      .replay()
     
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, "Hello")
@@ -867,8 +872,8 @@ class ObservableOperationsTests: XCTestCase {
     var minComparable = [Int]()
     let stream = ObservableInput<Int>(10)
     
-    stream.min{ $0 < $1 }.on{ minValues.append($0) }
-    stream.min().on{ minComparable.append($0) }
+    stream.min{ $0 < $1 }.on{ minValues.append($0) }.replay()
+    stream.min().on{ minComparable.append($0) }.replay()
     
     XCTAssertEqual(minValues.count, 1)
     XCTAssertEqual(minComparable.count, 1)
@@ -917,8 +922,8 @@ class ObservableOperationsTests: XCTestCase {
     var maxComparable = [Int]()
     let stream = ObservableInput<Int>(10)
     
-    stream.max{ $0 > $1 }.on{ maxValues.append($0) }
-    stream.max().on{ maxComparable.append($0) }
+    stream.max{ $0 > $1 }.on{ maxValues.append($0) }.replay()
+    stream.max().on{ maxComparable.append($0) }.replay()
     
     XCTAssertEqual(maxValues.count, 1)
     XCTAssertEqual(maxComparable.count, 1)
@@ -1542,7 +1547,7 @@ class ObservableOperationsTests: XCTestCase {
     var values = [Double]()
     let stream = ObservableInput<Double>(2.0)
     
-    stream.average().on{ values.append($0) }
+    stream.average().on{ values.append($0) }.replay()
     
     stream.set(2.0) // 4 / 2
     XCTAssertEqual(values, [2.0, 2.0])
@@ -1561,7 +1566,7 @@ class ObservableOperationsTests: XCTestCase {
     var values = [Double]()
     let stream = ObservableInput<Double>(2.0)
     
-    stream.sum().on{ values.append($0) }
+    stream.sum().on{ values.append($0) }.replay()
     
     XCTAssertEqual(values, [2.0])
     

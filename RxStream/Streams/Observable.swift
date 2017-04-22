@@ -33,7 +33,6 @@ public class Observable<T> : Stream<T> {
   init(_ value: T, op: String) {
     self.value = value
     super.init(op: op)
-    self.current = [value]
     persist()
   }
   
@@ -68,6 +67,7 @@ public class ObservableInput<T> : Observable<T> {
    */
   public init(_ value: T) {
     super.init(value, op: "Input")
+    self.current = [value]
   }
 
   /**
