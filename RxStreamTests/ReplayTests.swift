@@ -45,4 +45,21 @@ class ReplayTests: XCTestCase {
     XCTAssertEqual(bResults, [1])
   }
 
+  func testLongChainReplay() {
+    let hot = HotInput<Int>()
+    hot.push(0)
+    hot.push(1)
+
+    var results = [Int]()
+    hot
+      .map{ $0 + 1 }
+      .map{ $0 - 1 }
+      .map{ $0 + 1 }
+      .map{ $0 - 1 }
+      .on{ results.append($0) }
+      .replay()
+
+    XCTAssertEqual(results, [1])
+  }
+
 }

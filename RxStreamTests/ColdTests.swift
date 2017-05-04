@@ -184,7 +184,7 @@ class ColdTests: XCTestCase {
     var branchAResponses = [String]()
     var branchAErrors = [Error]()
     var branchATerms = [Termination]()
-    let branchA = coldTask
+    coldTask
       .map{ "\($0)" }
       .on{ branchAResponses.append($0) }
       .onError{ branchAErrors.append($0) }
@@ -193,7 +193,7 @@ class ColdTests: XCTestCase {
     var branchBResponses = [String]()
     var branchBErrors = [Error]()
     var branchBTerms = [Termination]()
-    let branchB = coldTask
+    coldTask
       .map{ "\($0)" }
       .on{ branchBResponses.append($0) }
       .onError{ branchBErrors.append($0) }
