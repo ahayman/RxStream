@@ -525,5 +525,22 @@ class PromiseOperationsTests: XCTestCase {
     XCTAssertEqual(values, [])
     XCTAssertEqual(term, .cancelled)
   }
-    
+
+  func testFuture() {
+    var value: Int? = nil
+    var onCount = 0
+    let promise = Promise<Int>{ _, result in result(.success(0)) }
+
+    promise
+      .future()
+      .on {
+        value = $0
+        onCount += 1
+      }
+      .replay()
+
+    XCTAssertEqual(value, 0)
+    XCTAssertEqual(onCount, 1)
+  }
+
 }

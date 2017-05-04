@@ -444,6 +444,35 @@ class PromiseTests: XCTestCase {
     XCTAssertEqual(results, [])
   }
 
+  func testCancelledRetry() {
+    var completions = [((Result<Int>) -> Void)]()
+    var results = [Int]()
+    var errors = [Error]()
+    var terminations = [Termination]()
+    let promise = Promise<Int> { _, onCompletion in
+      completions.append(onCompletion)
+    }
+
+    promise
+      .reuse()
+      .resultMap{ _ in return .failure(TestError()) }
+      .onError{ errors.append($0) }
+      .retry(3)
+      .on{ results.append($0) }
+      .onTerminate{ terminations.append($0)}
+
+    XCTAssertEqual(completions.count, 1)
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terminations, [])
+    XCTAssertEqual(results, [])
+
+    promise.cancel()
+    XCTAssertEqual(completions.count, 1)
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terminations, [.cancelled])
+    XCTAssertEqual(results, [])
+  }
+
   func testAutoRetry() {
     var completion: ((Result<Int>) -> Void)? = nil
     var results = [Int]()

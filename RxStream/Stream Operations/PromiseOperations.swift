@@ -397,80 +397,6 @@ extension Promise {
   /**
    ## Branching
    
-   Emit values from stream until the handler returns `false`, and then terminate the stream with the provided termination.
-   
-   - parameter then: **Default:** `.cancelled`. When the handler returns `false`, then terminate the stream with this termination.
-   - parameter handler: Takes the next value and returns `false` to terminate the stream or `true` to remain active.
-   - parameter value: The current value being passed down the stream.
-   
-   - warning: Be aware that terminations propagate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
-   
-   - returns: A new Promise Stream
-   */
-  @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ value: T) -> Bool) -> Promise<T> {
-    return appendWhile(stream: Promise<T>(op: "doWhile(then: \(then)"), handler: handler, then: then)
-  }
-  
-  /**
-   ## Branching
-   
-   Emit values from stream until the handler returns `true`, and then terminate the stream with the provided termination.
-   
-   - note: This is the inverse of `doWhile`, in that the stream remains active _until_ it returns `true` whereas `doWhile` remains active until the handler return `false`.
-   
-   - parameter then: **Default:** `.cancelled`. When the handler returns `true`, then terminate the stream with this termination.
-   - parameter handler: Takes the next value and returns `true` to terminate the stream or `false` to remain active.
-   - parameter value: The current value being passed down the stream.
-   
-   - warning: Be aware that terminations propagate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
-   
-   - returns: A new Promise Stream
-   */
-  @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (T) -> Bool) -> Promise<T> {
-    return appendUntil(stream: Promise<T>(op: "until(then: \(then))"), handler: handler, then: then)
-  }
-  
-  /**
-   ## Branching
-   
-   Emit values from stream until the handler returns `false`, and then terminate the stream with the provided termination.
-   
-   - parameter then: **Default:** `.cancelled`. When the handler returns `false`, then terminate the stream with this termination.
-   - parameter handler: Takes the next value and returns `false` to terminate the stream or `true` to remain active.
-   - parameter prior: The prior value, if any.
-   - parameter next: The current value being passed down the stream.
-   
-   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
-   
-   - returns: A new Promise Stream
-   */
-  @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Promise<T> {
-    return appendWhile(stream: Promise<T>(op: "doWhileTransition(then: \(then))"), handler: handler, then: then)
-  }
-  
-  /**
-   ## Branching
-   
-   Emit values from stream until the handler returns `true`, and then terminate the stream with the provided termination.
-   
-   - note: This is the inverse of `doWhile`, in that the stream remains active _until_ it returns `true` whereas `doWhile` remains active until the handler return `false`.
-   
-   - parameter then: **Default:** `.cancelled`. When the handler returns `true`, then terminate the stream with this termination.
-   - parameter handler: Takes the next value and returns `true` to terminate the stream or `false` to remain active.
-   - parameter prior: The prior value, if any.
-   - parameter next: The current value being passed down the stream.
-   
-   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
-   
-   - returns: A new Promise Stream
-   */
-  @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (_ prior: T?, _ next: T) -> Bool) -> Promise<T> {
-    return appendUntil(stream: Promise<T>(op: "untilTransition(then: \(then))"), handler: handler, then: then)
-  }
-  
-  /**
-   ## Branching
-   
    Tie the lifetime of the stream to that of the object.
    Terminate the stream on the next event that finds object `nil`.
    
@@ -483,22 +409,6 @@ extension Promise {
    */
   @discardableResult public func lifeOf<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Promise<T> {
     return appendLifeOf(stream: Promise<T>(op: "lifeOf(\(object), then: \(then))"), object: object, then: then)
-  }
-  
-  /**
-   ## Branching
-   
-   Emit the next "n" values and then terminate the stream.
-   
-   - parameter count: The number of values to emit before terminating the stream.
-   - parameter then: **Default:** `.cancelled`. How the stream is terminated after the events are emitted.
-   
-   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
-   
-   - returns: A new Promise Stream
-   */
-  @discardableResult public func next(_ count: UInt = 1, then: Termination = .cancelled) -> Promise<T> {
-    return appendNext(stream: Promise<T>(op: "next(\(count), then: \(then))"), count: count, then: then)
   }
   
 }
