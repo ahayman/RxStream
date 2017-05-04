@@ -102,15 +102,15 @@ public class Promise<T> : Stream<T> {
     super.init(op: op)
   }
   
-  /// Overriden to update the complete variable
-  override func preProcess<U>(event: Event<U>, withKey key: EventKey) -> (key: EventKey, event: Event<U>)? {
+  /// Overridden to update the complete variable
+  override func preProcess<U>(event: Event<U>) -> Event<U>? {
     guard !complete else { return nil }
     complete = true
-    return (key, event)
+    return event
   }
   
   /// Added logic will terminate the stream if it's not already terminated and we've received a value the stream is complete
-  override func postProcess<U>(event: Event<U>, withKey: EventKey, producedSignal signal: OpSignal<T>) {
+  override func postProcess<U>(event: Event<U>, producedSignal signal: OpSignal<T>) {
     if case .merging = signal {
       complete = false
     }

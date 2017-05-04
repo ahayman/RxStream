@@ -10,15 +10,7 @@ import Foundation
 
 /// Determines how events travel down their branches.
 enum EventKey {
-  case keyed(String) /// The event is keyed and should only travel down branches with that key
-  case shared(String) /// The event is keyed, but should travel down all branches.
-  case none /// The event is not keyed and should travel down all branches.
-  
-  var key: String? {
-    switch self {
-    case let .keyed(key): return key
-    case let .shared(key): return key
-    default: return nil
-    }
-  }
+  indirect case key(String, next: EventKey) /// The event is keyed and should only travel down branches with that key
+  case share /// The event should travel down all branches.
+  case end /// The event should end here
 }

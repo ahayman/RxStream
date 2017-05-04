@@ -60,21 +60,21 @@ public class Future<T> : Stream<T> {
     super.init(op: op)
   }
 
-  override func preProcess<U>(event: Event<U>, withKey key: EventKey) -> (key: EventKey, event: Event<U>)? {
+  override func preProcess<U>(event: Event<U>) -> Event<U>? {
     // Terminations are always processed.
     if case .terminate = event {
-      return (key: key, event: event)
+      return event
     }
     guard !complete else { return nil }
     complete = true
     if case .error(let error) = event {
       // All errors terminate in a future
-      return (key, .terminate(reason: .error(error)))
+      return .terminate(reason: .error(error))
     }
-    return (key, event)
+    return event
   }
   
-  override func postProcess<U>(event: Event<U>, withKey: EventKey, producedSignal signal: OpSignal<T>) {
+  override func postProcess<U>(event: Event<U>, producedSignal signal: OpSignal<T>) {
     switch signal {
     case .push, .error:
       if self.isActive && pendingTermination == nil {

@@ -520,15 +520,15 @@ class ColdOperationsTests: XCTestCase {
     var partial = [Int]()
     let stream = Cold<Int, Int> { (_, request, respond) in
       respond(.success(request))
-    }.share()
+    }
     
     stream.last(3).on{ partial.append($0) }
     stream.last(3, partial: false).on{ noPartial.append($0) }
     
-    stream.request(1)
+    stream.request(1, share: true)
     XCTAssertEqual(noPartial.count, 0)
     XCTAssertEqual(partial.count, 0)
-    stream.request(2)
+    stream.request(2, share: true)
     XCTAssertEqual(noPartial.count, 0)
     XCTAssertEqual(partial.count, 0)
     stream.terminate(withReason: .completed)
@@ -541,39 +541,39 @@ class ColdOperationsTests: XCTestCase {
     var noPartial = [[Int]]()
     let stream = Cold<Int, Int> { (_, request, respond) in
       respond(.success(request))
-    }.share()
+    }
     
     stream.buffer(size: 3).on{ buffer.append($0) }
     stream.buffer(size: 3, partial: false).on{ noPartial.append($0) }
     
-    stream.request(1)
+    stream.request(1, share: true)
     XCTAssertEqual(buffer.count, 0)
     XCTAssertEqual(noPartial.count, 0)
-    stream.request(2)
+    stream.request(2, share: true)
     XCTAssertEqual(buffer.count, 0)
     XCTAssertEqual(noPartial.count, 0)
-    stream.request(3)
+    stream.request(3, share: true)
     XCTAssertEqual(buffer.count, 1)
     XCTAssertEqual(noPartial.count, 1)
     XCTAssertEqual(buffer.last ?? [], [1, 2, 3])
     XCTAssertEqual(noPartial.last ?? [], [1, 2, 3])
     
-    stream.request(4)
+    stream.request(4, share: true)
     XCTAssertEqual(buffer.count, 1)
     XCTAssertEqual(noPartial.count, 1)
-    stream.request(5)
+    stream.request(5, share: true)
     XCTAssertEqual(buffer.count, 1)
     XCTAssertEqual(noPartial.count, 1)
-    stream.request(6)
+    stream.request(6, share: true)
     XCTAssertEqual(buffer.count, 2)
     XCTAssertEqual(noPartial.count, 2)
     XCTAssertEqual(buffer.last ?? [], [4, 5, 6])
     XCTAssertEqual(noPartial.last ?? [], [4, 5, 6])
     
-    stream.request(7)
+    stream.request(7, share: true)
     XCTAssertEqual(buffer.count, 2)
     XCTAssertEqual(noPartial.count, 2)
-    stream.request(8)
+    stream.request(8, share: true)
     XCTAssertEqual(buffer.count, 2)
     XCTAssertEqual(noPartial.count, 2)
     stream.terminate(withReason: .completed)
@@ -588,30 +588,30 @@ class ColdOperationsTests: XCTestCase {
     var partial = [[Int]]()
     let stream = Cold<Int, Int> { (_, request, respond) in
       respond(.success(request))
-    }.share()
+    }
     
     stream.window(size: 3).on{ window.append($0) }
     stream.window(size: 3, partial: true).on{ partial.append($0) }
     
-    stream.request(1)
+    stream.request(1, share: true)
     XCTAssertEqual(window.count, 0)
     XCTAssertEqual(partial.count, 1)
     XCTAssertEqual(partial.last ?? [], [1])
-    stream.request(2)
+    stream.request(2, share: true)
     XCTAssertEqual(window.count, 0)
     XCTAssertEqual(partial.count, 2)
     XCTAssertEqual(partial.last ?? [], [1, 2])
-    stream.request(3)
+    stream.request(3, share: true)
     XCTAssertEqual(window.count, 1)
     XCTAssertEqual(partial.count, 3)
     XCTAssertEqual(window.last ?? [], [1, 2, 3])
     XCTAssertEqual(partial.last ?? [], [1, 2, 3])
-    stream.request(4)
+    stream.request(4, share: true)
     XCTAssertEqual(window.count, 2)
     XCTAssertEqual(partial.count, 4)
     XCTAssertEqual(window.last ?? [], [2, 3, 4])
     XCTAssertEqual(partial.last ?? [], [2, 3, 4])
-    stream.request(5)
+    stream.request(5, share: true)
     XCTAssertEqual(window.count, 3)
     XCTAssertEqual(partial.count, 5)
     XCTAssertEqual(window.last ?? [], [3, 4, 5])
@@ -628,30 +628,30 @@ class ColdOperationsTests: XCTestCase {
     var limited = [[Int]]()
     let stream = Cold<Int, Int> { (_, request, respond) in
       respond(.success(request))
-    }.share()
+    }
     
     stream.window(size: 1.0).on{ window.append($0) }
     stream.window(size: 1.0, limit: 3).on{ limited.append($0) }
     
-    stream.request(1)
+    stream.request(1, share: true)
     XCTAssertEqual(window.count, 1)
     XCTAssertEqual(limited.count, 1)
     XCTAssertEqual(window.last ?? [], [1])
     XCTAssertEqual(limited.last ?? [], [1])
     
-    stream.request(2)
+    stream.request(2, share: true)
     XCTAssertEqual(window.count, 2)
     XCTAssertEqual(limited.count, 2)
     XCTAssertEqual(window.last ?? [], [1, 2])
     XCTAssertEqual(limited.last ?? [], [1, 2])
     
-    stream.request(3)
+    stream.request(3, share: true)
     XCTAssertEqual(window.count, 3)
     XCTAssertEqual(limited.count, 3)
     XCTAssertEqual(window.last ?? [], [1, 2, 3])
     XCTAssertEqual(limited.last ?? [], [1, 2, 3])
     
-    stream.request(4)
+    stream.request(4, share: true)
     XCTAssertEqual(window.count, 4)
     XCTAssertEqual(limited.count, 4)
     XCTAssertEqual(window.last ?? [], [1, 2, 3, 4])
@@ -659,13 +659,13 @@ class ColdOperationsTests: XCTestCase {
     
     wait(for: 0.5)
     
-    stream.request(5)
+    stream.request(5, share: true)
     XCTAssertEqual(window.count, 5)
     XCTAssertEqual(limited.count, 5)
     XCTAssertEqual(window.last ?? [], [1, 2, 3, 4, 5])
     XCTAssertEqual(limited.last ?? [], [3, 4, 5])
     
-    stream.request(6)
+    stream.request(6, share: true)
     XCTAssertEqual(window.count, 6)
     XCTAssertEqual(limited.count, 6)
     XCTAssertEqual(window.last ?? [], [1, 2, 3, 4, 5, 6])
@@ -673,13 +673,13 @@ class ColdOperationsTests: XCTestCase {
     
     wait(for: 0.75)
     
-    stream.request(7)
+    stream.request(7, share: true)
     XCTAssertEqual(window.count, 7)
     XCTAssertEqual(limited.count, 7)
     XCTAssertEqual(window.last ?? [], [5, 6, 7])
     XCTAssertEqual(limited.last ?? [], [5, 6, 7])
     
-    stream.request(8)
+    stream.request(8, share: true)
     XCTAssertEqual(window.count, 8)
     XCTAssertEqual(limited.count, 8)
     XCTAssertEqual(window.last ?? [], [5, 6, 7, 8])
@@ -732,36 +732,36 @@ class ColdOperationsTests: XCTestCase {
     var distinctEquality = [String]()
     let stream = Cold<String, String> { (_, request, respond) in
       respond(.success(request))
-    }.share()
+    }
     
     stream.distinct{ $0 != $1 }.on{ distinct.append($0) }
     stream.distinct().on{ distinctEquality.append($0) }
     
-    stream.request("hello")
+    stream.request("hello", share: true)
     XCTAssertEqual(distinct.count, 1)
     XCTAssertEqual(distinctEquality.count, 1)
     XCTAssertEqual(distinct.last, "hello")
     XCTAssertEqual(distinctEquality.last, "hello")
     
-    stream.request("stream")
+    stream.request("stream", share: true)
     XCTAssertEqual(distinct.count, 2)
     XCTAssertEqual(distinctEquality.count, 2)
     XCTAssertEqual(distinct.last, "stream")
     XCTAssertEqual(distinctEquality.last, "stream")
     
-    stream.request("stream")
+    stream.request("stream", share: true)
     XCTAssertEqual(distinct.count, 2)
     XCTAssertEqual(distinctEquality.count, 2)
     XCTAssertEqual(distinct.last, "stream")
     XCTAssertEqual(distinctEquality.last, "stream")
     
-    stream.request("for")
+    stream.request("for", share: true)
     XCTAssertEqual(distinct.count, 3)
     XCTAssertEqual(distinctEquality.count, 3)
     XCTAssertEqual(distinct.last, "for")
     XCTAssertEqual(distinctEquality.last, "for")
     
-    stream.request("for")
+    stream.request("for", share: true)
     XCTAssertEqual(distinct.count, 3)
     XCTAssertEqual(distinctEquality.count, 3)
     XCTAssertEqual(distinct.last, "for")
@@ -891,42 +891,42 @@ class ColdOperationsTests: XCTestCase {
     var minComparable = [Int]()
     let stream = Cold<Int, Int> { (_, request, respond) in
       respond(.success(request))
-    }.share()
+    }
     
     stream.min{ $0 < $1 }.on{ minValues.append($0) }
     stream.min().on{ minComparable.append($0) }
     
-    stream.request(10)
+    stream.request(10, share: true)
     XCTAssertEqual(minValues.count, 1)
     XCTAssertEqual(minComparable.count, 1)
     XCTAssertEqual(minValues.last, 10)
     XCTAssertEqual(minComparable.last, 10)
     
-    stream.request(12)
+    stream.request(12, share: true)
     XCTAssertEqual(minValues.count, 1)
     XCTAssertEqual(minComparable.count, 1)
     XCTAssertEqual(minValues.last, 10)
     XCTAssertEqual(minComparable.last, 10)
     
-    stream.request(8)
+    stream.request(8, share: true)
     XCTAssertEqual(minValues.count, 2)
     XCTAssertEqual(minComparable.count, 2)
     XCTAssertEqual(minValues.last, 8)
     XCTAssertEqual(minComparable.last, 8)
     
-    stream.request(8)
+    stream.request(8, share: true)
     XCTAssertEqual(minValues.count, 2)
     XCTAssertEqual(minComparable.count, 2)
     XCTAssertEqual(minValues.last, 8)
     XCTAssertEqual(minComparable.last, 8)
     
-    stream.request(10)
+    stream.request(10, share: true)
     XCTAssertEqual(minValues.count, 2)
     XCTAssertEqual(minComparable.count, 2)
     XCTAssertEqual(minValues.last, 8)
     XCTAssertEqual(minComparable.last, 8)
     
-    stream.request(5)
+    stream.request(5, share: true)
     XCTAssertEqual(minValues.count, 3)
     XCTAssertEqual(minComparable.count, 3)
     XCTAssertEqual(minValues.last, 5)
@@ -944,36 +944,36 @@ class ColdOperationsTests: XCTestCase {
     var maxComparable = [Int]()
     let stream = Cold<Int, Int> { (_, request, respond) in
       respond(.success(request))
-    }.share()
+    }
     
     stream.max{ $0 > $1 }.on{ maxValues.append($0) }
     stream.max().on{ maxComparable.append($0) }
     
-    stream.request(10)
+    stream.request(10, share: true)
     XCTAssertEqual(maxValues.count, 1)
     XCTAssertEqual(maxComparable.count, 1)
     XCTAssertEqual(maxValues.last, 10)
     XCTAssertEqual(maxComparable.last, 10)
     
-    stream.request(10)
+    stream.request(10, share: true)
     XCTAssertEqual(maxValues.count, 1)
     XCTAssertEqual(maxComparable.count, 1)
     XCTAssertEqual(maxValues.last, 10)
     XCTAssertEqual(maxComparable.last, 10)
     
-    stream.request(12)
+    stream.request(12, share: true)
     XCTAssertEqual(maxValues.count, 2)
     XCTAssertEqual(maxComparable.count, 2)
     XCTAssertEqual(maxValues.last, 12)
     XCTAssertEqual(maxComparable.last, 12)
     
-    stream.request(8)
+    stream.request(8, share: true)
     XCTAssertEqual(maxValues.count, 2)
     XCTAssertEqual(maxComparable.count, 2)
     XCTAssertEqual(maxValues.last, 12)
     XCTAssertEqual(maxComparable.last, 12)
     
-    stream.request(20)
+    stream.request(20, share: true)
     XCTAssertEqual(maxValues.count, 3)
     XCTAssertEqual(maxComparable.count, 3)
     XCTAssertEqual(maxValues.last, 20)
@@ -1212,10 +1212,10 @@ class ColdOperationsTests: XCTestCase {
     var values = [(left: Int, right: String)]()
     let left = Cold<Int, Int> { _, request, response in
       response(.success(request))
-    }.share()
+    }
     let right = Cold<String, String> { _, request, response in
       response(.success(request))
-    }.share()
+    }
     var term: Termination? = nil
     
     left
@@ -1223,43 +1223,43 @@ class ColdOperationsTests: XCTestCase {
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
     
-    left.request(1)
+    left.request(1, share: true)
     XCTAssertEqual(values.count, 0)
     
-    left.request(2)
+    left.request(2, share: true)
     XCTAssertEqual(values.count, 0)
     
-    right.request("one")
+    right.request("one", share: true)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
     XCTAssertEqual(values.last?.right, "one")
     
-    right.request("two")
+    right.request("two", share: true)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.request("three")
+    right.request("three", share: true)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.request("four")
+    right.request("four", share: true)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.request("five")
+    right.request("five", share: true)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    left.request(3)
+    left.request(3, share: true)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last?.left, 3)
     XCTAssertEqual(values.last?.right, "three")
     
-    left.request(4)
+    left.request(4, share: true)
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 4)
     XCTAssertEqual(values.last?.right, "four")
@@ -1273,10 +1273,10 @@ class ColdOperationsTests: XCTestCase {
     var values = [(left: Int, right: String)]()
     let left = Cold<Int, Int> { _, request, response in
       response(.success(request))
-    }.share()
+    }
     let right = Cold<String, String> { _, request, response in
       response(.success(request))
-    }.share()
+    }
     var term: Termination? = nil
     
     left
@@ -1284,78 +1284,78 @@ class ColdOperationsTests: XCTestCase {
       .on{ values.append($0) }
       .onTerminate{ term = $0 }
     
-    left.request(1)
+    left.request(1, share: true)
     XCTAssertEqual(values.count, 0)
     
-    left.request(2)
+    left.request(2, share: true)
     XCTAssertEqual(values.count, 0)
     
-    right.request("one")
+    right.request("one", share: true)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 1)
     XCTAssertEqual(values.last?.right, "one")
     
-    right.request("two")
+    right.request("two", share: true)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.request("three")
+    right.request("three", share: true)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.request("four")
+    right.request("four", share: true)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.request("five") //Should be ignored, exceeds buffer
+    right.request("five", share: true) //Should be ignored, exceeds buffer
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.request("six") //Should be ignored, exceeds buffer
+    right.request("six", share: true) //Should be ignored, exceeds buffer
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.request("seven") //Should be ignored, exceeds buffer
+    right.request("seven", share: true) //Should be ignored, exceeds buffer
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    left.request(3)
+    left.request(3, share: true)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last?.left, 3)
     XCTAssertEqual(values.last?.right, "three")
     
-    left.request(4)
+    left.request(4, share: true)
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 4)
     XCTAssertEqual(values.last?.right, "four")
     
-    left.request(5)
+    left.request(5, share: true)
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 4)
     XCTAssertEqual(values.last?.right, "four")
     
-    left.request(6)
+    left.request(6, share: true)
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 4)
     XCTAssertEqual(values.last?.right, "four")
     
-    left.request(7) //Should be ignored, exceeds buffer
+    left.request(7, share: true) //Should be ignored, exceeds buffer
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 4)
     XCTAssertEqual(values.last?.right, "four")
     
-    right.request("eight")
+    right.request("eight", share: true)
     XCTAssertEqual(values.count, 5)
     XCTAssertEqual(values.last?.left, 5)
     XCTAssertEqual(values.last?.right, "eight")
     
-    right.request("nine")
+    right.request("nine", share: true)
     XCTAssertEqual(values.count, 6)
     XCTAssertEqual(values.last?.left, 6)
     XCTAssertEqual(values.last?.right, "nine")
@@ -1369,10 +1369,10 @@ class ColdOperationsTests: XCTestCase {
     var values = [(left: Int, right: String)]()
     let left = Cold<Int, Int> { _, request, response in
       response(.success(request))
-    }.share()
+    }
     let right = Cold<String, String> { _, request, response in
       response(.success(request))
-    }.share()
+    }
     var term: Termination? = nil
     var error: Error? = nil
     
@@ -1382,33 +1382,33 @@ class ColdOperationsTests: XCTestCase {
       .onError{ error = $0 }
       .onTerminate{ term = $0 }
     
-    left.request(1)
+    left.request(1, share: true)
     XCTAssertEqual(values.count, 0)
     
-    left.request(2)
+    left.request(2, share: true)
     XCTAssertEqual(values.count, 0)
     
-    right.request("one")
+    right.request("one", share: true)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "one")
     
-    right.request("two")
+    right.request("two", share: true)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "two")
     
-    right.request("three")
+    right.request("three", share: true)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "three")
     
-    left.request(3)
+    left.request(3, share: true)
     XCTAssertEqual(values.count, 4)
     XCTAssertEqual(values.last?.left, 3)
     XCTAssertEqual(values.last?.right, "three")
     
-    right.request("four")
+    right.request("four", share: true)
     XCTAssertEqual(values.count, 5)
     XCTAssertEqual(values.last?.left, 3)
     XCTAssertEqual(values.last?.right, "four")
@@ -1417,7 +1417,7 @@ class ColdOperationsTests: XCTestCase {
     XCTAssertNil(term)
     XCTAssertNil(error)
     
-    left.request(4)
+    left.request(4, share: true)
     XCTAssertEqual(values.count, 6)
     XCTAssertEqual(values.last?.left, 4)
     XCTAssertEqual(values.last?.right, "four")
@@ -1432,10 +1432,10 @@ class ColdOperationsTests: XCTestCase {
     var values = [(left: Int, right: String)]()
     let left = Cold<Int, Int> { _, request, response in
       response(.success(request))
-    }.share()
+    }
     let right = Cold<String, String> { _, request, response in
       response(.success(request))
-    }.share()
+    }
     var term: Termination? = nil
     var error: Error? = nil
     
@@ -1445,33 +1445,33 @@ class ColdOperationsTests: XCTestCase {
       .onError{ error = $0 }
       .onTerminate{ term = $0 }
     
-    left.request(1)
+    left.request(1, share: true)
     XCTAssertEqual(values.count, 0)
     
-    left.request(2)
+    left.request(2, share: true)
     XCTAssertEqual(values.count, 0)
     
-    right.request("one")
+    right.request("one", share: true)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "one")
     
-    right.request("two")
+    right.request("two", share: true)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "one")
     
-    right.request("three")
+    right.request("three", share: true)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.left, 2)
     XCTAssertEqual(values.last?.right, "one")
     
-    left.request(3)
+    left.request(3, share: true)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 3)
     XCTAssertEqual(values.last?.right, "three")
     
-    right.request("four")
+    right.request("four", share: true)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.left, 3)
     XCTAssertEqual(values.last?.right, "three")
@@ -1480,7 +1480,7 @@ class ColdOperationsTests: XCTestCase {
     XCTAssertEqual(term, .completed)
     XCTAssertNil(error)
     
-    left.request(4)
+    left.request(4, share: true)
     XCTAssertEqual(values.count, 2)
     
     left.terminate(withReason: .cancelled)

@@ -18,7 +18,7 @@ public class Observable<T> : Stream<T> {
 
   override var streamType: StreamType { return .hot }
 
-  override func postProcess<U>(event: Event<U>, withKey: EventKey, producedSignal signal: OpSignal<T>) {
+  override func postProcess<U>(event: Event<U>, producedSignal signal: OpSignal<T>) {
     switch signal {
     case .push(.value(let value)): self.value = value
     case .push(.flatten(let values)) where values.count > 0: self.value = values[values.count - 1]

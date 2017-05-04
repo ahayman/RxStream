@@ -179,7 +179,7 @@ class ColdTests: XCTestCase {
       } else {
         response(.failure(TestError()))
       }
-    }.share(true)
+    }
     
     var branchAResponses = [String]()
     var branchAErrors = [Error]()
@@ -199,7 +199,7 @@ class ColdTests: XCTestCase {
       .onError{ branchBErrors.append($0) }
       .onTerminate{ branchBTerms.append($0) }
     
-    branchA.request(2)
+    coldTask.request(2, share: true)
     XCTAssertEqual(branchAResponses, ["3"])
     XCTAssertEqual(branchAErrors.count, 0)
     XCTAssertEqual(branchATerms, [])
@@ -207,7 +207,7 @@ class ColdTests: XCTestCase {
     XCTAssertEqual(branchBErrors.count, 0)
     XCTAssertEqual(branchBTerms, [])
     
-    branchA.request(3)
+    coldTask.request(3, share: true)
     XCTAssertEqual(branchAResponses, ["3"])
     XCTAssertEqual(branchAErrors.count, 1)
     XCTAssertEqual(branchATerms, [])
@@ -215,7 +215,7 @@ class ColdTests: XCTestCase {
     XCTAssertEqual(branchBErrors.count, 1)
     XCTAssertEqual(branchBTerms, [])
     
-    branchB.request(2)
+    coldTask.request(2, share: true)
     XCTAssertEqual(branchAResponses, ["3", "3"])
     XCTAssertEqual(branchAErrors.count, 1)
     XCTAssertEqual(branchATerms, [])
@@ -223,7 +223,7 @@ class ColdTests: XCTestCase {
     XCTAssertEqual(branchBErrors.count, 1)
     XCTAssertEqual(branchBTerms, [])
     
-    branchB.request(3)
+    coldTask.request(3, share: true)
     XCTAssertEqual(branchAResponses, ["3", "3"])
     XCTAssertEqual(branchAErrors.count, 2)
     XCTAssertEqual(branchATerms, [])

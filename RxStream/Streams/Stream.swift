@@ -59,7 +59,7 @@ extension Stream : BaseStream { }
 
 protocol ParentStream : class {
   func prune(_ prune: Prune, withReason reason: Termination)
-  func replayLast()
+  func replayLast(key: EventKey)
 }
 
 /// Indirection because we can't store class variables in a Generic
@@ -70,6 +70,9 @@ extension Stream : ParentStream, CustomDebugStringConvertible { }
 /// Base class for Streams.  It cannot be instantiated directly and should not generally be used as a type directly.
 public class Stream<T> {
   typealias Data = T
+
+  /// Unique ID for this stream to allow creating and validation of keys
+  let id = String.newUUID()
 
   /// Stream types are used to determine down stream types. This helps avoid complex type erasure just to test the base type.
   var streamType: StreamType { return .base }
@@ -317,7 +320,7 @@ public class Stream<T> {
       if types.count > 0 {
         let termination = Event<T>.terminate(reason: reason)
         for processor in self.downStreams where types.contains(processor.streamType){
-          processor.process(next: termination, withKey: .none)
+          processor.process(next: termination, withKey: .share)
         }
       }
       self.prune(prune, withReason: reason)
@@ -337,7 +340,7 @@ public class Stream<T> {
    - parameter event: The event to push into the stream
    - parameter key: _(Optional)_, the key to restrict the event.
    */
-  func process(event: Event<T>, withKey key: EventKey = .none) {
+  func process(event: Event<T>, withKey key: EventKey = .share) {
     self.process(key: key, next: event) { (event, completion) in completion(event.signal) }
   }
   
@@ -354,8 +357,8 @@ public class Stream<T> {
    
    - returns: tuple<key: String?, event: Event<U>> : The key and event returned will be used for processing. If no event is returned, nothing will be processed.
    */
-  func preProcess<U>(event: Event<U>, withKey key: EventKey) -> (key: EventKey, event: Event<U>)? {
-    return (key, event)
+  func preProcess<U>(event: Event<U>) -> Event<U>? {
+    return event
   }
   
   var pendingTermination: (reason: Termination, prune: Prune, callTermHandler: Bool)? = nil
@@ -381,8 +384,16 @@ public class Stream<T> {
 
     let work = {
       self.printDebug(info: "\(self.descriptor): begin processing \(next)")
-      guard let (key, event) = self.preProcess(event: next, withKey: key) else { return }
-      
+      var nextKey = key
+      switch key {
+      case .share: break
+      case .end: return
+      case .key(let key, let next):
+        nextKey = next
+        guard key == self.id else { return }
+      }
+      guard let event = self.preProcess(event: next) else { return }
+
       // Make sure we're receiving data, otherwise it's a termination event and we should set the terminateWork
       self.currentWork += 1
       
@@ -400,7 +411,7 @@ public class Stream<T> {
             }
             self.currentWork -= 1
 
-            self.postProcess(event: event, withKey: key, producedSignal: opSignal)
+            self.postProcess(event: event, producedSignal: opSignal)
             self.printDebug(info: "\(self.descriptor): throttle cancelled \(event)")
             return
           }
@@ -408,11 +419,11 @@ public class Stream<T> {
           op(event) { opSignal in
             let signalWork = {
               switch opSignal {
-              case .push(let value): self.push(events: value.events, withKey: key)
-              case .error(let error): self.push(events: [.error(error)], withKey: key)
+              case .push(let value): self.push(events: value.events, withKey: nextKey)
+              case .error(let error): self.push(events: [.error(error)], withKey: nextKey)
               case let .terminate(value, term):
                 if let events = value?.events {
-                  self.push(events: events, withKey: key)
+                  self.push(events: events, withKey: nextKey)
                 }
                 if self.pendingTermination == nil {
                   if case .terminate = event {
@@ -426,7 +437,7 @@ public class Stream<T> {
 
               self.currentWork -= 1
 
-              self.postProcess(event: event, withKey: key, producedSignal: opSignal)
+              self.postProcess(event: event, producedSignal: opSignal)
               self.printDebug(info: "\(self.descriptor): end Processing \(event) ")
 
               completion()
@@ -472,10 +483,10 @@ public class Stream<T> {
    - parameter events: All events returned from the stream processor.
    - parameter termination: _Optional_,  if a termination was processed, it will be returned here.  Note: If this is non-nil, then the stream has been terminated.
    */
-  func postProcess<U>(event: Event<U>, withKey key: EventKey, producedSignal signal: OpSignal<T>) { }
+  func postProcess<U>(event: Event<U>, producedSignal signal: OpSignal<T>) { }
 
   /// This will attempt to replay the last events, if any are found.  Otherwise, it will pass the request to it's parent.
-  func replayLast() {
+  func replayLast(key: EventKey) {
     let work = {
       guard self.canReplay else { return }
 
@@ -483,8 +494,8 @@ public class Stream<T> {
       self.termination >>? { events.append(.terminate(reason: $0)) }
 
       guard events.count > 0 else {
-        self.parent?.replayLast()
-        self.rParent?.replayLast()
+        self.parent?.replayLast(key: .key(self.id, next: key))
+        self.rParent?.replayLast(key: .key(self.id, next: key))
         return
       }
 
@@ -492,7 +503,7 @@ public class Stream<T> {
         self.printDebug(info: "\(self.descriptor): Replay push event: \(event)")
 
         for processor in self.downStreams {
-          processor.process(next: event, withKey: .none)
+          processor.process(next: event, withKey: key)
         }
       }
     }
@@ -553,8 +564,8 @@ extension Stream {
   /**
   This will crawl up the processing chain until it finds a valid last value and replay that value down the proessing chain.
   */
-  @discardableResult public func replay() -> Self {
-    replayLast()
+  @discardableResult public func replay(shared: Bool = true) -> Self {
+    replayLast(key: shared ? .share : .end)
     return self
   }
   

@@ -17,6 +17,7 @@
 		65491DDB1E95802700A1C736 /* ObservableOperationsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65491DDA1E95802700A1C736 /* ObservableOperationsTests.swift */; };
 		65491DDD1E958E4200A1C736 /* FutureOperationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65491DDC1E958E4200A1C736 /* FutureOperationTests.swift */; };
 		658370581E89A8F600B979F4 /* ThrottleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658370571E89A8F600B979F4 /* ThrottleTests.swift */; };
+		6585B0A41EBBAD5A0034F1E4 /* ReplayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6585B0A31EBBAD5A0034F1E4 /* ReplayTests.swift */; };
 		658C5E281EA91BB900F2018C /* ColdOperationsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658C5E271EA91BB900F2018C /* ColdOperationsTests.swift */; };
 		659432E11E83187800B71335 /* FutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659432E01E83187800B71335 /* FutureTests.swift */; };
 		659432E31E831B3100B71335 /* ColdTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659432E21E831B3100B71335 /* ColdTests.swift */; };
@@ -82,6 +83,7 @@
 		65491DDC1E958E4200A1C736 /* FutureOperationTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FutureOperationTests.swift; sourceTree = "<group>"; };
 		658370571E89A8F600B979F4 /* ThrottleTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ThrottleTests.swift; sourceTree = "<group>"; };
 		658370591E89BCE400B979F4 /* throttle.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = throttle.md; path = Docs/throttle.md; sourceTree = SOURCE_ROOT; };
+		6585B0A31EBBAD5A0034F1E4 /* ReplayTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReplayTests.swift; sourceTree = "<group>"; };
 		658692BA1E85ADCF000C9413 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
 		658692BC1E85AE7C000C9413 /* cold.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = cold.md; path = Docs/cold.md; sourceTree = SOURCE_ROOT; };
 		658692BD1E85AE7C000C9413 /* future.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = future.md; path = Docs/future.md; sourceTree = SOURCE_ROOT; };
@@ -187,6 +189,7 @@
 				653271B91E5F2BA300E3DE9C /* Info.plist */,
 				65DC98331E816A830045BFA3 /* TestExtensions.swift */,
 				651214A21EAA5CCD007ED019 /* ArrayExtensionsTests.swift */,
+				6585B0A31EBBAD5A0034F1E4 /* ReplayTests.swift */,
 				651214A01EAA5C48007ED019 /* ResultTests.swift */,
 				658370571E89A8F600B979F4 /* ThrottleTests.swift */,
 				651477D71E6E17A800190A44 /* DispatchTests.swift */,
@@ -440,6 +443,7 @@
 				651214A71EAA86DA007ED019 /* StreamProcessorTests.swift in Sources */,
 				65CDD95D1E84361000FF5C06 /* ObservableTests.swift in Sources */,
 				65CB069C1E8BF020007826E0 /* TimerTests.swift in Sources */,
+				6585B0A41EBBAD5A0034F1E4 /* ReplayTests.swift in Sources */,
 				65491DDD1E958E4200A1C736 /* FutureOperationTests.swift in Sources */,
 				651477D81E6E17A800190A44 /* DispatchTests.swift in Sources */,
 				65ACFD5C1E82CFD000641BB2 /* PromiseTests.swift in Sources */,

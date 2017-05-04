@@ -23,7 +23,7 @@ class StreamProcessorTests: XCTestCase {
 
   func testProcessorDoNothing() {
     let processor = StreamProcessor<Int>()
-    processor.process(next: .next(1), withKey: .none)
+    processor.process(next: .next(1), withKey: .share)
     XCTAssertTrue(true)
   }
 
@@ -48,10 +48,10 @@ class StreamProcessorTests: XCTestCase {
       events.append(event)
     }
 
-    processor.process(next: .next(0), withKey: .none)
+    processor.process(next: .next(0), withKey: .share)
     XCTAssertEqual(events.count, 1)
 
-    processor.process(next: .next(0), withKey: .none)
+    processor.process(next: .next(0), withKey: .share)
     XCTAssertEqual(events.count, 2)
   }
 
