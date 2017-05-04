@@ -182,7 +182,7 @@ public class Stream<T> {
   var shouldPrune: Bool { return !persist && state != .active }
   
   /// A Throttle is used to restrict the flow of information that moves through the stream.
-  internal(set) public var throttle: Throttle?
+  public var throttle: Throttle?
   
   /// If set, the next stream added will have their throttle set to this.
   fileprivate var nextThrottle: Throttle?
