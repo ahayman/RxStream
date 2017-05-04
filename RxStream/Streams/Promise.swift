@@ -36,7 +36,10 @@ public class Promise<T> : Stream<T> {
   
   /// Parent, retriable stream.  Note: This creates a retain cycle.  The parent must release the child in order to unravel the cycle.  This is done with the `prune` command when the child is no longer viable.
   var retryParent: Retriable?
-  
+
+  /// Marked as false while auto replay is pending to prevent multiple replays
+  private var autoReplayable: Bool = true
+
   /// The promise needed to pass into the promise task.
   lazy private var stateObservable: ObservableInput<StreamState> = ObservableInput(self.state)
   
@@ -101,7 +104,20 @@ public class Promise<T> : Stream<T> {
     task = nil
     super.init(op: op)
   }
-  
+
+  /// Overridden to auto replay the future stream result when a new stream is added
+  @discardableResult override func attachChildStream<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
+    let stream = super.attachChildStream(stream: stream, withOp: op)
+    if !isActive && autoReplayable {
+      autoReplayable = false
+      Dispatch.after(delay: 0.01, on: .main).execute {
+        self.autoReplayable = true
+        self.replay()
+      }
+    }
+    return stream
+  }
+
   /// Overridden to update the complete variable
   override func preProcess<U>(event: Event<U>) -> Event<U>? {
     guard !complete else { return nil }

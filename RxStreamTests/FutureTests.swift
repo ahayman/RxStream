@@ -111,5 +111,37 @@ class FutureTests: XCTestCase {
     future.complete(TestError())
     XCTAssertEqual(errors.count, 1)
   }
-    
+
+  func testAutoReplay() {
+    let future = FutureInput<Int>()
+    var values = [Int]()
+    future.complete(10)
+
+    future.on{ values.append($0) }
+
+    XCTAssertEqual(values, [], "Initially, nothing will happen because the future has already completed.")
+
+    wait(for: 0.1)
+
+    XCTAssertEqual(values, [10], "After a moment, the autoReplay should occur.")
+  }
+
+  func testMultiBranchAutoReplay() {
+    let future = FutureInput<Int>()
+    var aValues = [Int]()
+    var bValues = [Int]()
+    future.complete(10)
+
+    future.on{ aValues.append($0) }
+    future.on{ bValues.append($0) }
+
+    XCTAssertEqual(aValues, [], "Initially, nothing will happen because the future has already completed.")
+    XCTAssertEqual(bValues, [], "Initially, nothing will happen because the future has already completed.")
+
+    wait(for: 0.1)
+
+    XCTAssertEqual(aValues, [10], "After a moment, the autoReplay should occur.")
+    XCTAssertEqual(bValues, [10], "After a moment, the autoReplay should occur.")
+  }
+
 }

@@ -19,6 +19,8 @@ public class Future<T> : Stream<T> {
 
   private var lock: Future<T>?
   private var complete: Bool = false
+  /// Marked as false while auto replay is pending to prevent multiple replays
+  private var autoReplayable: Bool = true
 
   /// Allows for the creation of a `Future` that already has a value filled.
   public class func completed(_ value: T) -> Future<T> {
@@ -33,7 +35,20 @@ public class Future<T> : Stream<T> {
     future.process(event: .error(error))
     return future
   }
-  
+
+
+  /// Overridden to auto replay the future stream result when a new stream is added
+  @discardableResult override func attachChildStream<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
+    let stream = super.attachChildStream(stream: stream, withOp: op)
+    if !isActive && autoReplayable {
+      autoReplayable = false
+      Dispatch.after(delay: 0.01, on: .main).execute {
+        self.autoReplayable = true
+        self.replay()
+      }
+    }
+    return stream
+  }
   /**
    A Future is initialized with the task.  The task should call the completions handler with the result when it's done.
    

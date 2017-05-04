@@ -443,5 +443,73 @@ class PromiseTests: XCTestCase {
     XCTAssertEqual(terminations, [.error(TestError())])
     XCTAssertEqual(results, [])
   }
-  
+
+  func testAutoRetry() {
+    var completion: ((Result<Int>) -> Void)? = nil
+    var results = [Int]()
+    var terminations = [Termination]()
+    let promise = Promise<Int> { _, onCompletion in
+      completion = onCompletion
+    }
+
+    guard let completionTask = completion else {
+      return XCTFail("Expected the Promise task to be called")
+    }
+
+    completionTask(.success(0))
+
+    promise
+      .on { results.append($0) }
+      .onTerminate { terminations.append($0) }
+
+    XCTAssertEqual(results, [])
+    XCTAssertEqual(terminations, [])
+    XCTAssertEqual(promise.state, .terminated(reason: .completed))
+
+    wait(for: 0.1)
+
+    XCTAssertEqual(results, [0])
+    XCTAssertEqual(terminations, [.completed])
+    XCTAssertEqual(promise.state, .terminated(reason: .completed))
+  }
+
+  func testMultiBranchAutoRetry() {
+    var completion: ((Result<Int>) -> Void)? = nil
+    var aResults = [Int]()
+    var aTerminations = [Termination]()
+    var bResults = [Int]()
+    var bTerminations = [Termination]()
+    let promise = Promise<Int> { _, onCompletion in
+      completion = onCompletion
+    }
+
+    guard let completionTask = completion else {
+      return XCTFail("Expected the Promise task to be called")
+    }
+
+    completionTask(.success(0))
+
+    promise
+      .on { aResults.append($0) }
+      .onTerminate { aTerminations.append($0) }
+
+    promise
+      .on { bResults.append($0) }
+      .onTerminate { bTerminations.append($0) }
+
+    XCTAssertEqual(aResults, [])
+    XCTAssertEqual(aTerminations, [])
+    XCTAssertEqual(bResults, [])
+    XCTAssertEqual(bTerminations, [])
+    XCTAssertEqual(promise.state, .terminated(reason: .completed))
+
+    wait(for: 0.1)
+
+    XCTAssertEqual(aResults, [0])
+    XCTAssertEqual(aTerminations, [.completed])
+    XCTAssertEqual(bResults, [0])
+    XCTAssertEqual(bTerminations, [.completed])
+    XCTAssertEqual(promise.state, .terminated(reason: .completed))
+  }
+
 }
