@@ -51,7 +51,7 @@ Note: Where you place the `onError` in the processing chain matters.  If you pla
 
 ### Replaying Value
 
-When you receive a Future, you can never know whether the Future has been completed or not, so it's usually a good idea to call `replay()` at the end of your processing chain in order to ensure that the Future's value is replayed into the processing chain if the Future has already been filled.  If it hasn't been filled, calling `replay()` will do nothing.
+When you receive a Future, you can never know whether the Future has been completed or not. If the Future has completed, the completed value will replay after a short amount of time.  The delay is there to ensure the processing chain has had a chance to be added.  Otherwise, if you need the value immediately, you can call `replay()` at the end of the processing chain and the completed value will immediately be pushed into the new processing chain.  If the Future hasn't been filled, calling `replay()` will do nothing.
 
 ### Merge Operations
 
