@@ -28,11 +28,11 @@ Hot and Observable streams have subclasses used for producing the values.  While
 
 RxStream has several features that help you manage and use them easily.
 
-- **Dispatch**: All streams can have their operations done on a specified dispatch (which uses GCD under the hood).  This allows you to easily perform your operations on the main queue, a background queue or a custom queue you create.
+- **[Dispatch](/Docs/dispatch.md)**: All streams can have their operations done on a specified dispatch (which uses GCD under the hood).  This allows you to easily perform your operations on the main queue, a background queue or a custom queue you create.
 - **[Throttle](/Docs/throttle.md)**: A throttle allows you to control the flow of data being passed own the streams.  One of the most useful is a Pressure Throttle, which will buffer processing and prevent too many values from being processed based on the current work load.
 - **Disposal**:  Instead of using separate object(s) to dispose of processing chains, RxStream allows you to dispose of streams intuitively and specifically within the chain itself.  When any part of a stream terminates, that entire branch will be pruned.  Plus, you can easily specify when a branch terminates by using explicit `doWhile` or `until` operators or even tie the lifetime of the branch to a specific object.
 -  **Replay**: Streams can optionally be replayed, which will pull down the last value of a stream (if any) when creating a processing chain from an existing stream. Simply call `replay()` at the end of a processing chain, if there is a prior value available it will be pulled into the processing chain. Both Future and Promise streams will auto-replay a completed value into any new processing chain by default.
-- **Operators**: Each stream features a wide range of operators you can use to process your data.  However, we have avoided more complex operators, specifically those operators that produce or work on streams that contain other streams.  This is the primary area that RxStream differs from other Reactive frameworks.  
+- **Operations**: Each stream features a wide range of operations you can use to process your data.  However, we have avoided more complex operators, specifically those operators that produce or work on streams that contain other streams.  This is the primary area that RxStream differs from other Reactive frameworks.  
 - **Clear Terminators**: Each stream terminates with clear language, defined by an enum:
 	- `case .cancelled`: The stream has been cancelled.
 	- `case .completed`: The stream has been completed.

@@ -28,7 +28,7 @@ The same task serves all requests, but the response from that task only travels 
 
 	let coldTask = Cold<Int, Int> { _, request, respond in
 	   respond(.success(request + request % 2)) // Only return even numbers
-	 }.share(true)
+	 }
 	 
 	 // Branch A
 	 let branchA = coldTask
@@ -40,11 +40,13 @@ The same task serves all requests, but the response from that task only travels 
 	   .map{ "Branch B: \($0)" }
 	   .on{ print($0) }
 	 
-	 branchA.request(3) // prints: "Branch A: 4" & "Branch B: 4"
-	 branchB.request(4) // prints: "Branch A: 4" & "Branch B: 4"
-	 branchA.request(6) // prints: "Branch A: 6" & "Branch B: 6"
+	 branchA.request(3) // prints: "Branch A: 4"
+	 branchB.request(4) // prints: "Branch B: 4"
+	 branchA.request(6) // prints: "Branch A: 6"
+	 
+	 coldTask.request(7, share: true) // prints: "Branch A: 7" & "Branch B: 7"
 
-Because we’ve told the `coldTask` to share it’s responses, they now travel down all branches.  This “sharing” behavior is inherited down all chains until it is explicitly stopped using `share(false)`, after which point the processing chain(s) will revert to their default behavior of only processing Responses from which they made the request.  This adds a lot of flexility in how, when, and where the data processing should occur.
+Because we’ve told the `coldTask` to share it’s response, they now travel down all branches after the request.  This allows you to prune the branches that receive the request and those that do not.  This adds a lot of flexility in how, when, and where the data processing should occur.
 
 Like all the other streams, Cold streams allows you to perform a variety of operations on the values (Responses) of the stream.  However, Cold streams also give you the option to map the `Request` as well.  This gives you an enormous amount of flexibility in how you structure your processing chains.
 
