@@ -125,7 +125,9 @@ class HotTests: XCTestCase {
     XCTAssertEqual(values, [0, 1])
 
     wait(for: 0.01)
-    XCTAssertEqual(bValues, [0, 1])
+    XCTAssertTrue(bValues.contains(0))
+    XCTAssertTrue(bValues.contains(1))
+    XCTAssertEqual(bValues.count, 2)
   }
 
 
