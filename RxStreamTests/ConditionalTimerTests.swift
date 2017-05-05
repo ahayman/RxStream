@@ -18,19 +18,17 @@ class ConditionalTimerTests : XCTestCase {
       return true
     }
 
-    let start = Date.timeIntervalSinceReferenceDate
     timer.start()
 
     wait(for: 0.25)
-    let end = Date.timeIntervalSinceReferenceDate
-    let expected = Int((end - start) / 0.1)
-    XCTAssertEqual(count, expected, "Expect Timer to fire twice")
-    
+    XCTAssertGreaterThan(count, 0, "Expect Timer to fire twice")
+    let stopped = count
+
     timer.stop()
     XCTAssertFalse(timer.isActive, "Timer should be inactive")
     
-    wait(for: 0.1)
-    XCTAssertEqual(count, expected, "Expect Timer to have stopped firing.")
+    wait(for: 0.15)
+    XCTAssertEqual(count, stopped, "Expect Timer to have stopped firing.")
   }
   
   func testRestartTimer() {
@@ -40,26 +38,24 @@ class ConditionalTimerTests : XCTestCase {
       return true
     }
 
-    var start = Date.timeIntervalSinceReferenceDate
     timer.start()
     
-    wait(for: 0.11)
+    wait(for: 0.15)
+    XCTAssertGreaterThan(count, 0, "Expect Timer to fire")
+    var last = count
 
-    var end = Date.timeIntervalSinceReferenceDate
-    var expected = Int((end - start) / 0.1)
-    XCTAssertEqual(count, expected, "Expect Timer to fire")
-
-    start = Date.timeIntervalSinceReferenceDate
     timer.restart(withInterval: 0.2)
-    wait(for: 0.21)
-    end = Date.timeIntervalSinceReferenceDate
-    expected += Int((end - start) / 0.2)
-    XCTAssertEqual(count, expected, "Expect timer to have fired.")
+    wait(for: 0.11)
+    XCTAssertEqual(count, last, "Interval has changed, so timer should not fire yet.")
+
+    wait(for: 0.14)
+    XCTAssertGreaterThan(count, last, "Expect timer to have fired.")
+    last = count
     
     timer.stop()
     XCTAssertFalse(timer.isActive, "Timer should be inactive")
     wait(for: 0.21)
-    XCTAssertEqual(count, expected, "Timer has been stopped and shouldn't fire.")
+    XCTAssertEqual(count, last, "Timer has been stopped and shouldn't fire.")
   }
   
   func testTimerCondition() {
@@ -70,23 +66,21 @@ class ConditionalTimerTests : XCTestCase {
       return continueFiring
     }
 
-    let start = Date.timeIntervalSinceReferenceDate
     timer.start()
     
     wait(for: 0.25)
-    let end = Date.timeIntervalSinceReferenceDate
-    var expected = Int((end - start) / 0.1)
-    XCTAssertEqual(count, expected, "Expect Timer to fire")
+    XCTAssertGreaterThan(count, 0, "Expect Timer to fire")
+    var last = count
     
     continueFiring = false
-    expected += 1
     
-    wait(for: 0.1)
-    XCTAssertEqual(count, expected, "Expect Timer to fire, last time.")
+    wait(for: 0.15)
+    XCTAssertGreaterThan(count, last, "Expect Timer to fire, last time.")
     XCTAssertFalse(timer.isActive, "Timer should be inactive")
+    last = count
     
     wait(for: 0.1)
-    XCTAssertEqual(count, expected, "Timer shouldn't fire again")
+    XCTAssertEqual(count, last, "Timer shouldn't fire again")
   }
   
   func testTimerConditionRestart() {
@@ -97,30 +91,28 @@ class ConditionalTimerTests : XCTestCase {
       return continueFiring
     }
 
-    let start = Date.timeIntervalSinceReferenceDate
     timer.start()
     
     wait(for: 0.21)
-    let end = Date.timeIntervalSinceReferenceDate
-    var expected = Int((end - start) / 0.1)
-    XCTAssertEqual(count, expected, "Expect Timer to fire")
+    XCTAssertGreaterThan(count, 0, "Expect Timer to fire")
+    var last = count
     
     continueFiring = false
-    expected += 1
     
-    wait(for: 0.11) 
-    XCTAssertEqual(count, expected, "Expect Timer to fire, last time.")
+    wait(for: 0.2)
+    XCTAssertEqual(count, last + 1, "Expect Timer to fire, last time.")
     XCTAssertFalse(timer.isActive, "Timer should be inactive")
-    
+    last = count
+
     timer.restart()
-    expected += 1
     
-    wait(for: 0.11)
-    XCTAssertEqual(count, expected, "Expect Timer to fire, one before being discontinued.")
+    wait(for: 0.2)
+    XCTAssertGreaterThan(count, last, "Expect Timer to fire, one before being discontinued.")
     XCTAssertFalse(timer.isActive, "Timer should be inactive")
+    last = count
     
-    wait(for: 0.11)
-    XCTAssertEqual(count, expected, "Timer should not fire again.")
+    wait(for: 0.2)
+    XCTAssertEqual(count, last, "Timer should not fire again.")
   }
   
 }
