@@ -101,5 +101,32 @@ class HotTests: XCTestCase {
     XCTAssertEqual(terminations, [.completed])
   }
 
+  func testStreamDispatch() {
+    var values = [Int]()
+    var bValues = [Int]()
+    let hot = HotInput<Int>()
+
+    hot
+      .dispatch(.sync(on: .main)).on {
+        if Thread.isMainThread {
+          values.append($0)
+        }
+      }
+      .on{
+        if !Thread.isMainThread {
+          bValues.append($0)
+        }
+      }.dispatched(.async(on: .background))
+
+    hot.push(0)
+    XCTAssertEqual(values, [0])
+
+    hot.push(1)
+    XCTAssertEqual(values, [0, 1])
+
+    wait(for: 0.01)
+    XCTAssertEqual(bValues, [0, 1])
+  }
+
 
 }
