@@ -2,7 +2,7 @@ language: swift
 osx_image: xcode8.3
 xcode_project: RxStream.xcodeproj
 script:
-      - xcodebuild -scheme RxStream -project RxStream.xcodeproj -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 6S,OS=9.1' build test
+      - xcodebuild -scheme 'RxStream iOS' -project RxStream.xcodeproj -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 6S,OS=9.1' build test
 after_success:
       - bash <(curl -s https://codecov.io/bash) -J 'RxStream'
 branches:
