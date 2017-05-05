@@ -12,7 +12,7 @@ import Rx
 class TimerTests: XCTestCase {
   
   func testBasicTimer() {
-    let timer = Rx.Timer(interval: 0.1)
+    let timer = Rx.Timer(interval: 0.01)
     
     var count: UInt = 0
     timer.count().on{
@@ -22,19 +22,19 @@ class TimerTests: XCTestCase {
 
     timer.start()
     
-    wait(for: 0.21)
+    wait(for: 0.2)
 
     XCTAssertGreaterThan(count, 0)
-    var last = count
+    let last = count
     
     timer.terminate(withReason: .completed)
     
-    wait(for: 0.11)
+    wait(for: 0.1)
     XCTAssertEqual(count, last, "Timer should no longer be firing")
   }
   
   func testTimerActive() {
-    let timer = Rx.Timer(interval: 0.1)
+    let timer = Rx.Timer(interval: 0.01)
     
     var count: UInt = 0
     timer.count().on{
@@ -49,7 +49,7 @@ class TimerTests: XCTestCase {
     XCTAssertTrue(timer.isActive, "The stream should be active.")
     XCTAssertTrue(timer.isTimerActive, "The Timer should now be active.")
     
-    wait(for: 0.15)
+    wait(for: 0.1)
     XCTAssertGreaterThan(count, 0, "Wait for at least 1 fire.")
     
     timer.stop()
@@ -66,7 +66,7 @@ class TimerTests: XCTestCase {
   }
   
   func testTimerRestart() {
-    let timer = Rx.Timer(interval: 0.1)
+    let timer = Rx.Timer(interval: 0.01)
     
     var count: UInt = 0
     timer.count().on{
@@ -76,20 +76,20 @@ class TimerTests: XCTestCase {
 
     timer.start()
     
-    wait(for: 0.15)
+    wait(for: 0.1)
     XCTAssertGreaterThan(count, 0)
     let last = count
 
     timer.restart(withInterval: 0.2)
     
-    wait(for: 0.25)
+    wait(for: 0.2)
     XCTAssertGreaterThan(count, last)
     
     timer.terminate(withReason: .completed)
   }
   
   func testTimerWithNoFirstDelay() {
-    let timer = Rx.Timer(interval: 0.1)
+    let timer = Rx.Timer(interval: 0.01)
     
     var count: UInt = 0
     timer.count().on{
@@ -107,7 +107,7 @@ class TimerTests: XCTestCase {
   }
   
   func testTimerDealloc() {
-    var timer: Rx.Timer? = Rx.Timer(interval: 0.1)
+    var timer: Rx.Timer? = Rx.Timer(interval: 0.01)
     
     var count: UInt = 0
     timer?.count().on{
@@ -116,7 +116,7 @@ class TimerTests: XCTestCase {
 
     timer?.start()
     
-    wait(for: 0.15)
+    wait(for: 0.1)
     XCTAssertGreaterThan(count, 0, "Timer should have fired")
     
     timer = nil
@@ -144,7 +144,7 @@ class TimerTests: XCTestCase {
 
     timer.start()
 
-    wait(for: 0.15)
+    wait(for: 0.1)
 
     XCTAssertGreaterThan(tester.fired, 0)
   }

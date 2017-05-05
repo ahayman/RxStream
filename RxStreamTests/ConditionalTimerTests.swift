@@ -13,7 +13,7 @@ class ConditionalTimerTests : XCTestCase {
   
   func testBasicTimer() {
     var count = 0
-    let timer = ConditionalTimer(interval: 0.1) { () -> Bool in
+    let timer = ConditionalTimer(interval: 0.01) { () -> Bool in
       count += 1
       return true
     }
@@ -33,7 +33,7 @@ class ConditionalTimerTests : XCTestCase {
   
   func testRestartTimer() {
     var count = 0
-    let timer = ConditionalTimer(interval: 0.1) { () -> Bool in
+    let timer = ConditionalTimer(interval: 0.01) { () -> Bool in
       count += 1
       return true
     }
@@ -61,7 +61,7 @@ class ConditionalTimerTests : XCTestCase {
   func testTimerCondition() {
     var count = 0
     var continueFiring = true
-    let timer = ConditionalTimer(interval: 0.1) { () -> Bool in
+    let timer = ConditionalTimer(interval: 0.01) { () -> Bool in
       count += 1
       return continueFiring
     }
@@ -86,14 +86,14 @@ class ConditionalTimerTests : XCTestCase {
   func testTimerConditionRestart() {
     var count = 0
     var continueFiring = true
-    let timer = ConditionalTimer(interval: 0.1) { () -> Bool in
+    let timer = ConditionalTimer(interval: 0.01) { () -> Bool in
       count += 1
       return continueFiring
     }
 
     timer.start()
     
-    wait(for: 0.21)
+    wait(for: 0.2)
     XCTAssertGreaterThan(count, 0, "Expect Timer to fire")
     var last = count
     
