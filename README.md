@@ -1,5 +1,9 @@
 # RxStream
 
+_Simple React in Swift_
+
+[![Build Status](https://travis-ci.org/ahayman/RxStream.svg?branch=master)](https://travis-ci.org/ahayman/RxStream)
+
 RxStream is a simpler kind of Reactive framework for Swift that seeks to integrate well into existing language and architectural paradigms instead of replacing them.
 
 If you’re looking for a full Reactive framework, you’d probably be best taking a look at [RxSwift](https://github.com/ReactiveX/RxSwift) or [ReactiveCocoa](https://github.com/ReactiveCocoa/ReactiveCocoa).  In contrast to these, RxStream is a much pared down version of React.  The motivation for this is several fold:
@@ -39,3 +43,16 @@ RxStream has several features that help you manage and use them easily.
 	- `case .error(Error)`: The stream has terminated with an error.
 - **Non-terminating Errors**: In addition to the normal values, non-terminating errors can also be pushed into the stream and observed.  These errors can be turned into terminating errors down stream.
 - **Construction**: Constructing processing chains on a stream is the process of subscribing.  There’s no need manually call `subscribe` to start receiving values.  It’s rare for a developer to need to construct a chain without actually using it, so instead of forcing you to call `subscribe`, if you _don’t_ want to receive values, instead use `filter` to filter them out until you are ready.
+
+## Requirements
+
+ - Swift 3.0
+ - XCode 8.1
+ - iOS 8.1+ | MacOS 10.10+ | tvOS 9.0+ | watchOS 2.0+
+ 
+## Contact
+
+ - **Issues & Bugs:** Please file an issue on GitHub.
+ - **Feature Request:** Please file an issue on GitHub.
+ - **Contact Me:** [aaron@flexile.co](mailto:aaron@flexile.co)
+ - **Blog:** [Functional Gibberish](https://functionalgibberish.com)
