@@ -13,7 +13,7 @@ class TimerTests: XCTestCase {
   
   func testBasicTimer() {
     let timer = Rx.Timer(interval: 0.01)
-    
+
     var count: UInt = 0
     timer.count().on{
       count = $0
@@ -145,7 +145,7 @@ class TimerTests: XCTestCase {
 
     timer.start()
 
-    wait(for: 0.1)
+    wait(for: 0.3)
 
     XCTAssertGreaterThan(tester.fired, 0)
   }
