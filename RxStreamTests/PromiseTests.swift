@@ -7,7 +7,7 @@
 //
 
 import XCTest
-import Rx
+@testable import Rx
 
 private enum RetryError : Error {
   case retry
@@ -467,6 +467,12 @@ class PromiseTests: XCTestCase {
     XCTAssertEqual(results, [])
 
     promise.cancel()
+    XCTAssertEqual(completions.count, 1)
+    XCTAssertEqual(errors.count, 0)
+    XCTAssertEqual(terminations, [.cancelled])
+    XCTAssertEqual(results, [])
+
+    promise.retry()
     XCTAssertEqual(completions.count, 1)
     XCTAssertEqual(errors.count, 0)
     XCTAssertEqual(terminations, [.cancelled])

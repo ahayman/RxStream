@@ -142,5 +142,20 @@ class TimerTests: XCTestCase {
 
     XCTAssertEqual(tester.fired, 1)
   }
+
+  func testMultiStart() {
+    let timer = Rx.Timer(interval: 0.1)
+    var fired = 0
+    timer.on{ fired += 1 }
+
+    timer.start()
+    timer.start()
+    timer.start()
+    timer.start()
+
+    wait(for: 0.15)
+
+    XCTAssertEqual(fired, 1)
+  }
     
 }

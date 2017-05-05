@@ -1,5 +1,5 @@
 //
-//  EventKey.swift
+//  EventPath.swift
 //  RxStream
 //
 //  Created by Aaron Hayman on 4/20/17.
@@ -9,8 +9,8 @@
 import Foundation
 
 /// Determines how events travel down their branches.
-enum EventKey {
-  indirect case key(String, next: EventKey) /// The event is keyed and should only travel down branches with that key
+enum EventPath {
+  indirect case key(String, next: EventPath) /// The event is keyed and should only travel down branches with that key
   case share /// The event should travel down all branches.
   case end /// The event should end here
 }

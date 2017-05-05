@@ -68,9 +68,8 @@ struct CircularBuffer<Element> : RandomAccessCollection {
     let offset = head + index
     if offset < size {
       return buffer[offset]
-    } else {
-      return buffer[offset % size]
     }
+    return buffer[offset % size]
   }
   
   /**

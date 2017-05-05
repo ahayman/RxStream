@@ -116,5 +116,10 @@ class CircularBufferTests: XCTestCase {
     }
     XCTAssertEqual(results, [2, 1, 0])
   }
+
+  func testEmptyData() {
+    let buffer = CircularBuffer<Int>(size: 3, data: [])
+    XCTAssertEqual(buffer.count, 0)
+  }
     
 }

@@ -19,7 +19,7 @@ public class Cold<Request, Response> : Stream<Response> {
   
   public typealias ColdTask = (_ state: Observable<StreamState>, _ request: Request, _ response: (Result<Response>) -> Void) -> Void
 
-  typealias ParentProcessor = (Request, EventKey) -> Void
+  typealias ParentProcessor = (Request, EventPath) -> Void
 
   override var streamType: StreamType { return .cold }
 
@@ -43,7 +43,7 @@ public class Cold<Request, Response> : Stream<Response> {
   }
   
   func newMappedRequestStream<U>(mapper: @escaping (U) -> Request) -> Cold<U, Response> {
-    return Cold<U, Response>(op: "mapRequest"){ [weak self] (request: U, key: EventKey) in
+    return Cold<U, Response>(op: "mapRequest"){ [weak self] (request: U, key: EventPath) in
       self?.process(request: mapper(request), withKey: key)
     }
   }
@@ -62,9 +62,9 @@ public class Cold<Request, Response> : Stream<Response> {
     super.init(op: op)
   }
   
-  private func make(request: Request, withKey key: EventKey, withTask task: @escaping ColdTask) {
+  private func make(request: Request, withKey key: EventPath, withTask task: @escaping ColdTask) {
     let work = {
-      var key: EventKey? = key
+      var key: EventPath? = key
       task(self.stateObservable, request) {
         guard let requestKey = key else { return }
         key = nil
@@ -81,9 +81,9 @@ public class Cold<Request, Response> : Stream<Response> {
     }
   }
   
-  private func process(request: Request, withKey key: EventKey) {
+  private func process(request: Request, withKey key: EventPath) {
     guard isActive else { return }
-    let key: EventKey = .key(id, next: key)
+    let key: EventPath = .key(id, next: key)
 
     requestProcessor
       .onLeft{ self.make(request: request, withKey: key, withTask: $0) }

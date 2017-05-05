@@ -59,7 +59,7 @@ extension Stream : BaseStream { }
 
 protocol ParentStream : class {
   func prune(_ prune: Prune, withReason reason: Termination)
-  func replayLast(key: EventKey)
+  func replayLast(key: EventPath)
 }
 
 /// Indirection because we can't store class variables in a Generic
@@ -286,7 +286,7 @@ public class Stream<T> {
    Provide a key to pass down stream if one was provided.
    - warning: if the stream is not active, the event will be ignored.
   */
-  private func push(events: [Event<T>], withKey key: EventKey) {
+  private func push(events: [Event<T>], withKey key: EventPath) {
 
     // update internal state with values from event
     if self.canReplay, let values = events.oMap({ $0.eventValue }).filled {
@@ -340,7 +340,7 @@ public class Stream<T> {
    - parameter event: The event to push into the stream
    - parameter key: _(Optional)_, the key to restrict the event.
    */
-  func process(event: Event<T>, withKey key: EventKey = .share) {
+  func process(event: Event<T>, withKey key: EventPath = .share) {
     self.process(key: key, next: event) { (event, completion) in completion(event.signal) }
   }
   
@@ -379,7 +379,7 @@ public class Stream<T> {
    
    - warning: All work for a stream should use this function to process events.
    */
-  func process<U>(key: EventKey, next: Event<U>, withOp op: @escaping StreamOp<U, T>) {
+  func process<U>(key: EventPath, next: Event<U>, withOp op: @escaping StreamOp<U, T>) {
     guard isActive && pendingTermination == nil else { return }
 
     let work = {
@@ -486,7 +486,7 @@ public class Stream<T> {
   func postProcess<U>(event: Event<U>, producedSignal signal: OpSignal<T>) { }
 
   /// This will attempt to replay the last events, if any are found.  Otherwise, it will pass the request to it's parent.
-  func replayLast(key: EventKey) {
+  func replayLast(key: EventPath) {
     let work = {
       guard self.canReplay else { return }
 
