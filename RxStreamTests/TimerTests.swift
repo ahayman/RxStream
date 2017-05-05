@@ -80,10 +80,11 @@ class TimerTests: XCTestCase {
     XCTAssertGreaterThan(count, 0)
     let last = count
 
-    timer.restart(withInterval: 0.2)
+    timer.restart(withInterval: 0.1)
     
     wait(for: 0.2)
     XCTAssertGreaterThan(count, last)
+    XCTAssertLessThan(count, last + 10)
     
     timer.terminate(withReason: .completed)
   }
@@ -161,7 +162,7 @@ class TimerTests: XCTestCase {
 
     wait(for: 0.15)
 
-    XCTAssertEqual(fired, 1)
+    XCTAssertLessThan(fired, 5)
   }
     
 }
