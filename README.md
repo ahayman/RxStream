@@ -3,6 +3,7 @@
 _Simple React in Swift_
 
 [![Build Status](https://travis-ci.org/ahayman/RxStream.svg?branch=master)](https://travis-ci.org/ahayman/RxStream)
+[![Unit Test Coverage](https://codecov.io/gh/ahayman/RxStream/branch/master/graph/badge.svg)](https://codecov.io/gh/ahayman/RxStream)
 
 RxStream is a simpler kind of Reactive framework for Swift that seeks to integrate well into existing language and architectural paradigms instead of replacing them.
 
