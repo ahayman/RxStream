@@ -120,5 +120,27 @@ class TimerTests: XCTestCase {
     wait(for: 0.2)
     XCTAssertEqual(count, 1, "The timer should have been deallocated and no longer firing.")
   }
+
+  func testNewTimerHandler() {
+    class TimerTester {
+      var fired: Int = 0
+      dynamic func fire() { fired += 1 }
+    }
+
+    let timer = Rx.Timer(interval: 0.1)
+    let tester = TimerTester()
+    XCTAssertNotNil(timer.newTimer)
+
+    timer.newTimer = { (interval: TimeInterval, selector: Selector, repeats: Bool) -> Foundation.Timer in
+      return Timer.scheduledTimer(timeInterval: interval, target: tester, selector: #selector(TimerTester.fire), userInfo: nil, repeats: false)
+    }
+    XCTAssertNotNil(timer.newTimer)
+
+    timer.start()
+
+    wait(for: 0.15)
+
+    XCTAssertEqual(tester.fired, 1)
+  }
     
 }

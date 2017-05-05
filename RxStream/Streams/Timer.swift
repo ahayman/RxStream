@@ -36,6 +36,7 @@ public class Timer : Hot<Void> {
   /**
    Replace this to produce a custom Foundation.Timer instead of the default.  It
    - warning: The returned Foundation.Timer should use the interval, selector, and repeats parameters provided or else the behavior will be undefined.
+   The timer should be returned, already scheduled on a runloop.  Just initing a timer without scheduling it will result in nothing happening.
    */
   public var newTimer: NewTimerHandler {
     get { return timer.newTimer }
