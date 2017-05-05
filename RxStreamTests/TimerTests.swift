@@ -19,16 +19,20 @@ class TimerTests: XCTestCase {
       count = $0
     }
     XCTAssertEqual(count, 0)
-    
+
+    let start = Date.timeIntervalSinceReferenceDate
     timer.start()
     
     wait(for: 0.21)
-    XCTAssertEqual(count, 2)
+
+    let end = Date.timeIntervalSinceReferenceDate
+    let expected = UInt((end - start) / 0.1)
+    XCTAssertEqual(count, expected)
     
     timer.terminate(withReason: .completed)
     
     wait(for: 0.11)
-    XCTAssertEqual(count, 2, "Timer should no longer be firing")
+    XCTAssertEqual(count, expected, "Timer should no longer be firing")
   }
   
   func testTimerActive() {
@@ -41,13 +45,16 @@ class TimerTests: XCTestCase {
     XCTAssertEqual(count, 0)
     XCTAssertTrue(timer.isActive, "The stream should be active.")
     XCTAssertFalse(timer.isTimerActive, "The Timer should not be active.")
-    
+
+    let start = Date.timeIntervalSinceReferenceDate
     timer.start()
     XCTAssertTrue(timer.isActive, "The stream should be active.")
     XCTAssertTrue(timer.isTimerActive, "The Timer should now be active.")
     
     wait(for: 0.15)
-    XCTAssertEqual(count, 1, "Wait for at least 1 fire.")
+    let end = Date.timeIntervalSinceReferenceDate
+    let expected = UInt((end - start) / 0.1)
+    XCTAssertEqual(count, expected, "Wait for at least 1 fire.")
     
     timer.stop()
     XCTAssertTrue(timer.isActive, "The stream should be active.")
@@ -70,16 +77,22 @@ class TimerTests: XCTestCase {
       count = $0
     }
     XCTAssertEqual(count, 0)
-    
+
+    var start = Date.timeIntervalSinceReferenceDate
     timer.start()
     
     wait(for: 0.15)
-    XCTAssertEqual(count, 1)
-    
+    var end = Date.timeIntervalSinceReferenceDate
+    var expected = UInt((end - start) / 0.1)
+    XCTAssertEqual(count, expected)
+
+    start = Date.timeIntervalSinceReferenceDate
     timer.restart(withInterval: 0.2)
     
     wait(for: 0.25)
-    XCTAssertEqual(count, 2)
+    end = Date.timeIntervalSinceReferenceDate
+    expected = UInt((end - start) / 0.1)
+    XCTAssertEqual(count, expected)
     
     timer.terminate(withReason: .completed)
   }
@@ -92,12 +105,15 @@ class TimerTests: XCTestCase {
       count = $0
     }
     XCTAssertEqual(count, 0)
-    
+
+    let start = Date.timeIntervalSinceReferenceDate
     timer.start(delayFirst: false)
     XCTAssertEqual(count, 1)
     
     wait(for: 0.15)
-    XCTAssertEqual(count, 2)
+    let end = Date.timeIntervalSinceReferenceDate
+    let expected = UInt((end - start) / 0.1) + 1
+    XCTAssertEqual(count, expected)
     
     timer.terminate(withReason: .completed)
   }
@@ -109,16 +125,19 @@ class TimerTests: XCTestCase {
     timer?.count().on{
       count = $0
     }
-    
+
+    let start = Date.timeIntervalSinceReferenceDate
     timer?.start()
     
     wait(for: 0.15)
-    XCTAssertEqual(count, 1, "Timer should have fired")
+    let end = Date.timeIntervalSinceReferenceDate
+    let expected = UInt((end - start) / 0.1)
+    XCTAssertEqual(count, expected, "Timer should have fired")
     
     timer = nil
     
     wait(for: 0.2)
-    XCTAssertEqual(count, 1, "The timer should have been deallocated and no longer firing.")
+    XCTAssertEqual(count, expected, "The timer should have been deallocated and no longer firing.")
   }
 
   func testNewTimerHandler() {
@@ -136,11 +155,14 @@ class TimerTests: XCTestCase {
     }
     XCTAssertNotNil(timer.newTimer)
 
+    let start = Date.timeIntervalSinceReferenceDate
     timer.start()
 
     wait(for: 0.15)
 
-    XCTAssertEqual(tester.fired, 1)
+    let end = Date.timeIntervalSinceReferenceDate
+    let expected = Int((end - start) / 0.1)
+    XCTAssertEqual(tester.fired, expected)
   }
 
   func testMultiStart() {
@@ -148,6 +170,7 @@ class TimerTests: XCTestCase {
     var fired = 0
     timer.on{ fired += 1 }
 
+    let start = Date.timeIntervalSinceReferenceDate
     timer.start()
     timer.start()
     timer.start()
@@ -155,7 +178,9 @@ class TimerTests: XCTestCase {
 
     wait(for: 0.15)
 
-    XCTAssertEqual(fired, 1)
+    let end = Date.timeIntervalSinceReferenceDate
+    let expected = Int((end - start) / 0.1)
+    XCTAssertEqual(fired, expected)
   }
     
 }

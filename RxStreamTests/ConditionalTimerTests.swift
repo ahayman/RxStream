@@ -17,17 +17,20 @@ class ConditionalTimerTests : XCTestCase {
       count += 1
       return true
     }
-    
+
+    let start = Date.timeIntervalSinceReferenceDate
     timer.start()
-    
+
     wait(for: 0.25)
-    XCTAssertEqual(count, 2, "Expect Timer to fire twice")
+    let end = Date.timeIntervalSinceReferenceDate
+    let expected = Int((end - start) / 0.1)
+    XCTAssertEqual(count, expected, "Expect Timer to fire twice")
     
     timer.stop()
     XCTAssertFalse(timer.isActive, "Timer should be inactive")
     
     wait(for: 0.1)
-    XCTAssertEqual(count, 2, "Expect Timer to have stopped firing.")
+    XCTAssertEqual(count, expected, "Expect Timer to have stopped firing.")
   }
   
   func testRestartTimer() {
@@ -36,23 +39,27 @@ class ConditionalTimerTests : XCTestCase {
       count += 1
       return true
     }
-    
+
+    var start = Date.timeIntervalSinceReferenceDate
     timer.start()
     
-    wait(for: 0.11) 
-    XCTAssertEqual(count, 1, "Expect Timer to fire")
-    
-    timer.restart(withInterval: 0.2)
     wait(for: 0.11)
-    XCTAssertEqual(count, 1, "Interval has changed, so timer should not fire yet.")
-    
-    wait(for: 0.1)
-    XCTAssertEqual(count, 2, "Expect timer to have fired.")
+
+    var end = Date.timeIntervalSinceReferenceDate
+    var expected = Int((end - start) / 0.1)
+    XCTAssertEqual(count, expected, "Expect Timer to fire")
+
+    start = Date.timeIntervalSinceReferenceDate
+    timer.restart(withInterval: 0.2)
+    wait(for: 0.21)
+    end = Date.timeIntervalSinceReferenceDate
+    expected += Int((end - start) / 0.2)
+    XCTAssertEqual(count, expected, "Expect timer to have fired.")
     
     timer.stop()
     XCTAssertFalse(timer.isActive, "Timer should be inactive")
     wait(for: 0.21)
-    XCTAssertEqual(count, 2, "Timer has been stopped and shouldn't fire.")
+    XCTAssertEqual(count, expected, "Timer has been stopped and shouldn't fire.")
   }
   
   func testTimerCondition() {
@@ -62,20 +69,24 @@ class ConditionalTimerTests : XCTestCase {
       count += 1
       return continueFiring
     }
-    
+
+    let start = Date.timeIntervalSinceReferenceDate
     timer.start()
     
     wait(for: 0.25)
-    XCTAssertEqual(count, 2, "Expect Timer to fire")
+    let end = Date.timeIntervalSinceReferenceDate
+    var expected = Int((end - start) / 0.1)
+    XCTAssertEqual(count, expected, "Expect Timer to fire")
     
     continueFiring = false
+    expected += 1
     
     wait(for: 0.1)
-    XCTAssertEqual(count, 3, "Expect Timer to fire, last time.")
+    XCTAssertEqual(count, expected, "Expect Timer to fire, last time.")
     XCTAssertFalse(timer.isActive, "Timer should be inactive")
     
     wait(for: 0.1)
-    XCTAssertEqual(count, 3, "Timer shouldn't fire again")
+    XCTAssertEqual(count, expected, "Timer shouldn't fire again")
   }
   
   func testTimerConditionRestart() {
@@ -85,26 +96,31 @@ class ConditionalTimerTests : XCTestCase {
       count += 1
       return continueFiring
     }
-    
+
+    let start = Date.timeIntervalSinceReferenceDate
     timer.start()
     
     wait(for: 0.21)
-    XCTAssertEqual(count, 2, "Expect Timer to fire")
+    let end = Date.timeIntervalSinceReferenceDate
+    var expected = Int((end - start) / 0.1)
+    XCTAssertEqual(count, expected, "Expect Timer to fire")
     
     continueFiring = false
+    expected += 1
     
     wait(for: 0.11) 
-    XCTAssertEqual(count, 3, "Expect Timer to fire, last time.")
+    XCTAssertEqual(count, expected, "Expect Timer to fire, last time.")
     XCTAssertFalse(timer.isActive, "Timer should be inactive")
     
     timer.restart()
+    expected += 1
     
     wait(for: 0.11)
-    XCTAssertEqual(count, 4, "Expect Timer to fire, one before being discontinued.")
+    XCTAssertEqual(count, expected, "Expect Timer to fire, one before being discontinued.")
     XCTAssertFalse(timer.isActive, "Timer should be inactive")
     
     wait(for: 0.11)
-    XCTAssertEqual(count, 4, "Timer should not fire again.")
+    XCTAssertEqual(count, expected, "Timer should not fire again.")
   }
   
 }
