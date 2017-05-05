@@ -21,4 +21,25 @@ class MiscTests: XCTestCase {
     XCTAssertNotEqual(Termination.cancelled, Termination.error(TestError()))
   }
 
+  func testDebug() {
+    let hot = HotInput<Int>()
+    var logs = [String]()
+
+    hot.debugPrinter = { logs.append($0) }
+
+    hot.push(0)
+    XCTAssertGreaterThan(logs.count, 0)
+  }
+
+  func testGlobalDebug() {
+    let hot = HotInput<Int>()
+    var logs = [String]()
+
+    Hot<Int>.debugPrinter = { logs.append($0) }
+
+    hot.push(0)
+    XCTAssertGreaterThan(logs.count, 0)
+    Hot<Int>.debugPrinter = nil
+  }
+
 }

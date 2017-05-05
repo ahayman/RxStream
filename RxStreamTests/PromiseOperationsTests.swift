@@ -416,9 +416,7 @@ class PromiseOperationsTests: XCTestCase {
     let left = Promise<Int>{ _, result in result(.success(1)) }
     let right = Promise<String>{ _, result in result(.success("one")) }
     var term: Termination? = nil
-    
-    Rx.Stream<Int>.debugPrinter = { print($0) }
-    
+
     left
       .zip(right)
       .on{ values.append($0) }
