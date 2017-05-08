@@ -1,4 +1,4 @@
-<img src="/Docs/badges/hot.jpg" height=100 alt="Hot Stream">
+<img src="/Docs/badges/hot.jpg" height=75 alt="Hot Stream">
 
 A Hot stream is a kind of stream that produces values with no regard or input from it’s clients.  When a client registers operations on a Hot stream, it will receive values as they come as soon as the client adds operations to it.
 

@@ -1,4 +1,4 @@
-<img src="/Docs/badges/future.jpg" height=100 alt="Future Stream">
+<img src="/Docs/badges/future.jpg" height=75 alt="Future Stream">
 
 A Future is a simple stream that returns a single value (or an error) and then terminates.  At it’s core, it’s a replacement for the callback closures frequently used to return asynchronous values.  But as a stream, you get this asynchronous value with the ability to process it just as you would a normal stream.  This not only gives you the power and flexibility that streams provide, but also helps prevent nested code and increase the readability of your project.
 

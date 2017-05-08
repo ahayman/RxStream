@@ -1,5 +1,5 @@
 # Timer
-<img src="/Docs/badges/hot.jpg" height=50 alt="Hot Stream">
+<img src="/Docs/badges/hot.jpg" height=40 alt="Hot Stream">
 
 Rx.Timer is unusual in that it's the only concrete Rx stream that doesn't require a task or external input.  In truth, you could create your own "timer" stream by embedding a `Foundation.Timer` into a `HotTask` and having it emit events.  The problem is that controlling the timer and avoiding retain cycles can be problematic.  For this reason, I added this type to make it easy to create Timer streams that emit events at a specified interval.
 

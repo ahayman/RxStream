@@ -1,4 +1,4 @@
-<img src="/Docs/badges/observable.jpg" height=100 alt="Observable Stream">
+<img src="/Docs/badges/observable.jpg" height=75 alt="Observable Stream">
 
 An `Observable` can be though of as a kind of Hot Stream who’s value is guaranteed and can be directly observed and accessed outside of the stream.  The difference between an `Observable` and a `Hot` stream basically comes down to state.  A `Hot` stream is normally dealing with _transient_ data, whereas an `Observable` is used when you’re tracking persistent state.  It’s frequently used to store variables in a class or struct, and access them as you normally would otherwise, but with the added benefit of being able to _observe_ changes in that variable (thus the name).  Using an `Observable` in Swift is just about the closest thing you can get KVO without using KVO.
 
