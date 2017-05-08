@@ -44,6 +44,7 @@ RxStream has several features that help you manage and use them easily.
 	- `case .error(Error)`: The stream has terminated with an error.
 - **Non-terminating Errors**: In addition to the normal values, non-terminating errors can also be pushed into the stream and observed.  These errors can be turned into terminating errors down stream.
 - **Construction**: Constructing processing chains on a stream is the process of subscribing.  There’s no need manually call `subscribe` to start receiving values.  It’s rare for a developer to need to construct a chain without actually using it, so instead of forcing you to call `subscribe`, if you _don’t_ want to receive values, instead use `filter` to filter them out until you are ready.
+- **[Debugging](/Docs/debugging.md)**: RxStream has several features to allow for easier debugging, including descriptive `debugDescription` and custom debug log handlers on both the individual Stream and global spaces.
 
 ## Requirements
 

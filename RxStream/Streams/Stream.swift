@@ -104,11 +104,13 @@ public class Stream<T> {
   public var debugPrinter : ((String) -> Void)?
   
   /**
-   Primarily used for debugging purposes, this describes the current stream, including it's operation.
+   Primarily used for debugging purposes, it describes the current stream.
+   By default, this will display the type of stream (Hot, Cold, Future, etc) along with the operation it performs.
+   It can be overridden to provide custom information by setting this property or using the `named(_)` function.
    This helps make it easier when debugging to tell what is going on.
   */
-  public let descriptor: String
-  
+  public var descriptor: String
+
   public var debugDescription: String { return descriptor }
   
   /// Storage of all down streams.
@@ -200,7 +202,7 @@ public class Stream<T> {
   
   private func printDebug(info: String) {
     guard let printer = debugPrinter ?? globalDebugPrinter else { return }
-    printer(info)
+    printer("\(descriptor): \(info)")
   }
   
   /// By default, this returns a DownstreamProcessor, but it's primarily so that subclasses can override and provide their own custom processors.
@@ -294,7 +296,7 @@ public class Stream<T> {
     }
 
     for event in events {
-      printDebug(info: "\(descriptor): push event: \(event)")
+      printDebug(info: "push event \(event)")
     
       // Push the event down stream.  If the stream is reusable, we don't want to filter downstreams.  
       for processor in self.downStreams {
@@ -311,7 +313,7 @@ public class Stream<T> {
    */
   func terminate(reason: Termination, andPrune prune: Prune, pushDownstreamTo types: [StreamType]) {
     let work = {
-      self.printDebug(info: "\(self.descriptor): Terminating with \(reason)")
+      self.printDebug(info: "terminating with \(reason)")
       if self.isActive {
         self.state = .terminated(reason: reason)
       }
@@ -383,7 +385,7 @@ public class Stream<T> {
     guard isActive && pendingTermination == nil else { return }
 
     let work = {
-      self.printDebug(info: "\(self.descriptor): begin processing \(next)")
+      self.printDebug(info: "begin processing \(next)")
       var nextKey = key
       switch key {
       case .share: break
@@ -412,7 +414,7 @@ public class Stream<T> {
             self.currentWork -= 1
 
             self.postProcess(event: event, producedSignal: opSignal)
-            self.printDebug(info: "\(self.descriptor): throttle cancelled \(event)")
+            self.printDebug(info: "throttle cancelled \(event)")
             return
           }
 
@@ -438,7 +440,7 @@ public class Stream<T> {
               self.currentWork -= 1
 
               self.postProcess(event: event, producedSignal: opSignal)
-              self.printDebug(info: "\(self.descriptor): end Processing \(event) ")
+              self.printDebug(info: "end Processing \(event) ")
 
               completion()
             }
@@ -500,7 +502,7 @@ public class Stream<T> {
       }
 
       for event in events {
-        self.printDebug(info: "\(self.descriptor): Replay push event: \(event)")
+        self.printDebug(info: "replay event \(event)")
 
         for processor in self.downStreams {
           processor.process(next: event, withKey: key)
@@ -611,6 +613,15 @@ extension Stream {
   */
   @discardableResult public func onDebugInfo(_ printer: ((String) -> Void)?) -> Self {
     self.debugPrinter = printer
+    return self
+  }
+
+
+  /**
+  This will override the debug description for the the stream, using for printing and for printing out debug info.
+  */
+  @discardableResult public func named(_ descriptor: String) -> Self {
+    self.descriptor = descriptor
     return self
   }
   

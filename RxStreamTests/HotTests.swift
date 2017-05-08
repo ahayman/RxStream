@@ -106,6 +106,9 @@ class HotTests: XCTestCase {
     var bValues = [Int]()
     let hot = HotInput<Int>()
 
+    let bUpdate1 = expectation(description: "Background update 1")
+    let bUpdate2 = expectation(description: "Background update 2")
+
     hot
       .dispatch(.sync(on: .main)).on {
         if Thread.isMainThread {
@@ -115,6 +118,8 @@ class HotTests: XCTestCase {
       .on{
         if !Thread.isMainThread {
           bValues.append($0)
+          if $0 == 0 { bUpdate1.fulfill() }
+          if $0 == 1 { bUpdate2.fulfill() }
         }
       }.dispatched(.async(on: .background))
 
@@ -124,7 +129,8 @@ class HotTests: XCTestCase {
     hot.push(1)
     XCTAssertEqual(values, [0, 1])
 
-    wait(for: 0.5)
+    waitForExpectations(timeout: 5.0)
+
     XCTAssertTrue(bValues.contains(0))
     XCTAssertTrue(bValues.contains(1))
     XCTAssertEqual(bValues.count, 2)

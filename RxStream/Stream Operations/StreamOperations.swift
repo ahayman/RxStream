@@ -150,7 +150,20 @@ extension Stream {
       }
     }
   }
-  
+
+  func appendReduce<U: BaseStream>(stream: U, initial: U.Data, withReducer reducer: @escaping (U.Data, T) -> U.Data) -> U {
+    var reduction: U.Data = initial
+    return append(stream: stream) { (next, completion) in
+      switch next {
+      case let .next(value):
+        reduction = reducer(reduction, value)
+        completion(.cancel)
+      case .error(let error): completion(.error(error))
+      case .terminate(let term): completion(.terminate(.value(reduction), term))
+      }
+    }
+  }
+
   func appendFirst<U: BaseStream>(stream: U, count: Int, then: Termination) -> U where U.Data == T {
     let first = max(1, count)
     var count = 0

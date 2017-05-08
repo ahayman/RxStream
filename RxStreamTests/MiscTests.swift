@@ -42,4 +42,15 @@ class MiscTests: XCTestCase {
     Hot<Int>.debugPrinter = nil
   }
 
+  func testNamedDebug() {
+    let hot = HotInput<Int>().named("Custom Name")
+    XCTAssertEqual(hot.debugDescription, "Custom Name")
+  }
+
+  func testDesccriptor() {
+    let hot = HotInput<Int>()
+    hot.descriptor = "Custom Name"
+    XCTAssertEqual(hot.debugDescription, "Custom Name")
+  }
+
 }

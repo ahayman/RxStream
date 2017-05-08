@@ -73,7 +73,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func map<U>(_ mapper: @escaping (_ value: T) -> U?) -> Future<U> {
-    return appendMap(stream: Future<U>(op: "map"), withMapper: mapper)
+    return appendMap(stream: Future<U>(op: "map<\(String(describing: T.self))>"), withMapper: mapper)
   }
   
   /**
@@ -88,7 +88,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func resultMap<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Future<U> {
-    return appendMap(stream: Future<U>(op: "resultMap"), withMapper: mapper)
+    return appendMap(stream: Future<U>(op: "resultMap<\(String(describing: T.self))>"), withMapper: mapper)
   }
   
   /**
@@ -111,7 +111,7 @@ extension Future {
    - returns: A new Future Stream
    */
   @discardableResult public func asyncMap<U>(_ mapper: @escaping (_ value: T, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Future<U> {
-    return appendMap(stream: Future<U>(op: "asyncMap"), withMapper: mapper)
+    return appendMap(stream: Future<U>(op: "asyncMap<\(String(describing: T.self))>"), withMapper: mapper)
   }
   
   /**
@@ -127,7 +127,7 @@ extension Future {
    - returns: A new Hot Stream
    */
   @discardableResult public func flatMap<U>(_ mapper: @escaping (_ value: T) -> [U]) -> Hot<U> {
-    return appendFlatMap(stream: Hot<U>(op: "flatMap"), withFlatMapper: mapper)
+    return appendFlatMap(stream: Hot<U>(op: "flatMap<\(String(describing: T.self))>"), withFlatMapper: mapper)
   }
   
   /**

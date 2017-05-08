@@ -108,7 +108,7 @@ extension Cold {
    - returns: A new Cold Stream
    */
   @discardableResult public func map<U>(_ mapper: @escaping (_ value: Response) -> U?) -> Cold<Request, U> {
-    let stream: Cold<Request, U> = newSubStream("map")
+    let stream: Cold<Request, U> = newSubStream("map<\(String(describing: Response.self))>")
     return appendMap(stream: stream, withMapper: mapper)
   }
   
@@ -124,7 +124,7 @@ extension Cold {
    - returns: A new Cold Stream
    */
   @discardableResult public func resultMap<U>(_ mapper: @escaping (_ value: Response) -> Result<U>) -> Cold<Request, U> {
-    let stream: Cold<Request, U> = newSubStream("resultMap")
+    let stream: Cold<Request, U> = newSubStream("resultMap<\(String(describing: Response.self))>")
     return appendMap(stream: stream, withMapper: mapper)
   }
   
@@ -148,7 +148,7 @@ extension Cold {
    - returns: A new Cold Stream
    */
   @discardableResult public func asyncMap<U>(_ mapper: @escaping (_ value: Response, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Cold<Request, U> {
-    let stream: Cold<Request, U> = newSubStream("asyncMap")
+    let stream: Cold<Request, U> = newSubStream("asyncMap<\(String(describing: Response.self))>")
     return appendMap(stream: stream, withMapper: mapper)
   }
   
@@ -163,7 +163,7 @@ extension Cold {
    - returns: A new Cold Stream
    */
   @discardableResult public func flatMap<U>(_ mapper: @escaping (_ value: Response) -> [U]) -> Cold<Request, U> {
-    let stream: Cold<Request, U> = newSubStream("flatMap")
+    let stream: Cold<Request, U> = newSubStream("flatMap<\(String(describing: Response.self))>")
     return appendFlatMap(stream: stream, withFlatMapper: mapper)
   }
   
@@ -234,7 +234,8 @@ extension Cold {
    - returns: A new Cold Stream
    */
   @discardableResult public func reduce<U>(initial: U, reducer: @escaping (_ current: U, _ next: Response) -> U) -> Cold<Request, U> {
-    return scan(initial: initial, scanner: reducer).last()
+    let stream: Cold<Request, U> = newSubStream("reduce(initial: \(initial))")
+    return appendReduce(stream: stream, initial: initial, withReducer: reducer)
   }
   
   /**

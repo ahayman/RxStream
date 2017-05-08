@@ -292,6 +292,7 @@
 		65DC98331E816A830045BFA3 /* TestExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestExtensions.swift; sourceTree = "<group>"; };
 		7D8C70353704CBE7C9B626F5 /* operations.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = operations.md; path = Docs/operations.md; sourceTree = SOURCE_ROOT; };
 		7D8C70823D9B9FFF05B3C559 /* dispatch.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = dispatch.md; path = Docs/dispatch.md; sourceTree = SOURCE_ROOT; };
+		7D8C7912C7E8FD915B817476 /* debugging.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = debugging.md; path = Docs/debugging.md; sourceTree = SOURCE_ROOT; };
 		7D8C7D45E435DEA7A911024B /* timer.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = timer.md; path = Docs/timer.md; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -529,6 +530,7 @@
 				7D8C7D45E435DEA7A911024B /* timer.md */,
 				7D8C70823D9B9FFF05B3C559 /* dispatch.md */,
 				7D8C70353704CBE7C9B626F5 /* operations.md */,
+				7D8C7912C7E8FD915B817476 /* debugging.md */,
 			);
 			name = Docs;
 			sourceTree = "<group>";

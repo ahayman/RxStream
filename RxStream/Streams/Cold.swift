@@ -43,7 +43,7 @@ public class Cold<Request, Response> : Stream<Response> {
   }
   
   func newMappedRequestStream<U>(mapper: @escaping (U) -> Request) -> Cold<U, Response> {
-    return Cold<U, Response>(op: "mapRequest"){ [weak self] (request: U, key: EventPath) in
+    return Cold<U, Response>(op: "mapRequest<\(String(describing: Request.self))>"){ [weak self] (request: U, key: EventPath) in
       self?.process(request: mapper(request), withKey: key)
     }
   }

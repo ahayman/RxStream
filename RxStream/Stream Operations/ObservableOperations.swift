@@ -111,7 +111,7 @@ extension Observable {
    - returns: A new Observable with the mapped value type
    */
   public func map<U>(_ mapper: @escaping (_ value: T) -> U) -> Observable<U> {
-    return appendMap(stream: Observable<U>(mapper(self.value), op: "map"), withMapper: mapper)
+    return appendMap(stream: Observable<U>(mapper(self.value), op: "map<\(String(describing: T.self))>"), withMapper: mapper)
   }
   
   /**
@@ -129,7 +129,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func map<U>(_ mapper: @escaping (_ value: T) -> U?) -> Hot<U> {
-    return appendMap(stream: Hot<U>(op: "map"), withMapper: mapper)
+    return appendMap(stream: Hot<U>(op: "map<\(String(describing: T.self))>"), withMapper: mapper)
   }
   
   /**
@@ -146,7 +146,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func resultMap<U>(_ mapper: @escaping (_ value: T) -> Result<U>) -> Hot<U> {
-    return appendMap(stream: Hot<U>(op: "resultMap"), withMapper: mapper)
+    return appendMap(stream: Hot<U>(op: "resultMap<\(String(describing: T.self))>"), withMapper: mapper)
   }
   
   /**
@@ -171,7 +171,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func asyncMap<U>(_ mapper: @escaping (_ value: T, _ completion: @escaping (Result<U>?) -> Void) -> Void) -> Hot<U> {
-    return appendMap(stream: Hot<U>(op: "asyncMap"), withMapper: mapper)
+    return appendMap(stream: Hot<U>(op: "asyncMap<\(String(describing: T.self))>"), withMapper: mapper)
   }
   
   /**
@@ -187,7 +187,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func flatMap<U>(_ mapper: @escaping (_ value: T) -> [U]) -> Hot<U> {
-    return appendFlatMap(stream: Hot<U>(op: "flatMap"), withFlatMapper: mapper)
+    return appendFlatMap(stream: Hot<U>(op: "flatMap<\(String(describing: T.self))>"), withFlatMapper: mapper)
   }
   
   /**
@@ -262,7 +262,7 @@ extension Observable {
    - returns: A new Hot Stream
    */
   @discardableResult public func reduce<U>(initial: U, reducer: @escaping (_ current: U, _ next: T) -> U) -> Hot<U> {
-    return scan(initial: initial, scanner: reducer).last()
+    return appendReduce(stream: Hot<U>(op: "reduce(initial: \(initial)"), initial: initial, withReducer: reducer)
   }
   
   /**
@@ -358,7 +358,7 @@ extension Observable {
    - returns: A new Observable Stream
    */
   @discardableResult public func stamp<U>(_ stamper: @escaping (_ value: T) -> U) -> Observable<(value: T, stamp: U)> {
-    return appendStamp(stream: Observable<(value: T, stamp: U)>((value: self.value, stamp: stamper(self.value)), op: "stamp"), stamper: stamper)
+    return appendStamp(stream: Observable<(value: T, stamp: U)>((value: self.value, stamp: stamper(self.value)), op: "stamp<\(String(describing: T.self))>"), stamper: stamper)
   }
   
   /**
@@ -509,7 +509,7 @@ extension Observable {
    Emit provided values after the last item, right before the stream terminates.
    These values will be the last values emitted by the stream.
    
-   - parameter conat: The values to emit before the stream terminates.
+   - parameter concat: The values to emit before the stream terminates.
    
    - returns: A new Observable Stream
    */
