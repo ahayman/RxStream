@@ -198,8 +198,8 @@ extension Cold {
    
    - returns: A new Cold Stream
    */
-  @discardableResult public func first(_ count: Int = 1, then: Termination = .cancelled) -> Cold<Request, Response> {
-    return appendFirst(stream: newSubStream("first(\(count), then: \(then))"), count: count, then: then)
+  @discardableResult public func first(_ count: UInt = 1, then: Termination = .cancelled) -> Cold<Request, Response> {
+    return appendNext(stream: newSubStream("first(\(count), then: \(then))"), count: count, then: then)
   }
   
   /**

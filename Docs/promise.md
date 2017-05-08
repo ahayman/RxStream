@@ -1,4 +1,4 @@
-# Promise
+<img src="/Docs/badges/promise.jpg" height=100 alt="Promise Stream">
 
 A Promise is basically a future that can be retried and cancelled.  Like a future, it will only return a single value.  However, unlike a future, a promise can be retried in the case that an error has occurred.  It can also be manually cancelled.  This gives the client much more control over how the promise delivers its value.  By simply returning a Promise, an interface is essentially saying that the task to retrieve the data can be retried on the client’s terms.  
 

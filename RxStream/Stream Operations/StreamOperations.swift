@@ -164,23 +164,6 @@ extension Stream {
     }
   }
 
-  func appendFirst<U: BaseStream>(stream: U, count: Int, then: Termination) -> U where U.Data == T {
-    let first = max(1, count)
-    var count = 0
-    return append(stream: stream) { (next, completion) in
-      switch next {
-      case let .next(value):
-        count += 1
-        switch count {
-        case 0..<first: completion(next.signal)
-        case first: completion(.terminate(.value(value), then))
-        default: completion(.cancel)
-        }
-      case .error, .terminate: completion(next.signal)
-      }
-    }
-  }
-  
   func appendLast<U: BaseStream>(stream: U) -> U where U.Data == T {
     var last: T? = nil
     return append(stream: stream) { (next, completion) in

@@ -222,8 +222,8 @@ extension Observable {
    
    - returns: A new Hot Stream
    */
-  @discardableResult public func first(_ count: Int = 1, then: Termination = .cancelled) -> Hot<T> {
-    return appendFirst(stream: Hot<T>(op: "first(\(count), then: \(then)"), count: count, then: then)
+  @discardableResult public func first(_ count: UInt = 1, then: Termination = .cancelled) -> Hot<T> {
+    return appendNext(stream: Hot<T>(op: "first(\(count), then: \(then)"), count: count, then: then)
   }
   
   /**
