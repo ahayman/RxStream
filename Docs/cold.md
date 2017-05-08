@@ -1,4 +1,4 @@
-![Cold](/Docs/badges/cold.jpg)
+<img src="/Docs/badges/cold.jpg" height=100 alt="Cold Stream"> 
 
 A Cold stream only produces values when a client makes a `Request`.  Unlike all other streams, a Cold stream has two types: `Request` and `Response`. A client makes a `Request` and receive a `Response` from the Cold stream. A cold stream is initialized with a task that should take a `Request` and return a `Response` in the task’s completion handler.
 
