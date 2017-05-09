@@ -88,9 +88,9 @@ public class Promise<T> : Stream<T> {
    If the stream is terminated, the task should cancel whatever it's doing (if possible).  
    After a stream has been terminated, calling the completion handler will do nothing.
    
-   - parameter task: The task that should complete the future
+   - parameter task: The task that should complete the Promise
    
-   - returns: A new Future
+   - returns: A new Promise
    */
   public init(task: @escaping PromiseTask<T>) {
     self.task = task
@@ -105,7 +105,7 @@ public class Promise<T> : Stream<T> {
     super.init(op: op)
   }
 
-  /// Overridden to auto replay the future stream result when a new stream is added
+  /// Overridden to auto replay the Promise stream result when a new stream is added
   @discardableResult override func attachChildStream<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
     let stream = super.attachChildStream(stream: stream, withOp: op)
     if !isActive && autoReplayable {

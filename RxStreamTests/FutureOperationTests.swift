@@ -523,7 +523,125 @@ class FutureOperationsTests: XCTestCase {
     right.terminate(withReason: .completed)
     XCTAssertEqual(term, .completed)
   }
-  
+
+  func testWhile() {
+    var values = [Int]()
+    let stream = FutureInput<Int>()
+    var term: Termination? = nil
+
+    stream
+      .doWhile{ $0 < 10 }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    stream.complete(10)
+    XCTAssertEqual(values, [])
+    XCTAssertEqual(term, .cancelled)
+  }
+
+  func testWhileCompleted() {
+    var values = [Int]()
+    let stream = FutureInput<Int>()
+    var term: Termination? = nil
+
+    stream
+      .doWhile{ $0 < 10 }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    stream.complete(9)
+    XCTAssertEqual(values, [9])
+    XCTAssertEqual(term, .completed)
+  }
+
+  func testUntil() {
+    var values = [Int]()
+    let stream = FutureInput<Int>()
+    var term: Termination? = nil
+
+    stream
+      .until{ $0 == 10 }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    stream.complete(10)
+    XCTAssertEqual(values, [])
+    XCTAssertEqual(term, .cancelled)
+  }
+
+  func testUntilCompleted() {
+    var values = [Int]()
+    let stream = FutureInput<Int>()
+    var term: Termination? = nil
+
+    stream
+      .until{ $0 == 10 }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    stream.complete(9)
+    XCTAssertEqual(values, [9])
+    XCTAssertEqual(term, .completed)
+  }
+
+  func testUntilTermination(){
+    var values = [Int]()
+    let stream = FutureInput<Int>()
+    var term: Termination? = nil
+
+    stream
+      .until{ value -> Termination? in
+        return value == 10 ? .cancelled : nil
+      }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    stream.complete(10)
+    XCTAssertEqual(values, [])
+
+    XCTAssertEqual(term, .cancelled)
+  }
+
+  func testUsing() {
+    var values = [Int]()
+    let stream = FutureInput<Int>()
+    var term: Termination? = nil
+    var object: TestClass? = TestClass()
+
+    stream
+      .using(object!)
+      .on{ values.append($0.1) }
+      .onTerminate{ term = $0 }
+
+    object = nil
+
+    wait(for: 0.1) // Allow the object to deinit
+
+    stream.complete(1)
+    XCTAssertEqual(values, [])
+    XCTAssertEqual(term, .cancelled)
+  }
+
+  func testUsingComplete() {
+    var values = [Int]()
+    let stream = FutureInput<Int>()
+    var term: Termination? = nil
+    var object: TestClass? = TestClass()
+
+    stream
+      .using(object!)
+      .on{ values.append($0.1) }
+      .onTerminate{ term = $0 }
+
+    stream.complete(1)
+    object = nil
+
+    wait(for: 0.1) // Allow the object to deinit
+
+    XCTAssertEqual(values, [1])
+    XCTAssertEqual(term, .completed)
+  }
+
   func testLifeOf() {
     var values = [Int]()
     var completion: ((Result<Int>) -> Void)?
@@ -545,4 +663,5 @@ class FutureOperationsTests: XCTestCase {
     XCTAssertEqual(values, [])
     XCTAssertEqual(term, .cancelled)
   }
+
 }

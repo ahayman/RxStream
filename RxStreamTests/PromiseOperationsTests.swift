@@ -500,7 +500,131 @@ class PromiseOperationsTests: XCTestCase {
     right.terminate(withReason: .completed)
     XCTAssertEqual(term, .completed)
   }
-  
+
+  func testWhile() {
+    var values = [Int]()
+    var completion: ((Result<Int>) -> Void)?
+    let promise = Promise<Int>{ _, result in completion = result }
+    var term: Termination? = nil
+
+    promise
+      .doWhile{ $0 < 10 }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    completion?(.success(10))
+    XCTAssertEqual(values, [])
+    XCTAssertEqual(term, .cancelled)
+  }
+
+  func testWhileCompleted() {
+    var values = [Int]()
+    var completion: ((Result<Int>) -> Void)?
+    let promise = Promise<Int>{ _, result in completion = result }
+    var term: Termination? = nil
+
+    promise
+      .doWhile{ $0 < 10 }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    completion?(.success(9))
+    XCTAssertEqual(values, [9])
+    XCTAssertEqual(term, .completed)
+  }
+
+  func testUntil() {
+    var values = [Int]()
+    var completion: ((Result<Int>) -> Void)?
+    let promise = Promise<Int>{ _, result in completion = result }
+    var term: Termination? = nil
+
+    promise
+      .until{ $0 == 10 }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    completion?(.success(10))
+    XCTAssertEqual(values, [])
+    XCTAssertEqual(term, .cancelled)
+  }
+
+  func testUntilCompleted() {
+    var values = [Int]()
+    var completion: ((Result<Int>) -> Void)?
+    let promise = Promise<Int>{ _, result in completion = result }
+    var term: Termination? = nil
+
+    promise
+      .until{ $0 == 10 }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    completion?(.success(9))
+    XCTAssertEqual(values, [9])
+    XCTAssertEqual(term, .completed)
+  }
+
+  func testUntilTermination(){
+    var values = [Int]()
+    var completion: ((Result<Int>) -> Void)?
+    let promise = Promise<Int>{ _, result in completion = result }
+    var term: Termination? = nil
+
+    promise
+      .until{ value -> Termination? in
+        return value == 10 ? .cancelled : nil
+      }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    completion?(.success(10))
+    XCTAssertEqual(values, [])
+    XCTAssertEqual(term, .cancelled)
+  }
+
+  func testUsing() {
+    var values = [Int]()
+    var completion: ((Result<Int>) -> Void)?
+    let promise = Promise<Int>{ _, result in completion = result }
+    var term: Termination? = nil
+    var object: TestClass? = TestClass()
+
+    promise
+      .using(object!)
+      .on{ values.append($0.1) }
+      .onTerminate{ term = $0 }
+
+    object = nil
+
+    wait(for: 0.1) // Allow the object to deinit
+
+    completion?(.success(1))
+    XCTAssertEqual(values, [])
+    XCTAssertEqual(term, .cancelled)
+  }
+
+  func testUsingComplete() {
+    var values = [Int]()
+    var completion: ((Result<Int>) -> Void)?
+    let promise = Promise<Int>{ _, result in completion = result }
+    var term: Termination? = nil
+    var object: TestClass? = TestClass()
+
+    promise
+      .using(object!)
+      .on{ values.append($0.1) }
+      .onTerminate{ term = $0 }
+
+    completion?(.success(1))
+    object = nil
+
+    wait(for: 0.1) // Allow the object to deinit
+
+    XCTAssertEqual(values, [1])
+    XCTAssertEqual(term, .completed)
+  }
+
   func testLifeOf() {
     var values = [Int]()
     var completion: ((Result<Int>) -> Void)?

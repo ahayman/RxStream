@@ -305,7 +305,77 @@ extension Future {
 
 // MARK: Lifetime operators
 extension Future {
-  
+
+  /**
+   ## Branching
+
+   Emit values from stream until the handler returns `false`, and then terminate the stream with the provided termination.
+
+   - parameter then: **Default:** `.cancelled`. When the handler returns `false`, then terminate the stream with this termination.
+   - parameter handler: Takes the next value and returns `false` to terminate the stream or `true` to remain active.
+   - parameter value: The current value being passed down the stream.
+
+   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
+
+   - returns: A new Hot Stream
+   */
+  @discardableResult public func doWhile(then: Termination = .cancelled, handler: @escaping (_ value: T) -> Bool) -> Future<T> {
+    return appendWhile(stream: Future<T>(op: "doWhile(then: \(then))"), handler: handler, then: then)
+  }
+
+  /**
+   ## Branching
+
+   Emit values from stream until the handler returns `true`, and then terminate the stream with the provided termination.
+
+   - note: This is the inverse of `doWhile`, in that the stream remains active _until_ it returns `true` whereas `doWhile` remains active until the handler return `false`.
+
+   - parameter then: **Default:** `.cancelled`. When the handler returns `true`, then terminate the stream with this termination.
+   - parameter handler: Takes the next value and returns `true` to terminate the stream or `false` to remain active.
+   - parameter value: The current value being passed down the stream.
+
+   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
+
+   - returns: A new Hot Stream
+   */
+  @discardableResult public func until(then: Termination = .cancelled, handler: @escaping (T) -> Bool) -> Future<T> {
+    return appendUntil(stream: Future<T>(op: "until(then: \(then)"), handler: handler, then: then)
+  }
+
+  /**
+   ## Branching
+
+   Emit values from stream until the handler returns a `Termination`, at which the point the stream will Terminate.
+
+   - parameter handler: Takes the next value and returns a `Termination` to terminate the stream or `nil` to continue as normal.
+   - parameter value: The current value being passed down the stream.
+
+   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
+
+   - returns: A new Hot Stream
+   */
+  @discardableResult public func until(_ handler: @escaping (_ value: T) -> Termination?) -> Future<T> {
+    return appendUntil(stream: Future<T>(op: "until"), handler: handler)
+  }
+
+  /**
+   ## Branching
+
+   Keep a weak reference to an object, emitting both the object and the current value as a tuple.
+   Terminate the stream on the next event that finds object `nil`.
+
+   - parameter object: The object to keep a week reference.  The stream will terminate on the next even where the object is `nil`.
+   - parameter then: The termination to apply after the reference has been found `nil`.
+
+   - warning: Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
+   - warning: This stream will return a stream that _cannot_ be replayed.  This prevents the stream of retaining the object and extending its lifetime.
+
+   - returns: A new Hot Stream
+   */
+  @discardableResult public func using<U: AnyObject>(_ object: U, then: Termination = .cancelled) -> Future<(U, T)> {
+    return appendUsing(stream: Future<(U, T)>(op: "using(\(object), then: \(then))"), object: object, then: then).canReplay(false)
+  }
+
   /**
    ## Branching
    

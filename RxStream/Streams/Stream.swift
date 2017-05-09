@@ -490,8 +490,6 @@ public class Stream<T> {
   /// This will attempt to replay the last events, if any are found.  Otherwise, it will pass the request to it's parent.
   func replayLast(key: EventPath) {
     let work = {
-      guard self.canReplay else { return }
-
       var events = self.current?.map{ Event.next($0) } ?? []
       self.termination >>? { events.append(.terminate(reason: $0)) }
 
@@ -585,9 +583,9 @@ extension Stream {
   
   /**
    This will cause the stream to be unable to replay values. This can be useful (and necessary) if you don't want the stream to retain the values passed down.
-   This option will propogate to all new downstreams added.  It does not propogate to existing streams already added before the parameter is set. 
+   This option will propagate to all new down streams added.  It does not propagate to existing streams already added before the parameter is set.
    
-   - warning: This can directly impact some operations.  For example, transition observations rely on replayable streams.  If you set `canReplay` to false, then transitions will never provide the `prior` value.
+   - warning: This can directly impact some operations.  For example, transition observations rely on replayable streams.  If you set `canReplay` to false, then transitions will never provide the `prior` value needed.  Also, this will not block a replay request, so stored events upstream from this one can still replay back into this stream.
    
    - parameter canReplay: If `true`, then the stream can replay values, otherwise it cannot.
    

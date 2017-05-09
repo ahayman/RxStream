@@ -129,7 +129,7 @@ class HotTests: XCTestCase {
     hot.push(1)
     XCTAssertEqual(values, [0, 1])
 
-    waitForExpectations(timeout: 5.0)
+    waitForExpectations(timeout: 10.0)
 
     XCTAssertTrue(bValues.contains(0))
     XCTAssertTrue(bValues.contains(1))

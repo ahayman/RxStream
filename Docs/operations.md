@@ -303,7 +303,7 @@ Lifetime operators specifically define exactly how long a stream is allowed to r
 **warning:** Be aware that terminations propogate _upstream_ until the termination hits a stream that has multiple active branches (attached down streams) _or_ it hits a stream that is marked `persist`.
 
 #### While
-<img src="/Docs/badges/hot.jpg" height=15 alt="Hot Stream"> <img src="/Docs/badges/cold.jpg" height=15 alt="Cold Stream"> <img src="/Docs/badges/observable.jpg" height=15 alt="Observable Stream">
+<img src="/Docs/badges/hot.jpg" height=15 alt="Hot Stream"> <img src="/Docs/badges/cold.jpg" height=15 alt="Cold Stream"> <img src="/Docs/badges/future.jpg" height=15 alt="Future Stream"> <img src="/Docs/badges/promise.jpg" height=15 alt="Promise Stream"> <img src="/Docs/badges/observable.jpg" height=15 alt="Observable Stream">
   
  `doWhile(then: Termination, handler: (T) -> Bool) -> Stream<T>`
    
@@ -314,7 +314,7 @@ Emit values from stream until the handler returns `false`, and then terminate th
 Emit values from stream until the handler returns `false`, and then terminate the stream with the provided termination.
    
 #### Until   
-<img src="/Docs/badges/hot.jpg" height=15 alt="Hot Stream"> <img src="/Docs/badges/cold.jpg" height=15 alt="Cold Stream"> <img src="/Docs/badges/observable.jpg" height=15 alt="Observable Stream">
+<img src="/Docs/badges/hot.jpg" height=15 alt="Hot Stream"> <img src="/Docs/badges/cold.jpg" height=15 alt="Cold Stream"> <img src="/Docs/badges/future.jpg" height=15 alt="Future Stream"> <img src="/Docs/badges/promise.jpg" height=15 alt="Promise Stream"> <img src="/Docs/badges/observable.jpg" height=15 alt="Observable Stream">
    
 `until(then: Termination, handler: (T) -> Bool) -> Stream<T>`
    
@@ -337,16 +337,18 @@ _Note:_ This is the inverse of `doWhile`, in that the stream remains active _unt
 Emit values from stream until the handler returns a `Termination`, and then terminate the stream with the provided termination.
    
 #### Using
-<img src="/Docs/badges/hot.jpg" height=15 alt="Hot Stream"> <img src="/Docs/badges/cold.jpg" height=15 alt="Cold Stream">
+<img src="/Docs/badges/hot.jpg" height=15 alt="Hot Stream"> <img src="/Docs/badges/cold.jpg" height=15 alt="Cold Stream"> <img src="/Docs/badges/future.jpg" height=15 alt="Future Stream"> <img src="/Docs/badges/promise.jpg" height=15 alt="Promise Stream">
 
 `using<U: AnyObject>(object: U, then: Termination) -> Stream<(U, T)>`
    
 Keep a weak reference to an object, emitting both the object and the current value as a tuple.
 Terminate the stream on the next event that finds object `nil`.
 
-**warning:** This stream will return a stream that _cannot_ be replayed.  This prevents the stream of retaining the object, extending its lifetime and ruining the entire purpose of this operation.  For the same reason, it's unavailable in `Observable` streams (since they retain their value).
+**Warning** 
+This stream will return a stream that _cannot_ be replayed.  This prevents the stream of retaining the object, extending its lifetime and ruining the entire purpose of this operation.  For the same reason, it's unavailable in `Observable` streams since they retain their value.
   
 #### Life of
+<img src="/Docs/badges/hot.jpg" height=15 alt="Hot Stream"> <img src="/Docs/badges/cold.jpg" height=15 alt="Cold Stream"> <img src="/Docs/badges/future.jpg" height=15 alt="Future Stream"> <img src="/Docs/badges/promise.jpg" height=15 alt="Promise Stream"> <img src="/Docs/badges/observable.jpg" height=15 alt="Observable Stream">
 
 `lifeOf<U: AnyObject>(object: U, then: Termination) -> Stream<T>`
    
@@ -354,6 +356,7 @@ Tie the lifetime of the stream to that of the object.
 Terminate the stream on the next event that finds object `nil`.
    
 #### Next/First   
+<img src="/Docs/badges/hot.jpg" height=15 alt="Hot Stream"> <img src="/Docs/badges/cold.jpg" height=15 alt="Cold Stream"> <img src="/Docs/badges/observable.jpg" height=15 alt="Observable Stream">
 
 `next(count: UInt, then: Termination) -> Stream<T>`
    
