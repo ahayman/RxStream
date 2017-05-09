@@ -16,5 +16,5 @@ Pod::Spec.new do |s|
   s.watchos.deployment_target = '2.0'
   s.source = { :git => "https://github.com/ahayman/RxStream.git", :tag => "#{s.version}" }
 
-  s.source_files  = "RxStream/*.swift"
+  s.source_files  = "RxStream/**/*.swift"
 end
