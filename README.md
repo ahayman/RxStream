@@ -4,6 +4,10 @@ _Simple React in Swift_
 
 [![Build Status](https://travis-ci.org/ahayman/RxStream.svg?branch=master)](https://travis-ci.org/ahayman/RxStream)
 [![Unit Test Coverage](https://codecov.io/gh/ahayman/RxStream/branch/master/graph/badge.svg)](https://codecov.io/gh/ahayman/RxStream)
+[![CocoaPods Compatible](https://img.shields.io/cocoapods/v/RxStream.svg)](https://cocoapods.org/pods/RxStream)
+[![Carthage Compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
+[![Available Platforms](https://img.shields.io/cocoapods/p/RxStream.svg?style=flat)](#requirements)
+[![License Info](https://img.shields.io/badge/license-GNUv3-blue.svg)](https://github.com/ahayman/RxStream/blob/master/LICENSE)
 
 RxStream is a simpler kind of Reactive framework for Swift that seeks to integrate well into existing language and architectural paradigms instead of replacing them.
 
