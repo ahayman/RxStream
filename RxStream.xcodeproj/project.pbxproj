@@ -1491,6 +1491,7 @@
 				6585B0C41EBCB7CB0034F1E4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		6585B0C51EBCB7CB0034F1E4 /* Build configuration list for PBXNativeTarget "RxStream MacOSTests" */ = {
 			isa = XCConfigurationList;
@@ -1499,6 +1500,7 @@
 				6585B0C71EBCB7CB0034F1E4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		6585B16D1EBCBEF90034F1E4 /* Build configuration list for PBXNativeTarget "RxStream watchOS" */ = {
 			isa = XCConfigurationList;
@@ -1507,6 +1509,7 @@
 				6585B16F1EBCBEF90034F1E4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		6585B1A71EBCC5360034F1E4 /* Build configuration list for PBXNativeTarget "RxStream tvOS" */ = {
 			isa = XCConfigurationList;
@@ -1515,6 +1518,7 @@
 				6585B1A91EBCC5360034F1E4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		6585B1AA1EBCC5360034F1E4 /* Build configuration list for PBXNativeTarget "RxStream tvOSTests" */ = {
 			isa = XCConfigurationList;
@@ -1523,6 +1527,7 @@
 				6585B1AC1EBCC5360034F1E4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

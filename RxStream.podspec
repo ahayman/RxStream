@@ -7,7 +7,7 @@ Pod::Spec.new do |s|
     RxStream is a simple React framework for Swift that seeks to integrate well into existing language paradigms instead of replacing them.
                    DESC
   s.homepage = "https://github.com/ahayman/RxStream"
-  s.license = "GNU v3"
+  s.license = "MIT"
   s.author = { "Aaron Hayman" => "aaron@flexile.co" }
 
   s.ios.deployment_target = '8.1'
