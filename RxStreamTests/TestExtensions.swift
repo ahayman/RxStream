@@ -19,11 +19,11 @@ extension XCTestCase {
    - parameter for: The time interval to wait
    */
   func wait(for wait: TimeInterval) {
-    let waitExpectation = expectation(description: "Wait for \(wait) seconds")
+    let waitExpectation = expectation(description: "Wait for \(wait) seconds.  If this times out, then consider increasing the tolerance. ")
     Dispatch.after(delay: wait, on: .main).execute {
       waitExpectation.fulfill()
     }
-    waitForExpectations(timeout: wait + 0.5, handler: nil)
+    waitForExpectations(timeout: wait + 10.0, handler: nil)
   }
     
 }
