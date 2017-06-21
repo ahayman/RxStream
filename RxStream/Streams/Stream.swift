@@ -291,7 +291,7 @@ public class Stream<T> {
   private func push(events: [Event<T>], withKey key: EventPath) {
 
     // update internal state with values from event
-    if self.canReplay, let values = events.oMap({ $0.eventValue }).filled {
+    if self.canReplay, let values = events.flatMap({ $0.eventValue }).filled {
       self.current = values
     }
 

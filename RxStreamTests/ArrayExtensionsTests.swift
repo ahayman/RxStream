@@ -34,11 +34,6 @@ class ArrayExtensionsTests: XCTestCase {
     XCTAssertEqual([0, 1, 2, 3, 4, 5].takeUntil{ $0 == 10 }, [0, 1, 2, 3, 4, 5])
   }
 
-  func testOMap() {
-    XCTAssertEqual([0, 1, 2, 3, 4, 5].oMap{ $0 % 2 == 0 ? $0 : nil }, [0, 2, 4])
-    XCTAssertEqual([0, 1, 2, 3, 4, 5].oMap{ $0 % 2 == 1 ? $0 : nil }, [1, 3, 5])
-  }
-
   func testFilled() {
     XCTAssertNil([].filled)
     XCTAssertNotNil([1].filled)
