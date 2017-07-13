@@ -20,7 +20,7 @@ class DispatchThreadTests: XCTestCase {
     thread.enqueue {
       updates.append("Second Block")
     }
-    wait(for: 0.2)
+    wait(for: 1.0)
     XCTAssertEqual(updates.count, 2)
   }
 
@@ -43,7 +43,7 @@ class DispatchThreadTests: XCTestCase {
       updates.append("Second")
     }
 
-    wait(for: 0.25)
+    wait(for: 1.0)
     XCTAssertEqual(updates, ["First"])
 
     let third = expectation(description: "Second Block run")
