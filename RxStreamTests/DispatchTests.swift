@@ -263,4 +263,24 @@ class DispatchTests: XCTestCase {
     XCTAssertEqual(Priority.low.qos, DispatchQoS.utility)
   }
 
+  func testDispatchThread() {
+    let thread = DispatchThread()
+    let runBlock1 = expectation(description: "Block 1 run")
+    let runBlock2 = expectation(description: "Block 2 run")
+
+    Dispatch
+      .on(thread: thread).execute {
+        if Thread.current.name == thread.name {
+          runBlock1.fulfill()
+        }
+      }
+      .then(.on(thread: thread)) {
+        if Thread.current.name == thread.name {
+          runBlock2.fulfill()
+        }
+      }
+
+    waitForExpectations(timeout: 10.0)
+  }
+
 }

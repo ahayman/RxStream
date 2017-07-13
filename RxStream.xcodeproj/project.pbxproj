@@ -195,6 +195,13 @@
 		65CDD9621E8461D200FF5C06 /* ArrayExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CDD9611E8461D200FF5C06 /* ArrayExtensions.swift */; };
 		65DC98321E8039B60045BFA3 /* HotOperationsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65DC98311E8039B60045BFA3 /* HotOperationsTests.swift */; };
 		65DC98341E816A830045BFA3 /* TestExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65DC98331E816A830045BFA3 /* TestExtensions.swift */; };
+		65E807231F154E0500AFF837 /* DispatchThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E807221F154E0500AFF837 /* DispatchThread.swift */; };
+		65E807241F16D01B00AFF837 /* DispatchThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E807221F154E0500AFF837 /* DispatchThread.swift */; };
+		65E807251F16D01C00AFF837 /* DispatchThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E807221F154E0500AFF837 /* DispatchThread.swift */; };
+		65E807261F16D01F00AFF837 /* DispatchThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E807221F154E0500AFF837 /* DispatchThread.swift */; };
+		65E807281F17BD9300AFF837 /* DispatchThreadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E807271F17BD9300AFF837 /* DispatchThreadTests.swift */; };
+		65E807291F17BD9300AFF837 /* DispatchThreadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E807271F17BD9300AFF837 /* DispatchThreadTests.swift */; };
+		65E8072A1F17BD9300AFF837 /* DispatchThreadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E807271F17BD9300AFF837 /* DispatchThreadTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -290,6 +297,8 @@
 		65CDD9611E8461D200FF5C06 /* ArrayExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ArrayExtensions.swift; path = Utilities/ArrayExtensions.swift; sourceTree = "<group>"; };
 		65DC98311E8039B60045BFA3 /* HotOperationsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HotOperationsTests.swift; sourceTree = "<group>"; };
 		65DC98331E816A830045BFA3 /* TestExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestExtensions.swift; sourceTree = "<group>"; };
+		65E807221F154E0500AFF837 /* DispatchThread.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DispatchThread.swift; path = Utilities/DispatchThread.swift; sourceTree = "<group>"; };
+		65E807271F17BD9300AFF837 /* DispatchThreadTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DispatchThreadTests.swift; sourceTree = "<group>"; };
 		7D8C70353704CBE7C9B626F5 /* operations.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = operations.md; path = Docs/operations.md; sourceTree = SOURCE_ROOT; };
 		7D8C70823D9B9FFF05B3C559 /* dispatch.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = dispatch.md; path = Docs/dispatch.md; sourceTree = SOURCE_ROOT; };
 		7D8C7912C7E8FD915B817476 /* debugging.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = debugging.md; path = Docs/debugging.md; sourceTree = SOURCE_ROOT; };
@@ -435,6 +444,7 @@
 				651214A21EAA5CCD007ED019 /* ArrayExtensionsTests.swift */,
 				65ACFD591E82C39500641BB2 /* CircularBufferTests.swift */,
 				651477D71E6E17A800190A44 /* DispatchTests.swift */,
+				65E807271F17BD9300AFF837 /* DispatchThreadTests.swift */,
 				651214A01EAA5C48007ED019 /* ResultTests.swift */,
 				658370571E89A8F600B979F4 /* ThrottleTests.swift */,
 				6585B0A71EBCA77C0034F1E4 /* EitherTests.swift */,
@@ -474,6 +484,7 @@
 				65ACFD481E82BB3300641BB2 /* Throttle.swift */,
 				65ACFD491E82BB3300641BB2 /* WeakBox.swift */,
 				65C9781B1EA912880059D3D1 /* ConditionalTimer.swift */,
+				65E807221F154E0500AFF837 /* DispatchThread.swift */,
 			);
 			name = Utilities;
 			sourceTree = "<group>";
@@ -824,6 +835,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				65ACFD4F1E82BB3300641BB2 /* Result.swift in Sources */,
+				65E807231F154E0500AFF837 /* DispatchThread.swift in Sources */,
 				65ACFD331E82BB1C00641BB2 /* Observable.swift in Sources */,
 				65ACFD4A1E82BB3300641BB2 /* Arithmetic.swift in Sources */,
 				65ACFD511E82BB3300641BB2 /* Throttle.swift in Sources */,
@@ -882,6 +894,7 @@
 				65ACFD5A1E82C39500641BB2 /* CircularBufferTests.swift in Sources */,
 				651214A11EAA5C48007ED019 /* ResultTests.swift in Sources */,
 				65DC98321E8039B60045BFA3 /* HotOperationsTests.swift in Sources */,
+				65E807281F17BD9300AFF837 /* DispatchThreadTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -890,6 +903,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6585B0C91EBCB80D0034F1E4 /* Future.swift in Sources */,
+				65E807241F16D01B00AFF837 /* DispatchThread.swift in Sources */,
 				6585B0D61EBCB81C0034F1E4 /* OpSignal.swift in Sources */,
 				6585B0DA1EBCB8230034F1E4 /* ArrayExtensions.swift in Sources */,
 				6585B0D11EBCB8140034F1E4 /* HotOperations.swift in Sources */,
@@ -948,6 +962,7 @@
 				6585B0FC1EBCB8FE0034F1E4 /* TestExtensions.swift in Sources */,
 				6585B1121EBCB8FE0034F1E4 /* ConditionalTimerTests.swift in Sources */,
 				6585B0FF1EBCB8FE0034F1E4 /* ReplayTests.swift in Sources */,
+				65E807291F17BD9300AFF837 /* DispatchThreadTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -956,6 +971,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6585B1711EBCBF640034F1E4 /* Future.swift in Sources */,
+				65E807261F16D01F00AFF837 /* DispatchThread.swift in Sources */,
 				6585B17E1EBCBF6F0034F1E4 /* OpSignal.swift in Sources */,
 				6585B1821EBCBF750034F1E4 /* ArrayExtensions.swift in Sources */,
 				6585B1791EBCBF690034F1E4 /* HotOperations.swift in Sources */,
@@ -992,6 +1008,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6585B1AE1EBCC5AD0034F1E4 /* Future.swift in Sources */,
+				65E807251F16D01C00AFF837 /* DispatchThread.swift in Sources */,
 				6585B1BB1EBCC5B90034F1E4 /* OpSignal.swift in Sources */,
 				6585B1BF1EBCC5C20034F1E4 /* ArrayExtensions.swift in Sources */,
 				6585B1B61EBCC5B40034F1E4 /* HotOperations.swift in Sources */,
@@ -1050,6 +1067,7 @@
 				6585B1DA1EBCC5F30034F1E4 /* CircularBufferTests.swift in Sources */,
 				6585B1CF1EBCC5E10034F1E4 /* TimerTests.swift in Sources */,
 				6585B1D41EBCC5E90034F1E4 /* PromiseOperationsTests.swift in Sources */,
+				65E8072A1F17BD9300AFF837 /* DispatchThreadTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -76,6 +76,20 @@ public enum Dispatch {
   
   /// This will dispatch on the queue provided after the specified delay (in seconds)
   case after(delay: TimeInterval, on: Queue)
+
+  /**
+    This will dispatch on a specific DispatchThread.
+
+    In most cases, it will make more sense to use a normal async Queue instead (GCD).  Creating separate threads is expensive,
+      and in most case you'll want to use another abstraction.  However, there are cases where it makes sense or it's necessary
+      to restrict access of a resource to a single thread.  In those cases, using DispatchThread can be very useful.
+    
+    - warning: An execution chain is separate from the thread's queue. While executions are queued into the DispatchThread,
+      they are only done so after the prior execution has occurred in the execution chain.  Be aware that creating an execution
+      chain will always be processed serially, but it's possible (likely?) other work will be interpolated between the items in
+      the chain if the thread is shared.
+  */
+  case on(thread: DispatchThread)
   
   /// This executes inline.  Mostly, it's a convenience to use this as simply executing a closure is the same as using this dispatch action.  However, it can reduce code complexity and simplify syntax to use `.inline` instead of optionally handling a dispatch.
   case inline
@@ -86,7 +100,7 @@ public enum Dispatch {
     case let .sync(queue): return queue
     case let .async(queue): return queue
     case let .after(_, queue): return queue
-    case .inline: return nil
+    case .on, .inline: return nil
     }
   }
   
@@ -135,6 +149,9 @@ public enum Dispatch {
       
     case let .after(delay, queue):
       queue.queueT.asyncAfter(deadline: DispatchTime.now() + Double(Int64(delay * Double(NSEC_PER_SEC))) / Double(NSEC_PER_SEC), execute: doWorkAndReturn)
+
+    case let .on(thread):
+      thread.enqueue(doWorkAndReturn)
       
     case .inline:
       doWorkAndReturn()
