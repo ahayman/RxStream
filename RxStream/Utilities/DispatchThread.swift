@@ -24,6 +24,10 @@ extension NSCondition {
     self.unlock()
   }
 
+  /**
+    Convenience method to retrieve data from a locked resource without going through
+    the hassle of setting and releasing the lock.
+  */
   func get<T>(_ block: () -> T) -> T {
     self.lock()
     let value = block()
