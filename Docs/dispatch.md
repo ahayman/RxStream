@@ -9,6 +9,7 @@ _Why not use Apple's Dispatch natively?_  While Apple's new Dispatch abstraction
  - _Stored Dispatch Method_: `Rx.Dispatch` allows you to store the actual dispatch method as a variable parameter, something that's not possible with `Foundation.Dispatch`. For example, a class can store and expose a `Dispatch` variable, allowing a client to change it.  This allows you to change how and where that class performs it's operations: `myCache.dispatch = .async(on: .main) //My cache now performs all it's operations asynchronously on the main queue`. 
  - _Chained execution:_ It's common to need to switch back and forth between queues.  For example, we may receive data on a custom queue, switch to a background queue to operate on the data, then switch again to the main queue to update the UI.  All of these are nested operations that can work to make the code difficult to read.  `Rx.Dispatch` allows you to chain operations together sequentially as a chain instead of nesting the dispatches.
  - _Custom Queues_: `Rx.Dispatch` wraps around and works with custom queues, storing both them and the dispatch method separately or together.
+ - _Dedicated Threading_: By using `DispatchThread`, you can dispatch asynchronously on a specific, single Thread.  This is useful if you need to access resources on a single Thread.  However, because creating Threads is expensive, most of the time it's better to use a Queue, which will operate from a pool of existing Threads.
  
 #### Limitations 
 
