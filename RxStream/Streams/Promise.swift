@@ -106,8 +106,7 @@ public class Promise<T> : Stream<T> {
   }
 
   /// Overridden to auto replay the Promise stream result when a new stream is added
-  @discardableResult override func attachChildStream<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
-    let stream = super.attachChildStream(stream: stream, withOp: op)
+  override func didAttachStream<U>(stream: Stream<U>) {
     if !isActive && autoReplayable {
       autoReplayable = false
       Dispatch.after(delay: 0.01, on: .main).execute {
@@ -115,8 +114,8 @@ public class Promise<T> : Stream<T> {
         self.replay()
       }
     }
-    return stream
   }
+
 
   /// Overridden to update the complete variable
   override func preProcess<U>(event: Event<U>) -> Event<U>? {

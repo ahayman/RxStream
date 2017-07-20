@@ -36,10 +36,8 @@ public class Future<T> : Stream<T> {
     return future
   }
 
-
   /// Overridden to auto replay the future stream result when a new stream is added
-  @discardableResult override func attachChildStream<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
-    let stream = super.attachChildStream(stream: stream, withOp: op)
+  override func didAttachStream<U>(stream: Stream<U>) {
     if !isActive && autoReplayable {
       autoReplayable = false
       Dispatch.after(delay: 0.01, on: .main).execute {
@@ -47,8 +45,8 @@ public class Future<T> : Stream<T> {
         self.replay()
       }
     }
-    return stream
   }
+
   /**
    A Future is initialized with the task.  The task should call the completions handler with the result when it's done.
    
@@ -147,4 +145,45 @@ public class FutureInput<T> : Future<T> {
     self.process(event: .terminate(reason: .cancelled))
   }
   
+}
+
+/**
+  Lazy is a type of Future that will _only_ generate a value if the stream is used.
+  Lazy will wait until a child stream is attached to it before it uses the Task to generate
+  the value.  This is different from a standard Future in that a Future will immediately run the
+  Task it was given while Lazy waits until it know the value is needed.
+
+  The purpose is to defer the generation of expensive values until we are certain they're needed.
+*/
+public class Lazy<T> : Future<T> {
+
+  private var task: Task<T>?
+
+  /**
+    Initialize a Lazy with a Task that generates the expected value.
+    The task will not be run until the value is needed, after which the task
+    will be discarded.
+  */
+  public override init(task: @escaping Task<T>) {
+    super.init(op: "Task")
+    persist()
+    self.task = task
+  }
+
+  override func didAttachStream<U>(stream: Stream<U>) {
+    if let task = self.task {
+      self.task = nil
+      var complete = false
+      task { [weak self] completion in
+        guard let me = self, !complete else { return }
+        complete = true
+        completion
+          .onFailure{ me.process(event: .error($0)) }
+          .onSuccess{ me.process(event: .next($0)) }
+      }
+    } else {
+      super.didAttachStream(stream: stream)
+    }
+  }
+
 }

@@ -49,6 +49,12 @@ Future allows the task to also return an Error, at which point the Future stream
 
 Note: Where you place the `onError` in the processing chain matters.  If you place it at the beginning of the chain, it will only be called for errors returned by the network request.  If you place it at the end of the chain, it will also pick up errors that could be emitted by the processing chain itself.
 
+### Lazy
+
+Lazy is a type of Future that _only_ runs the task given to it when it's needed... when a child stream (an operation) is attached to it.  In contrast, a normal Future will execute it's task immediately so that it's ready as soon as possible. Once the task is executed the value is kept but the task is discarded in order to free up resources.
+
+Normally, you'd use Lazy when generating a value is expensive and you want to provide access to that value only if it's needed.
+
 ### Replaying Value
 
 When you receive a Future, you can never know whether the Future has been completed or not. If the Future has completed, the completed value will replay after a short amount of time.  The delay is there to ensure the processing chain has had a chance to be added.  Otherwise, if you need the value immediately, you can call `replay()` at the end of the processing chain and the completed value will immediately be pushed into the new processing chain.  If the Future hasn't been filled, calling `replay()` will do nothing.

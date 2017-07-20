@@ -144,4 +144,39 @@ class FutureTests: XCTestCase {
     XCTAssertEqual(bValues, [10], "After a moment, the autoReplay should occur.")
   }
 
+  func testLazy() {
+    var generated = [Int]()
+    let lazy = Lazy<Int> {
+      generated.append(1)
+      $0(.success(1))
+    }
+
+    XCTAssertEqual(generated, [], "Lazy should not generate a value yet.")
+
+    var observed = [Int]()
+    lazy.on{ observed.append($0) }
+
+    XCTAssertEqual(generated, [1], "Adding an op should trigger the value to be generated.")
+    XCTAssertEqual(observed, [1], "Generated value should be observed.")
+  }
+
+  func testLazyChain() {
+    var generated = [Int]()
+    let lazy = Lazy<Int> {
+      generated.append(1)
+      $0(.success(1))
+    }
+
+    XCTAssertEqual(generated, [], "Lazy should not generate a value yet.")
+
+    var observed = [String]()
+    lazy
+      .map{ String($0) }
+      .on{ observed.append($0) }
+      .replay()
+
+    XCTAssertEqual(generated, [1], "Adding an op should trigger the value to be generated.")
+    XCTAssertEqual(observed, ["1"], "Generated value should be observed.")
+  }
+
 }

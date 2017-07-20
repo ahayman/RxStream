@@ -245,13 +245,18 @@ public class Stream<T> {
     if let dispatch = self.dispatch {
       dispatch.execute{
         self.downStreams.append(self.newDownstreamProcessor(forStream: child, withProcessor: op))
+        self.didAttachStream(stream: child)
       }
     } else {
       self.downStreams.append(self.newDownstreamProcessor(forStream: child, withProcessor: op))
+      self.didAttachStream(stream: child)
     }
 
     return stream
   }
+
+  /// This is primarily for subclasses to be notified when a child stream is attached.
+  func didAttachStream<U>(stream: Stream<U>) { }
 
   /// The main function used to attach a stream to a parent stream along with the child's stream work
   @discardableResult func append<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
