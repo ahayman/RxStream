@@ -71,7 +71,7 @@ class ConditionalTimer {
   }
   
   /// The handler that's called when Foundation.Timer fires
-  dynamic func fire() {
+  @objc dynamic func fire() {
     guard isActive else { return }
     if !handler() {
       stop()

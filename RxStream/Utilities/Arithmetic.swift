@@ -32,5 +32,12 @@ extension UInt16 : Arithmetic { }
 extension UInt32 : Arithmetic { }
 extension UInt64 : Arithmetic { }
 
+public func %(lhs: Float, rhs: Float) -> Float {
+  return lhs.truncatingRemainder(dividingBy: rhs)
+}
 extension Float : Arithmetic { }
+
+public func %(lhs: Double, rhs: Double) -> Double {
+  return lhs.truncatingRemainder(dividingBy: rhs)
+}
 extension Double : Arithmetic { }

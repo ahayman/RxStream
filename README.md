@@ -52,9 +52,11 @@ RxStream has several features that help you manage and use them easily.
 
 ## Requirements
 
- - Swift 3.0
- - XCode 8.1
+ - Swift 4.0
+ - XCode 9.0
  - iOS 8.1+ | MacOS 10.10+ | tvOS 9.0+ | watchOS 2.0+
+ 
+ * Note: For Swift 3 projects, you can either use version 1.x or the Swift 3 branch.*
  
 ## Contact
 

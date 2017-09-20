@@ -283,7 +283,7 @@ extension Stream {
   func appendStamp<U: BaseStream, V>(stream: U, stamper: @escaping (T) -> V) -> U where U.Data == (value: T, stamp: V) {
     return append(stream: stream) { (next, completion) in
       switch next {
-      case let .next(value): completion(.push(.value(value: value, stamp: stamper(value))))
+      case let .next(value): completion(.push(.value((value: value, stamp: stamper(value)))))
       case .error(let error): completion(.error(error))
       case .terminate(let term): completion(.terminate(nil, term))
       }
@@ -543,7 +543,7 @@ extension Stream {
       switch next {
       case let .next(value):
         if rightBuffer.count > 0 {
-          completion(.push(.value(value, rightBuffer.removeFirst())))
+          completion(.push(.value((value, rightBuffer.removeFirst()))))
         } else {
           if let buffer = buffer, leftBuffer.count >= buffer {
             return completion(.merging)
@@ -567,7 +567,7 @@ extension Stream {
       switch next {
       case let .next(value):
         if leftBuffer.count > 0 {
-          completion(.push(.value(leftBuffer.removeFirst(), value)))
+          completion(.push(.value((leftBuffer.removeFirst(), value))))
         } else {
           if let buffer = buffer, rightBuffer.count >= buffer {
             return completion(.merging)
@@ -617,7 +617,7 @@ extension Stream {
           left = nil
           right = nil
         }
-        completion(.push(.value(value, rightValue)))
+        completion(.push(.value((value, rightValue))))
       case .error(let error): completion(.error(error))
       case let .terminate(term):
         leftTerm = term
@@ -644,7 +644,7 @@ extension Stream {
           left = nil
           right = nil
         }
-        completion(.push(.value(leftValue, value)))
+        completion(.push(.value((leftValue, value))))
       case .error(let error): completion(.error(error))
       case .terminate(let term):
         rightTerm = term
@@ -760,7 +760,7 @@ extension Stream {
       switch next {
       case let .next(value):
         if let object = box.object {
-          completion(.push(.value(object, value)))
+          completion(.push(.value((object, value))))
         } else {
           completion(.terminate(nil, then))
         }

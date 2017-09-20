@@ -64,7 +64,7 @@ public class Timer : Hot<Void> {
       stop()
       return
     }
-    self.process(event: .next())
+    self.process(event: .next(()))
   }
   
   /**

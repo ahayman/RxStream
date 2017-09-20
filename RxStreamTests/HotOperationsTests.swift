@@ -830,19 +830,19 @@ class HotOperationsTests: XCTestCase {
     stream.push(1)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, 1)
-    XCTAssertEqualWithAccuracy(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
+    XCTAssertEqual(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
     
     stream.push(2)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.0, 2)
-    XCTAssertEqualWithAccuracy(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
+    XCTAssertEqual(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
     
     wait(for: 0.5)
     
     stream.push(3)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last?.0, 3)
-    XCTAssertEqualWithAccuracy(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
+    XCTAssertEqual(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
   }
   
   func testCountStamp() {

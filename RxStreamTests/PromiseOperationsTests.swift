@@ -195,7 +195,7 @@ class PromiseOperationsTests: XCTestCase {
 
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, 0)
-    XCTAssertEqualWithAccuracy(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
+    XCTAssertEqual(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
   }
   
   func testDelay() {

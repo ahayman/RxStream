@@ -27,15 +27,15 @@ class ColdOperationsTests: XCTestCase {
       onCount += 1
     }
 
-    cold.request()
+    cold.request(())
     XCTAssertEqual(value, 0)
     XCTAssertEqual(onCount, 1)
     
-    cold.request()
+    cold.request(())
     XCTAssertEqual(value, 1)
     XCTAssertEqual(onCount, 2)
 
-    cold.request()
+    cold.request(())
     XCTAssertEqual(value, 2)
     XCTAssertEqual(onCount, 3)
   }
@@ -56,17 +56,17 @@ class ColdOperationsTests: XCTestCase {
       onCount += 1
     }
 
-    cold.request()
+    cold.request(())
     XCTAssertNil(prior)
     XCTAssertEqual(value, 0)
     XCTAssertEqual(onCount, 1)
 
-    cold.request()
+    cold.request(())
     XCTAssertEqual(prior, 0)
     XCTAssertEqual(value, 1)
     XCTAssertEqual(onCount, 2)
 
-    cold.request()
+    cold.request(())
     XCTAssertEqual(prior, 1)
     XCTAssertEqual(value, 2)
     XCTAssertEqual(onCount, 3)
@@ -84,10 +84,10 @@ class ColdOperationsTests: XCTestCase {
       terminations.append($0)
     }
 
-    cold.request()
+    cold.request(())
     XCTAssertEqual(terminations.count, 0)
 
-    cold.request()
+    cold.request(())
     XCTAssertEqual(terminations.count, 0)
     
     stream.terminate(withReason: .completed)
@@ -115,13 +115,13 @@ class ColdOperationsTests: XCTestCase {
         values.append($0)
     }
 
-    cold.request()
+    cold.request(())
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last, 0)
     XCTAssertEqual(terminations.count, 0)
     XCTAssertEqual(stream.state, .active)
 
-    cold.request()
+    cold.request(())
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, 1)
     XCTAssertEqual(terminations.count, 0)
@@ -134,14 +134,14 @@ class ColdOperationsTests: XCTestCase {
     XCTAssertEqual(terminations.count, 1, "The stream should only terminate once.")
     XCTAssertEqual(stream.state, .terminated(reason: .completed))
     
-    cold.request()
+    cold.request(())
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, 1)
     XCTAssertEqual(terminations.last, Termination.completed, "The stream should only terminate once.")
     XCTAssertEqual(terminations.count, 1, "The stream should only terminate once.")
     XCTAssertEqual(stream.state, .terminated(reason: .completed))
     
-    cold.request()
+    cold.request(())
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last, 1)
     XCTAssertEqual(terminations.last, Termination.completed, "The stream should only terminate once.")
@@ -177,25 +177,25 @@ class ColdOperationsTests: XCTestCase {
         mapped = $0
     }
     
-    cold.request()
+    cold.request(())
     XCTAssertEqual(mapped, "0")
     XCTAssertEqual(mapCount, 1)
     XCTAssertEqual(onCount, 1)
     mapped = nil
     
-    cold.request()
+    cold.request(())
     XCTAssertEqual(mapped, "1")
     XCTAssertEqual(mapCount, 2)
     XCTAssertEqual(onCount, 2)
     mapped = nil
     
-    cold.request()
+    cold.request(())
     XCTAssertEqual(mapped, "2")
     XCTAssertEqual(mapCount, 3)
     XCTAssertEqual(onCount, 3)
     mapped = nil
     
-    cold.request()
+    cold.request(())
     XCTAssertNil(mapped)
     XCTAssertEqual(mapCount, 4)
     XCTAssertEqual(onCount, 3)
@@ -226,20 +226,20 @@ class ColdOperationsTests: XCTestCase {
       }
       .onError{ error = $0 }
     
-    cold.request()
+    cold.request(())
     XCTAssertEqual(mapped, "0")
     XCTAssertEqual(mapCount, 1)
     XCTAssertEqual(onCount, 1)
     XCTAssertNil(error)
     
-    cold.request()
+    cold.request(())
     XCTAssertEqual(mapped, "1")
     XCTAssertEqual(mapCount, 2)
     XCTAssertEqual(onCount, 2)
     XCTAssertNil(error)
     mapped = nil
     
-    cold.request()
+    cold.request(())
     XCTAssertNil(mapped)
     XCTAssertEqual(mapCount, 3)
     XCTAssertEqual(onCount, 2)
@@ -269,7 +269,7 @@ class ColdOperationsTests: XCTestCase {
       }
       .onError{ error = $0 }
     
-    cold.request()
+    cold.request(())
     XCTAssertEqual(mapCount, 1)
     XCTAssertEqual(onCount, 0)
     XCTAssertNil(mapped)
@@ -281,7 +281,7 @@ class ColdOperationsTests: XCTestCase {
     mapped = nil
     nextMap = nil
     
-    cold.request()
+    cold.request(())
     XCTAssertEqual(mapCount, 2)
     XCTAssertEqual(onCount, 1)
     XCTAssertNil(mapped)
@@ -292,7 +292,7 @@ class ColdOperationsTests: XCTestCase {
     XCTAssertNil(error)
     mapped = nil
     
-    cold.request()
+    cold.request(())
     XCTAssertEqual(mapCount, 3)
     XCTAssertEqual(onCount, 2)
     XCTAssertNil(mapped)
@@ -852,19 +852,19 @@ class ColdOperationsTests: XCTestCase {
     cold.request(1)
     XCTAssertEqual(values.count, 1)
     XCTAssertEqual(values.last?.0, 1)
-    XCTAssertEqualWithAccuracy(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
+    XCTAssertEqual(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
     
     cold.request(2)
     XCTAssertEqual(values.count, 2)
     XCTAssertEqual(values.last?.0, 2)
-    XCTAssertEqualWithAccuracy(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
+    XCTAssertEqual(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
     
     wait(for: 0.1)
     
     cold.request(3)
     XCTAssertEqual(values.count, 3)
     XCTAssertEqual(values.last?.0, 3)
-    XCTAssertEqualWithAccuracy(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
+    XCTAssertEqual(values.last?.1.timeIntervalSinceReferenceDate ?? 0, Date.timeIntervalSinceReferenceDate, accuracy: 0.5)
   }
   
   func testCountStamp() {
