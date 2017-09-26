@@ -91,7 +91,7 @@ public class Future<T> : Stream<T> {
     switch signal {
     case .push, .error:
       if self.isActive && pendingTermination == nil {
-        self.terminate(reason: .completed, andPrune: .none, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
+        self.terminate(reason: .completed, andPrune: .none, pushDownstreamTo: StreamType.all().removing([.promise, .future, .progress]))
       }
     case .cancel:
       if self.isActive && pendingTermination == nil {

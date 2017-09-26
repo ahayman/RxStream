@@ -8,6 +8,34 @@
 
 import Foundation
 
+
+/**
+Internal protocol defines a stream that can be canceled and/or pass the cancellation request on to the parent.
+Generally, when the cancelTask() function is called, the implementation should check to see if it has a task
+to cancel.  If so, it should cancel the task and the stream.  If not, then it should pass the cancellation up
+to the parent.  If there is no parent, then the stream should be cancelled.
+
+- note: By default, the base class Stream should assign `cancelParent` by default if both the child and parent
+streams are both Cancelable
+*/
+protocol Cancelable : class {
+  weak var cancelParent: Cancelable? { get set }
+  func cancelTask()
+}
+
+/**
+Internal protocol that defines a stream that be retried.  This requires that there be some task that is retriable.
+Generally, when the `retry()` function is called, the implementation should first check if there is a task it can cancel,
+and if there is, cancel the task and the stream. If not, then the cancellation should be passed up to the a parent.
+
+- note: By default, the base class Stream should assign `retryParent` by default if both the child and parent
+streams are both Retriable
+*/
+protocol Retriable : class {
+  weak var retryParent: Retriable? { get set }
+  func retry()
+}
+
 /**
  Stream types are used to detect and alter behavior for specific types.
  Because all streams are generics, determining the underlying types can be difficult
@@ -24,6 +52,7 @@ enum StreamType : Int {
   case cold
   case future
   case promise
+  case progress
 }
 
 /// Defines the current state of the stream, which can be active (the stream is emitting data) or terminated with a reason.
@@ -205,11 +234,6 @@ public class Stream<T> {
     printer("\(descriptor): \(info)")
   }
   
-  /// By default, this returns a DownstreamProcessor, but it's primarily so that subclasses can override and provide their own custom processors.
-  func newDownstreamProcessor<U>(forStream stream: Stream<U>, withProcessor processor: @escaping StreamOp<T, U>) -> StreamProcessor<T> {
-    return DownstreamProcessor(stream: stream, processor: processor)
-  }
-
   @discardableResult func configureStreamAsChild<U: BaseStream>(stream: U, leftParent: Bool) -> U {
     guard let child = stream as? Stream<U.Data> else { fatalError("Error attaching streams: All Streams must descend from Stream.") }
 
@@ -242,13 +266,17 @@ public class Stream<T> {
   @discardableResult func attachChildStream<U: BaseStream>(stream: U, withOp op: @escaping StreamOp<T, U.Data>) -> U {
     guard let child = stream as? Stream<U.Data> else { fatalError("Error attaching streams: All Streams must descend from Stream.") }
 
+    (child as? Retriable)?.retryParent = (self as? Retriable)
+    (child as? Cancelable)?.cancelParent = (self as? Cancelable)
+
+    let downStream = DownstreamProcessor(stream: child, processor: op)
     if let dispatch = self.dispatch {
       dispatch.execute{
-        self.downStreams.append(self.newDownstreamProcessor(forStream: child, withProcessor: op))
+        self.downStreams.append(downStream)
         self.didAttachStream(stream: child)
       }
     } else {
-      self.downStreams.append(self.newDownstreamProcessor(forStream: child, withProcessor: op))
+      self.downStreams.append(downStream)
       self.didAttachStream(stream: child)
     }
 

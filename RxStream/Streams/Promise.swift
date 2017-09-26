@@ -10,17 +10,6 @@ import Foundation
 
 public typealias PromiseTask<T> = (_ terminated: Observable<StreamState>, _ completion: @escaping (Result<T>) -> Void) -> Void
 
-/// Internal protocol defines an object that can be canceled and/or pass the cancelation request on to the parent
-protocol Cancelable : class {
-  weak var cancelParent: Cancelable? { get set }
-  func cancelTask()
-}
-
-protocol Retriable : class {
-  weak var retryParent: Retriable? { get set }
-  func retry()
-}
-
 extension Promise : Cancelable { }
 extension Promise : Retriable { }
 
@@ -133,22 +122,13 @@ public class Promise<T> : Stream<T> {
     
     switch signal {
     case .push where self.shouldPrune:
-      terminate(reason: .completed, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
+      terminate(reason: .completed, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future, .progress]))
     case .error(let error) where self.shouldPrune:
-      terminate(reason: .error(error), andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
+      terminate(reason: .error(error), andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future, .progress]))
     case .terminate(_, let reason):
-      terminate(reason: reason, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
+      terminate(reason: reason, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future, .progress]))
     default: break
     }
-  }
-  
-  /// Create a promise down stream processor if the stream is a Promise, so the termination logic works out.
-  override func newDownstreamProcessor<U>(forStream stream: Stream<U>, withProcessor processor: @escaping StreamOp<T, U>) -> StreamProcessor<T> {
-    if let child = stream as? Promise<U> {
-      child.cancelParent = self
-      child.retryParent = self
-    }
-    return super.newDownstreamProcessor(forStream: stream, withProcessor: processor)
   }
   
   /// Used to run the task and process the value the task returns.
@@ -174,14 +154,12 @@ public class Promise<T> : Stream<T> {
   /// Cancel the task, if we have one, otherwise, pass the request to the parent.
   func cancelTask() {
     guard isActive else { return }
-    guard task == nil else {
-      process(event: .terminate(reason: .cancelled))
-      return
-    }
-    cancelParent?.cancelTask()
+    guard task == nil else { return process(event: .terminate(reason: .cancelled)) }
+    guard let parent = cancelParent else { return process(event: .terminate(reason: .cancelled)) }
+    parent.cancelTask()
   }
   
-  /// A Retry will propogate up the chain, re-enabling the the parent stream(s), until it find a task to retry, where it will retry that task.
+  /// A Retry will propagate up the chain, re-enabling the the parent stream(s), until it find a task to retry, where it will retry that task.
   func retry() {
     // There's two states we can retry on: error and completed.  If the state is active, then the task we want to retry is already pending.  If the state is cancelled then someone cancelled the stream and no retry is possible.
     guard !isCancelled else { return }

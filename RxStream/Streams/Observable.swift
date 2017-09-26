@@ -29,7 +29,7 @@ public class Observable<T> : Stream<T> {
   /// The current value of the observable
   private(set) public var value: T
   
-  /// Private initilization.  An Observable is not intended to be initialized directly, except by it's subclass.
+  /// Private initialization.  An Observable is not intended to be initialized directly, except by it's subclass.
   init(_ value: T, op: String) {
     self.value = value
     super.init(op: op)
