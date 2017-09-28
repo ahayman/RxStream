@@ -52,7 +52,6 @@ enum StreamType : Int {
   case cold
   case future
   case promise
-  case progress
 }
 
 /// Defines the current state of the stream, which can be active (the stream is emitting data) or terminated with a reason.
@@ -81,11 +80,29 @@ enum Prune : Int {
 /// Defines work that should be done for an event.  The event is passed in, and the completion handler is called when the work has completed.
 typealias StreamOp<U, T> = (_ next: Event<U>, _ complete: @escaping (OpSignal<T>) -> Void) -> Void
 
-internal protocol BaseStream : class {
+/**
+Type erasure to store streams without regard to their type.
+*/
+internal protocol CoreStream : class {
+  var streamType: StreamType { get }
+  var shouldPrune: Bool { get }
+}
+
+/**
+A secondary type erasure to apply type constraints to a stream.
+Since this protocol has an associated type, it cannot be used to store streams.
+For this reason, we have a "staged" protocol.
+Kinda wish Swift would provide a simpler way to accomplish this.
+*/
+internal protocol BaseStream : CoreStream {
   associatedtype Data
 }
 extension Stream : BaseStream { }
 
+/**
+Parent Stream protocol allow us to pass up pruning information from leaf branches up to the branch that
+actually needs to do the pruning.
+*/
 protocol ParentStream : class {
   func prune(_ prune: Prune, withReason reason: Termination)
   func replayLast(key: EventPath)
@@ -302,7 +319,7 @@ public class Stream<T> {
   func prune(_ prune: Prune, withReason reason: Termination) {
     let work = {
       guard prune != .none else { return }
-      self.downStreams = self.downStreams.filter{ !$0.shouldPrune }
+      self.downStreams = self.downStreams.filter{ !$0.stream.shouldPrune }
       if case .upStream = prune {
         self.terminate(reason: reason, andPrune: .none, pushDownstreamTo: [])
         self.parent?.prune(prune, withReason: reason)
@@ -354,7 +371,7 @@ public class Stream<T> {
       self.onTerminate = nil
       if types.count > 0 {
         let termination = Event<T>.terminate(reason: reason)
-        for processor in self.downStreams where types.contains(processor.streamType){
+        for processor in self.downStreams where types.contains(processor.stream.streamType){
           processor.process(next: termination, withKey: .share)
         }
       }
@@ -395,7 +412,24 @@ public class Stream<T> {
   func preProcess<U>(event: Event<U>) -> Event<U>? {
     return event
   }
-  
+
+  /**
+    Designed to be overridden by subclasses that are being used as a pass through, normally to manipulate some other data.
+    If this function returns false, the event will not be throttled even if a throttle is present.
+    This really should only be used if the actual StreamOp is a passthrough and some other event type (ex: A ProgressEvent)
+    needs to use the throttle.
+  */
+  func shouldThrottle<U>(event: Event<U>) -> Bool { return true }
+
+  /**
+    Designed to be overridden by subclasses that are being used as a pass through, normally to manipulate some other data.
+    If this function returns false, the event will not be dispatched, but executed inline even if a dispatch is present.
+    This really should only be used if the actual StreamOp is a passthrough and some other event type (ex: A ProgressEvent)
+    needs to use the dispatch instead.
+  */
+  func shouldDispatch<U>(event: Event<U>) -> Bool { return true }
+
+  /// Held to keep track of a termination that has entered the process, but has yet to finish processing.  It'll prevent other events from entering the process.
   var pendingTermination: (reason: Termination, prune: Prune, callTermHandler: Bool)? = nil
   /**
    This is an internal function used to process event work. It's important that all processing work done for a stream use this function.
@@ -487,21 +521,21 @@ public class Stream<T> {
           }
         }
 
-        if let dispatch = self.dispatch {
+        if let dispatch = self.dispatch, self.shouldDispatch(event: next) {
           dispatch.execute(throttleWork)
         } else {
           throttleWork()
         }
       }
       
-      if let throttle = self.throttle {
+      if let throttle = self.throttle, self.shouldThrottle(event: next) {
         throttle.process(work: workProcessor)
       } else {
         workProcessor(.perform{ })
       }
     }
 
-    if let dispatch = self.dispatch {
+    if let dispatch = self.dispatch, self.shouldDispatch(event: next) {
       dispatch.execute(work)
     } else {
       work()

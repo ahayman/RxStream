@@ -10,12 +10,14 @@ import Foundation
 
 /**
  Stream processor is a base class used to encapsulate the processing that needs to occur on an event before it is passed downstream. 
- This class also allos a stream to query down stream processors whether the processor should be pruned.
+ This class also allows a stream to query down stream processors whether the processor should be pruned.
  */
 class StreamProcessor<T> {
-  var shouldPrune: Bool { return true }
-  var streamType: StreamType { return  .base }
+  var stream: CoreStream
   func process(next: Event<T>, withKey key: EventPath) { }
+  init(stream: CoreStream) {
+    self.stream = stream
+  }
 }
 
 /**
@@ -23,20 +25,17 @@ class StreamProcessor<T> {
  Subclasses should override to implement custom processing logic.
  */
 class DownstreamProcessor<T, U> : StreamProcessor<T> {
-  var stream: Stream<U>
+  var downStream: Stream<U>
   var processor: StreamOp<T, U>
 
-  override var streamType: StreamType { return stream.streamType }
-  
-  override var shouldPrune: Bool { return stream.shouldPrune }
-  
   override func process(next: Event<T>, withKey key: EventPath) {
-    stream.process(key: key, next: next, withOp: processor)
+    downStream.process(key: key, next: next, withOp: processor)
   }
   
   init(stream: Stream<U>, processor: @escaping StreamOp<T, U>) {
-    self.stream = stream
+    self.downStream = stream
     self.processor = processor
+    super.init(stream: stream)
     stream.onTerminate = { processor(.terminate(reason: $0), { _ in }) }
   }
   

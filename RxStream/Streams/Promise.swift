@@ -55,8 +55,8 @@ public class Promise<T> : Stream<T> {
     
     // We need to prune if there are no active down stream _promises_.  Since a promise emits only one value that can be retried, we can't prune until those streams complete.
     let active = downStreams.reduce(0) { (count, processor) -> Int in
-      guard !processor.shouldPrune else { return count }
-      guard processor.streamType == .promise else { return count }
+      guard !processor.stream.shouldPrune else { return count }
+      guard processor.stream.streamType == .promise else { return count }
       return count + 1
     }
     return active < 1
@@ -65,7 +65,7 @@ public class Promise<T> : Stream<T> {
   /// The number of downStreams that are promises. Used to determine if the stream should terminate after a value has been pushed.
   private var downStreamPromises: Int {
     return downStreams.reduce(0) { (count, processor) -> Int in
-      guard processor.streamType == .promise else { return count }
+      guard processor.stream.streamType == .promise else { return count }
       return count + 1
     }
   }

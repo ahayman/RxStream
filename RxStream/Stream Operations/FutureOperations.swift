@@ -283,16 +283,9 @@ extension Future {
    ## Branching
    
    Merge another stream into this one, emitting the values as a tuple.
-   
-   - warning: The behavior of this function changes significantly on the `latest` parameter.  
-   
-   Specifying `latest = true` (the default) will cause the stream to enumerate _all_ changes in both streams.
-   If one stream emits more values than another, the lastest value in that other stream will be emitted multiple times, thus enumerating each combinmation.
-   
-   If `latest = false`, then a value can only be emitted _once_, even if the other stream emits multiple values.
-   This means if one stream emits a single value while the other emits multiple values, all but one of those multiple values will be dropped.
-   
-   - parameter latest: **Default:** `true`. Whether to emit all values, using the latest value from the other stream as necessary.  If false, values may be dropped.
+
+   If one stream emits more values than another, the latest value in that other stream will be emitted multiple times, thus enumerating each combination.
+
    - parameter stream: The stream to combine into this one.
    
    - returns: A new Future Stream
