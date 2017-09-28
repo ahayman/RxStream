@@ -122,11 +122,11 @@ public class Promise<T> : Stream<T> {
     
     switch signal {
     case .push where self.shouldPrune:
-      terminate(reason: .completed, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future, .progress]))
+      terminate(reason: .completed, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
     case .error(let error) where self.shouldPrune:
-      terminate(reason: .error(error), andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future, .progress]))
+      terminate(reason: .error(error), andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
     case .terminate(_, let reason):
-      terminate(reason: reason, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future, .progress]))
+      terminate(reason: reason, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
     default: break
     }
   }

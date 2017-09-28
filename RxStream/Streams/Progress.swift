@@ -176,7 +176,7 @@ public class Progress<ProgressUnit, T> : Future<T> {
     }
 
     let work = {
-      guard let pEvent = self.mapProgressEvent(event) else { return }
+      guard let pEvent = mapProgressEvent(event) else { return }
       self.onHandler?(pEvent)
       for stream in self.downStreams.oMap({ $0.stream as? ProgressStream }) {
         stream.processProgressEvent(pEvent)

@@ -98,7 +98,7 @@ public enum EitherAnd<Left, Right> {
   public var right: Right? {
     switch self {
     case let .right(value): return value
-    case let .both(_, right): return value
+    case let .both(_, value): return value
     default: return nil
     }
   }
