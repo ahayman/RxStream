@@ -9,13 +9,13 @@
 import XCTest
 @testable import Rx
 
-class ProgressTests : XCTestCase {
+class ProgressionTests : XCTestCase {
 
   func testCompletion() {
     var completion: ((Either<ProgressEvent<Double>, Result<Int>>) -> Void)? = nil
     var results = [Int]()
     var terminations = [Termination]()
-    let progress = Rx.Progress<Double, Int> { cancelled, onCompletion in
+    let progress = Progression<Double, Int> { cancelled, onCompletion in
       completion = onCompletion
     }
       .on{ results.append($0) }
@@ -40,7 +40,7 @@ class ProgressTests : XCTestCase {
     var completion: ((Either<ProgressEvent<Double>, Result<Int>>) -> Void)? = nil
     var results = [Int]()
     var terminations = [Termination]()
-    let progress = Rx.Progress<Double, Int> { cancelled, onCompletion in
+    let progress = Progression<Double, Int> { cancelled, onCompletion in
         completion = onCompletion
     }
       .on{ results.append($0) }
@@ -76,14 +76,14 @@ class ProgressTests : XCTestCase {
     var results = [Int]()
     var progressEvents = [Double]()
     let total = 100.0
-    let title = "Test Progress"
+    let title = "Test Progression"
     let unit = "%"
 
     func validateProgress(event: ProgressEvent<Double>) -> Bool {
       return event.total == total && event.title == title && event.unitName == unit
     }
     var terminations = [Termination]()
-    let progress = Rx.Progress<Double, Int> { cancelled, onCompletion in
+    let progress = Progression<Double, Int> { cancelled, onCompletion in
         completion = onCompletion
       }
       .onProgress {
@@ -128,14 +128,14 @@ class ProgressTests : XCTestCase {
     var results = [Int]()
     var progressEvents = [Double]()
     let total = 100.0
-    let title = "Test Progress"
+    let title = "Test Progression"
     let unit = "%"
 
     func validateProgress(event: ProgressEvent<Double>) -> Bool {
       return event.total == total && event.title == title && event.unitName == unit
     }
     var terminations = [Termination]()
-    let progress = Rx.Progress<Double, Int> { cancelled, onCompletion in
+    let progress = Progression<Double, Int> { cancelled, onCompletion in
         completion = onCompletion
       }
       .throttle(TimedThrottle(interval: 1.0, delayFirst: false))
@@ -181,15 +181,15 @@ class ProgressTests : XCTestCase {
     var results = [Int]()
     var progressEvents = [Double]()
     let total = 100.0
-    let title = "Test Progress"
+    let title = "Test Progression"
     let unit = "%"
 
     func validateProgress(event: ProgressEvent<Double>) -> Bool {
       return event.total == total && event.title == title && event.unitName == unit
     }
     var terminations = [Termination]()
-    let expectProgress = expectation(description: "Progress Event Received")
-    let progress = Rx.Progress<Double, Int> { cancelled, onCompletion in
+    let expectProgress = expectation(description: "Progression Event Received")
+    let progress = Progression<Double, Int> { cancelled, onCompletion in
         completion = onCompletion
       }
       .dispatch(.async(on: .background))
@@ -206,7 +206,29 @@ class ProgressTests : XCTestCase {
     guard let completionTask = completion else { return XCTFail("Expected the Future task to be called") }
 
     completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 10.0, total: total)))
-    wait(for: [expectProgress], timeout: 5.0)
+    XCTAssertEqual(progressEvents, [10.0])
+
+    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 50.0, total: total)))
+    XCTAssertEqual(progressEvents, [10.0])
+
+    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 75.2, total: total)))
+    XCTAssertEqual(progressEvents, [10.0])
+
+    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 100.0, total: total)))
+    XCTAssertEqual(progressEvents, [10.0])
+
+    completionTask(.right(.success(0)))
+
+    XCTAssertEqual(results, [0])
+    XCTAssertEqual(terminations, [.completed])
+    XCTAssertEqual(progress.state, .terminated(reason: .completed))
+
+    completionTask(.right(.success(1)))
+    XCTAssertEqual(results, [0])
+    XCTAssertEqual(terminations, [.completed])
+    XCTAssertEqual(progress.state, .terminated(reason: .completed))
+
+    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 100.0, total: total)))
     XCTAssertEqual(progressEvents, [10.0])
   }
 

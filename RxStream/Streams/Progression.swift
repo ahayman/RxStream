@@ -1,5 +1,5 @@
 //
-//  Progress.swift
+//  Progression.swift
 //  RxStream iOS
 //
 //  Created by Aaron Hayman on 9/25/17.
@@ -15,25 +15,25 @@ public struct ProgressEvent<T> {
   public let total: T
 }
 
-/// Use to detect the presence of a Progress stream down stream and pass it a progress event.
+/// Use to detect the presence of a Progression stream down stream and pass it a progress event.
 protocol ProgressStream {
   func processProgressEvent<Unit>(_ event: ProgressEvent<Unit>)
 }
 
-extension Progress : Cancelable { }
-extension Progress : ProgressStream { }
+extension Progression: Cancelable { }
+extension Progression: ProgressStream { }
 
 /**
-  A Progress stream is a type of Future that allows the client to observe the progress of the task while waiting for the task to complete.
-  The most obvious and common use case for this is to update a Progress Indicator in the UI while waiting for something to complete/download/process/etc.
+  A Progression stream is a type of Future that allows the client to observe the progress of the task while waiting for the task to complete.
+  The most obvious and common use case for this is to update a Progression Indicator in the UI while waiting for something to complete/download/process/etc.
 
-  At it's core, the Progress stream replaces the standard two handler function signature with a single return value.  For example, this:
+  At it's core, the Progression stream replaces the standard two handler function signature with a single return value.  For example, this:
 
-      func downloadImage(at url: URL, progressHandler: ((Progress) -> Void)?, completion: (URL) -> Void)
+      func downloadImage(at url: URL, progressHandler: ((Progression) -> Void)?, completion: (URL) -> Void)
 
   can be replaced with:
 
-      func downloadImage(at url: URL) -> Progress<Double, URL>
+      func downloadImage(at url: URL) -> Progression<Double, URL>
 
   The client can then choose to observe the progress on their own terms:
 
@@ -43,10 +43,10 @@ extension Progress : ProgressStream { }
 
   Warning: Unless the Stream is cancelled, the task should _always_ return a result.  Otherwise, both the task and the stream will be leaked in memory.
 */
-public class Progress<ProgressUnit, T> : Future<T> {
+public class Progression<ProgressUnit, T> : Future<T> {
 
   /**
-    When creating a Progress stream, you'll need to pass in the task closure that both updates the progress _and_ submits the final value when completed.
+    When creating a Progression stream, you'll need to pass in the task closure that both updates the progress _and_ submits the final value when completed.
     The closure takes two arguments:
 
       - parameter cancelled: a reference Boolean value that indicates whether the task has been cancelled.
@@ -81,7 +81,7 @@ public class Progress<ProgressUnit, T> : Future<T> {
   private var cancelled = false
 
   /**
-  Initialize a Progress with a Task.  The task should be use to:
+  Initialize a Progression with a Task.  The task should be use to:
    - Pass updates regarding the progress of the task.
    - Monitor the cancelled boolean status and clean up if the flag is marked `true`
    - Pass the Result when the task has completed or encountered an error.
@@ -89,7 +89,7 @@ public class Progress<ProgressUnit, T> : Future<T> {
   Note: The task will be called immediately on instantiation.
 
    - parameter task: A ProgressTask used to perform the task, update progress, and return the Result.
-   - return: A new Progress Stream
+   - return: A new Progression Stream
   */
   public init(task: @escaping ProgressTask) {
     super.init(op: "Task")
