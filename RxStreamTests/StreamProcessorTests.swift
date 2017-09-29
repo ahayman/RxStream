@@ -11,34 +11,17 @@ import XCTest
 
 class StreamProcessorTests: XCTestCase {
 
-  func testProcessorShouldPrune() {
-    let processor = StreamProcessor<Int>()
-    XCTAssertTrue(processor.shouldPrune)
-  }
-
-  func testProcessorStreamType() {
-    let processor = StreamProcessor<Int>()
-    XCTAssertEqual(processor.streamType, .base)
-  }
-
   func testProcessorDoNothing() {
-    let processor = StreamProcessor<Int>()
+    let processor = StreamProcessor<Int>(stream: HotInput<Int>())
     processor.process(next: .next(1), withKey: .share)
     XCTAssertTrue(true)
   }
 
-  func testDownStreamProcessorShouldPrune() {
+  func testDownStreamProcessorStreamVariable() {
     let stream = HotInput<Int>()
     let processor = DownstreamProcessor<Int, Int>(stream: stream) { _, _ in }
 
-    XCTAssertEqual(stream.shouldPrune, processor.shouldPrune)
-  }
-
-  func testDownStreamProcessorStreamType() {
-    let stream = HotInput<Int>()
-    let processor = DownstreamProcessor<Int, Int>(stream: stream) { _, _ in }
-
-    XCTAssertEqual(stream.streamType, processor.streamType)
+    XCTAssertEqual(stream.id, (processor.stream as! Hot<Int>).id)
   }
 
   func testDownStreamProcessorWork() {

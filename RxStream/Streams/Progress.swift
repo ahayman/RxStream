@@ -55,7 +55,7 @@ public class Progress<ProgressUnit, T> : Future<T> {
         If a progress event is passed in, the stream will be updated with the current progress.  If a Result is passed in,
         the stream will complete with the Result and terminate.
   */
-  public typealias ProgressTask = (inout Bool, (Either<ProgressEvent<ProgressUnit>, Result<T>>) -> Void) -> Void
+  public typealias ProgressTask = (_ cancelled: inout Bool, _ result: @escaping (Either<ProgressEvent<ProgressUnit>, Result<T>>) -> Void) -> Void
 
   /**
     The progress mapper should map a progress event to the this streams ProgressUnit type.
