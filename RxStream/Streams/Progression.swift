@@ -8,10 +8,17 @@
 
 import Foundation
 
+/**
+  A ProgressEvent represents the current progress for a task.
+*/
 public struct ProgressEvent<T> {
+  // The title should be a user friendly, short stream describing the task.
   public let title: String
+  // The unit name should describe the progress units. Example: 'mb', '%', etc
   public let unitName: String
+  // The current progress.
   public var current: T
+  // The total expected progress.
   public let total: T
 }
 
@@ -19,9 +26,10 @@ public struct ProgressEvent<T> {
 protocol ProgressStream {
   func processProgressEvent<Unit>(_ event: ProgressEvent<Unit>)
 }
-
-extension Progression: Cancelable { }
 extension Progression: ProgressStream { }
+
+/// Progression streams are cancelable.
+extension Progression: Cancelable { }
 
 /**
   A Progression stream is a type of Future that allows the client to observe the progress of the task while waiting for the task to complete.

@@ -49,6 +49,11 @@ Future allows the task to also return an Error, at which point the Future stream
 
 Note: Where you place the `onError` in the processing chain matters.  If you place it at the beginning of the chain, it will only be called for errors returned by the network request.  If you place it at the end of the chain, it will also pick up errors that could be emitted by the processing chain itself.
 
+
+### FutureInput
+
+In some cases, it may not make sense to define a Future by a self-contained task. In that case, you can create a `FutureInput` that has additional functionality to complete the future externally by passing into it a Result (rather than returning a result from within a closure).  Unlike a normal `Future`, a `FutureInput` must be retained until it's completed or it will be deallocated.  But also unlike a `Future`, a `FutureInput` can be passed around within your code and completed by somewhere other than where it was created.  And since a `FutureInput` is a subclass of `Future`, it can be passed in where ever a `Future` is required.
+
 ### Lazy
 
 Lazy is a type of Future that _only_ runs the task given to it when it's needed... when a child stream (an operation) is attached to it.  In contrast, a normal Future will execute it's task immediately so that it's ready as soon as possible. Once the task is executed the value is kept but the task is discarded in order to free up resources.

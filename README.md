@@ -27,6 +27,7 @@ RxStream operates around the idea of a transforming stream of values.  If you’
 - **[Hot](/Docs/hot.md)**: A Hot stream is a kind of stream that produces values with no regard or input from it’s clients.  When a client registers operations on a Hot stream, it will receive values as they come.
 - **[Cold](/Docs/cold.md)**: A Cold stream only produces values when a client makes a `Request`.  Unlike all other streams, a Cold stream has two types: `Request` and `Response`.  A client makes a `Request` and receive a `Response` from the Cold stream.  
 - **[Future](/Docs/future.md)**: A future is a stream that produces _only_ one value and then closes.  
+- **[Progression](/Docs/progression.md)**: A Progression is a special type of Future that reports the progress of a task.  It allows the client to observe the progress and respond to it as well as the final result.  
 - **[Promise](/Docs/promise.md)**: A type of future that produces only one value, but it can be cancelled and retried by it’s client until it produces an error or a valid value.
 - **[Observable](/Docs/observable.md)**: An observable is a kind of Hot Stream who’s value is guaranteed and can be directly observed and accessed outside of the stream.
 - **[Timer](/Docs/timer.md)**: This is a concrete Hot Stream that emits an event repeatedly on a predefined interval.  While you can create your own timer by creating a `HotTask`, because of `Foundation.Timer`'s retaining behavior, it can be tricky to do this without creating a retain cycle.  So `Rx.Timer` has been created to provide an easier way.
