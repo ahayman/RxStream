@@ -19,3 +19,15 @@ class WeakBox<T: AnyObject> {
     self.object = object
   }
 }
+
+/**
+  A simple wrapper used to wrap values.
+  This is normally used to share a value, like a Bool, Int, String, etc between objects.
+*/
+public class Box<T> {
+  public var value: T
+
+  init(_ value: T) {
+    self.value = value
+  }
+}

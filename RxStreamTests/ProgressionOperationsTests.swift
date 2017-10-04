@@ -13,6 +13,133 @@ private class TestClass { }
 
 class ProgressionOperationsTests: XCTestCase {
 
+  func testOnProgress() {
+    var completion: ((Either<ProgressEvent<Double>, Result<Int>>) -> Void)? = nil
+    var progressEvents = [Double]()
+    let total = 100.0
+    let title = "Test Progression"
+    let unit = "%"
+
+    func validateProgress(event: ProgressEvent<Double>) -> Bool {
+      return event.total == total && event.title == title && event.unitName == unit
+    }
+
+    let progress = Progression<Double, Int> { cancelled, onCompletion in
+      completion = onCompletion
+    }
+      .onProgress {
+        progressEvents.append($0.current)
+        XCTAssertTrue(validateProgress(event: $0))
+      }
+
+    XCTAssertTrue(progress.isActive)
+    guard let completionTask = completion else { return XCTFail("Expected the Future task to be called") }
+
+    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 0.1, total: total)))
+    XCTAssertEqual(progressEvents, [0.1])
+
+    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 50.0, total: total)))
+    XCTAssertEqual(progressEvents, [0.1, 50.0])
+
+    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 75.2, total: total)))
+    XCTAssertEqual(progressEvents, [0.1, 50.0, 75.2])
+
+    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 100.0, total: total)))
+    XCTAssertEqual(progressEvents, [0.1, 50.0, 75.2, 100.0])
+  }
+
+  func testMapProgress() {
+    var completion: ((Either<ProgressEvent<Double>, Result<Int>>) -> Void)? = nil
+    var progressEvents = [String]()
+    let total = 100.0
+    let title = "Test Progression"
+    let unit = "%"
+
+    func validateProgress(event: ProgressEvent<Double>) -> Bool {
+      return event.total == total && event.title == title && event.unitName == unit
+    }
+
+    let progress = Progression<Double, Int> { cancelled, onCompletion in
+      completion = onCompletion
+    }
+      .mapProgress{ ProgressEvent(title: $0.title, unitName: $0.unitName, current: String($0.current), total: String($0.total)) }
+      .onProgress{
+        progressEvents.append($0.current)
+      }
+
+    XCTAssertTrue(progress.isActive)
+    guard let completionTask = completion else { return XCTFail("Expected the Future task to be called") }
+
+    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 0.1, total: total)))
+    XCTAssertEqual(progressEvents, ["0.1"])
+
+    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 50.0, total: total)))
+    XCTAssertEqual(progressEvents, ["0.1", "50.0"])
+
+    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 75.2, total: total)))
+    XCTAssertEqual(progressEvents, ["0.1", "50.0", "75.2"])
+
+    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 100.0, total: total)))
+    XCTAssertEqual(progressEvents, ["0.1", "50.0", "75.2", "100.0"])
+  }
+
+  func testProgressMerge() {
+    var values = [(Int, String)]()
+    var lProg = ProgressEvent(title: "Left", unitName: "int", current: 0, total: 1000)
+    var rProg = ProgressEvent(title: "Right", unitName: "double", current: 0.0, total: 100.0)
+    var leftComp: ((Either<ProgressEvent<Int>, Result<Int>>) -> Void)? = nil
+    var rightComp: ((Either<ProgressEvent<Double>, Result<String>>) -> Void)? = nil
+    var progressions = [ProgressEvent<Double>]()
+    let left = Progression<Int, Int>{ (_, c) in leftComp = c }
+    let right = Progression<Double, String>{ (_, c) in rightComp = c }
+    var term: Termination? = nil
+
+    left
+      .combineProgress(stream: right) { (events: EitherAnd<ProgressEvent<Int>, ProgressEvent<Double>>) -> ProgressEvent<Double> in
+        switch events {
+        case let .right(e): return ProgressEvent(title: e.title, unitName: e.unitName, current: e.current / e.total * 100.0, total: 100.0)
+        case let .left(e): return ProgressEvent(title: e.title, unitName: e.unitName, current: Double(e.current) / Double(e.total) * 100.0, total: 100.0)
+        case let .both(l, r):
+          return ProgressEvent(
+            title: l.title + ", " + r.title,
+            unitName: "%",
+            current: (Double(l.current) / Double(l.total)) * 50.0 + (r.current / r.total) * 50.0,
+            total: 100.0)
+        }
+      }
+      .onProgress { progressions.append($0) }
+      .on{ values.append($0) }
+      .onTerminate{ term = $0 }
+
+    lProg.current = 100
+    leftComp?(.left(lProg))
+    XCTAssertEqual(progressions.map({ $0.current }), [10.0])
+    XCTAssertEqual(progressions.map({ $0.total }), [100.0])
+    XCTAssertEqual(progressions.map({ $0.title }), ["Left"])
+    XCTAssertEqual(progressions.map({ $0.unitName }), ["int"])
+
+    lProg.current = 500
+    leftComp?(.left(lProg))
+    XCTAssertEqual(progressions.map({ $0.current }), [10.0, 50.0])
+    XCTAssertEqual(progressions.map({ $0.total }), [100.0, 100.0])
+    XCTAssertEqual(progressions.map({ $0.title }), ["Left", "Left"])
+    XCTAssertEqual(progressions.map({ $0.unitName }), ["int", "int"])
+
+    rProg.current = 30.0
+    rightComp?(.left(rProg))
+    XCTAssertEqual(progressions.map({ $0.current }), [10.0, 50.0, 40.0])
+    XCTAssertEqual(progressions.map({ $0.total }), [100.0, 100.0, 100.0])
+    XCTAssertEqual(progressions.map({ $0.title }), ["Left", "Left", "Left, Right"])
+    XCTAssertEqual(progressions.map({ $0.unitName }), ["int", "int", "%"])
+    
+    leftComp?(.right(.success(1)))
+    rightComp?(.right(.success("1.0")))
+
+    XCTAssertEqual(values.map({ $0.1 }), ["1.0"], "Both terms are emitted, but only the last term emitted is replayed.")
+    XCTAssertEqual(values.map({ $0.0 }), [1], "Both terms are emitted, but only the last term emitted is replayed.")
+    XCTAssertEqual(term, .completed)
+  }
+
   func testOn() {
     var value: Int? = nil
     var onCount = 0
