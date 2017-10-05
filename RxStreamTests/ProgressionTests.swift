@@ -80,7 +80,7 @@ class ProgressionTests : XCTestCase {
     let unit = "%"
 
     func validateProgress(event: ProgressEvent<Double>) -> Bool {
-      return event.total == total && event.title == title && event.unitName == unit
+      return event.total == total && event.title == title && event.unit == unit
     }
     var terminations = [Termination]()
     let progress = Progression<Double, Int> { cancelled, onCompletion in
@@ -96,16 +96,16 @@ class ProgressionTests : XCTestCase {
     XCTAssertTrue(progress.isActive)
     guard let completionTask = completion else { return XCTFail("Expected the Future task to be called") }
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 0.1, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 0.1, total: total)))
     XCTAssertEqual(progressEvents, [0.1])
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 50.0, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 50.0, total: total)))
     XCTAssertEqual(progressEvents, [0.1, 50.0])
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 75.2, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 75.2, total: total)))
     XCTAssertEqual(progressEvents, [0.1, 50.0, 75.2])
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 100.0, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 100.0, total: total)))
     XCTAssertEqual(progressEvents, [0.1, 50.0, 75.2, 100.0])
 
     completionTask(.right(.success(0)))
@@ -119,7 +119,7 @@ class ProgressionTests : XCTestCase {
     XCTAssertEqual(terminations, [.completed])
     XCTAssertEqual(progress.state, .terminated(reason: .completed))
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 100.0, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 100.0, total: total)))
     XCTAssertEqual(progressEvents, [0.1, 50.0, 75.2, 100.0])
   }
 
@@ -132,7 +132,7 @@ class ProgressionTests : XCTestCase {
     let unit = "%"
 
     func validateProgress(event: ProgressEvent<Double>) -> Bool {
-      return event.total == total && event.title == title && event.unitName == unit
+      return event.total == total && event.title == title && event.unit == unit
     }
     var terminations = [Termination]()
     let progress = Progression<Double, Int> { cancelled, onCompletion in
@@ -149,16 +149,16 @@ class ProgressionTests : XCTestCase {
     XCTAssertTrue(progress.isActive)
     guard let completionTask = completion else { return XCTFail("Expected the Future task to be called") }
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 10.0, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 10.0, total: total)))
     XCTAssertEqual(progressEvents, [10.0])
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 50.0, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 50.0, total: total)))
     XCTAssertEqual(progressEvents, [10.0])
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 75.2, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 75.2, total: total)))
     XCTAssertEqual(progressEvents, [10.0])
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 100.0, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 100.0, total: total)))
     XCTAssertEqual(progressEvents, [10.0])
 
     completionTask(.right(.success(0)))
@@ -172,7 +172,7 @@ class ProgressionTests : XCTestCase {
     XCTAssertEqual(terminations, [.completed])
     XCTAssertEqual(progress.state, .terminated(reason: .completed))
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 100.0, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 100.0, total: total)))
     XCTAssertEqual(progressEvents, [10.0])
   }
 
@@ -185,7 +185,7 @@ class ProgressionTests : XCTestCase {
     let unit = "%"
 
     func validateProgress(event: ProgressEvent<Double>) -> Bool {
-      return event.total == total && event.title == title && event.unitName == unit
+      return event.total == total && event.title == title && event.unit == unit
     }
     var terminations = [Termination]()
     let expectProgress = expectation(description: "Progression Event Received")
@@ -205,7 +205,7 @@ class ProgressionTests : XCTestCase {
     XCTAssertTrue(progress.isActive)
     guard let completionTask = completion else { return XCTFail("Expected the Future task to be called") }
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 10.0, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 10.0, total: total)))
     wait(for: [expectProgress], timeout: 5.0)
     XCTAssertEqual(progressEvents, [10.0])
   }
@@ -220,7 +220,7 @@ class ProgressionTests : XCTestCase {
     let unit = "%"
 
     func validateProgress(event: ProgressEvent<Double>) -> Bool {
-      return event.total == total && event.title == title && event.unitName == unit
+      return event.total == total && event.title == title && event.unit == unit
     }
     var terminations = [Termination]()
     let progress = Progression<Double, Int> { isCancelled, onCompletion in
@@ -237,21 +237,21 @@ class ProgressionTests : XCTestCase {
     XCTAssertTrue(progress.isActive)
     guard let completionTask = completion else { return XCTFail("Expected the Future task to be called") }
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 0.1, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 0.1, total: total)))
     XCTAssertEqual(progressEvents, [0.1])
     XCTAssertFalse(cancelled.value)
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 50.0, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 50.0, total: total)))
     XCTAssertEqual(progressEvents, [0.1, 50.0])
     XCTAssertFalse(cancelled.value)
 
     progress.cancel()
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 75.2, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 75.2, total: total)))
     XCTAssertEqual(progressEvents, [0.1, 50.0])
     XCTAssertTrue(cancelled.value)
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 100.0, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 100.0, total: total)))
     XCTAssertEqual(progressEvents, [0.1, 50.0])
 
     completionTask(.right(.success(0)))
@@ -260,7 +260,7 @@ class ProgressionTests : XCTestCase {
     XCTAssertEqual(terminations, [.cancelled])
     XCTAssertEqual(progress.state, .terminated(reason: .cancelled))
 
-    completionTask(.left(ProgressEvent(title: title, unitName: unit, current: 100.0, total: total)))
+    completionTask(.left(ProgressEvent(title: title, unit: unit, current: 100.0, total: total)))
     XCTAssertEqual(progressEvents, [0.1, 50.0])
   }
 

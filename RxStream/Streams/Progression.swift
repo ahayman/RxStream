@@ -14,8 +14,8 @@ import Foundation
 public struct ProgressEvent<T> {
   // The title should be a user friendly, short stream describing the task.
   public let title: String
-  // The unit name should describe the progress units. Example: 'mb', '%', etc
-  public let unitName: String
+  // The unit should describe the progress units. Example: 'mb', '%', etc
+  public let unit: String
   // The current progress.
   public var current: T
   // The total expected progress.
@@ -32,7 +32,7 @@ public struct ProgressEvent<T> {
   */
   public init(title: String, unit: String, current: T, total: T) {
     self.title = title
-    self.unitName = unit
+    self.unit = unit
     self.current = current
     self.total = total
   }

@@ -34,7 +34,7 @@ Note that it requires an `Either`.  This mean you can pass in _either_ a Progres
 When the progress of a task is updated, it's done so through a `ProgressEvent<T>`.  The type of the event will match the first type of the Progression.  So, if you have a `Progression<Double, URL>` stream, it will emit `ProgressEvent<Double>` events.  A progress event includes the basic information needed to display the progress of the task:
 
  - `title`: This should normally not change much (or at all), but should be a user-friendly string that defines what the progression represents.
- - `unitName`: Represents the progression unit.  Example: `mb`, `%`, etc.  Should be a short string that is easily appended and displayed as part of the progress.
+ - `unit`: Represents the progression unit.  Example: `mb`, `%`, etc.  Should be a short string that is easily appended and displayed as part of the progress.
  - `current`: The current progression, normally should be less than the `total`.
  - `total`: The total of the progression when complete.  When `current` == `total`, it's expected that the progression is done.
  
