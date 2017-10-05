@@ -1,5 +1,5 @@
 language: swift
-osx_image: xcode8.3
+osx_image: xcode9.0
 xcode_project: RxStream.xcodeproj
 script:
       - xcodebuild -scheme 'RxStream iOS' -project RxStream.xcodeproj -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 6S' -enableCodeCoverage YES build test
