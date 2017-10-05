@@ -20,6 +20,22 @@ public struct ProgressEvent<T> {
   public var current: T
   // The total expected progress.
   public let total: T
+
+  /**
+    A Progress Event should be initialized with:
+
+    - parameters:
+      - title: A short description of the progress
+      - unit: The name of the unit describing the progress
+      - current: The current progress
+      - total: The total expected units
+  */
+  public init(title: String, unit: String, current: T, total: T) {
+    self.title = title
+    self.unitName = unit
+    self.current = current
+    self.total = total
+  }
 }
 
 /// Use to detect the presence of a Progression stream down stream and pass it a progress event.
