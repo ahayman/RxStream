@@ -70,7 +70,137 @@ class ProgressionTests : XCTestCase {
     XCTAssertEqual(terminations, [.error(TestError())])
     XCTAssertEqual(progress.state, .terminated(reason: .error(TestError())))
   }
+  
+  func testInputValue() {
+    var result = [String]()
+    var terminations = [Termination]()
+    var progressEvents = [Int]()
+    let progress = ProgressionInput<Int, String>()
+    
+    progress
+      .on{ result.append($0) }
+      .onTerminate{ terminations.append($0) }
+      .onProgress{ progressEvents.append($0.current) }
+    
+    XCTAssertEqual(result, [])
+    XCTAssertEqual(terminations, [])
+    XCTAssertEqual(progressEvents, [])
+    
+    progress.complete("Hello")
+    XCTAssertEqual(result, ["Hello"])
+    XCTAssertEqual(terminations, [.completed])
+    XCTAssertEqual(progressEvents, [])
+    
+    progress.complete("World")
+    XCTAssertEqual(result, ["Hello"])
+    XCTAssertEqual(terminations, [.completed])
+    XCTAssertEqual(progressEvents, [])
+  }
+  
+  func testInputError() {
+    var result = [String]()
+    var terminations = [Termination]()
+    var progressEvents = [Int]()
+    let progress = ProgressionInput<Int, String>()
+    
+    progress
+      .on{ result.append($0) }
+      .onTerminate{ terminations.append($0) }
+      .onProgress{ progressEvents.append($0.current) }
+    
+    XCTAssertEqual(result, [])
+    XCTAssertEqual(terminations, [])
+    XCTAssertEqual(progressEvents, [])
+    
+    progress.complete(TestError())
+    XCTAssertEqual(result, [])
+    XCTAssertEqual(terminations, [.error(TestError())])
+    XCTAssertEqual(progressEvents, [])
+    
+    progress.complete("World")
+    XCTAssertEqual(result, [])
+    XCTAssertEqual(terminations, [.error(TestError())])
+    XCTAssertEqual(progressEvents, [])
+  }
+  
+  func testInputProgress() {
+    var result = [String]()
+    var terminations = [Termination]()
+    var progressEvents = [Int]()
+    let progress = ProgressionInput<Int, String>()
+    
+    progress
+      .on{ result.append($0) }
+      .onTerminate{ terminations.append($0) }
+      .onProgress{ progressEvents.append($0.current) }
+    
+    XCTAssertEqual(result, [])
+    XCTAssertEqual(terminations, [])
+    XCTAssertEqual(progressEvents, [])
+    
+    var currentProgress = ProgressEvent(title: "Progress", unit: "int", current: 0, total: 100)
+    progress.updateProgress(to: currentProgress)
+    XCTAssertEqual(result, [])
+    XCTAssertEqual(terminations, [])
+    XCTAssertEqual(progressEvents, [0])
+    
+    currentProgress.current = 50
+    progress.updateProgress(to: currentProgress)
+    XCTAssertEqual(result, [])
+    XCTAssertEqual(terminations, [])
+    XCTAssertEqual(progressEvents, [0, 50])
+    
+    currentProgress.current = 100
+    progress.updateProgress(to: currentProgress)
+    XCTAssertEqual(result, [])
+    XCTAssertEqual(terminations, [])
+    XCTAssertEqual(progressEvents, [0, 50, 100])
 
+    progress.complete("Hello")
+    XCTAssertEqual(result, ["Hello"])
+    XCTAssertEqual(terminations, [.completed])
+    XCTAssertEqual(progressEvents, [0, 50, 100])
+
+    progress.complete("World")
+    XCTAssertEqual(result, ["Hello"])
+    XCTAssertEqual(terminations, [.completed])
+    XCTAssertEqual(progressEvents, [0, 50, 100])
+  }
+  
+  func testCompletedValue() {
+    var result = [String]()
+    var terminations = [Termination]()
+    var progressEvents = [Int]()
+    let progress: Progression<Int, String> = Progression<Int, String>.completed("Hello")
+    
+    progress
+      .on{ result.append($0) }
+      .onTerminate{ terminations.append($0) }
+      .onProgress{ progressEvents.append($0.current) }
+      .replay()
+    
+    XCTAssertEqual(result, ["Hello"])
+    XCTAssertEqual(terminations, [.completed])
+    XCTAssertEqual(progressEvents, [])
+  }
+  
+  func testCompletedError() {
+    var result = [String]()
+    var terminations = [Termination]()
+    var progressEvents = [Int]()
+    let progress: Progression<Int, String> = Progression<Int, String>.completed(TestError())
+    
+    progress
+      .on{ result.append($0) }
+      .onTerminate{ terminations.append($0) }
+      .onProgress{ progressEvents.append($0.current) }
+      .replay()
+    
+    XCTAssertEqual(result, [])
+    XCTAssertEqual(terminations, [.error(TestError())])
+    XCTAssertEqual(progressEvents, [])
+  }
+  
   func testProgress() {
     var completion: ((Either<ProgressEvent<Double>, Result<Int>>) -> Void)? = nil
     var results = [Int]()

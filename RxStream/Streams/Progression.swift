@@ -105,6 +105,26 @@ public class Progression<ProgressUnit, T> : Future<T> {
   private var cancelled = Box(false)
 
   // MARK: Initializers
+  
+  /**
+   Allows for the creation of a `Progression` that already has a value filled.
+   - note: Since the Progression is completed before being returned, there will be no chance for progress updates.
+   */
+  public class func completed<U, T>(_ value: T) -> Progression<U, T> {
+    let progression = Progression<U, T>(op: "CompletedValue")
+    progression.process(event: .next(value))
+    return progression
+  }
+  
+  /**
+   Allows for the creation of a `Progression` that already has a error filled.
+   - note: Since the Progression is completed before being returned, there will be no chance for progress updates.
+   */
+  public class func completed<U, T>(_ error: Error) -> Progression<U, T> {
+    let progression = Progression<U, T>(op: "CompletedError")
+    progression.process(event: .error(error))
+    return progression
+  }
 
   /**
   Initialize a Progression with a Task.  The task should be use to:
@@ -699,4 +719,60 @@ public class Progression<ProgressUnit, T> : Future<T> {
   }
 
 
+}
+
+/**
+ A ProgressionInput is a subclass of Progression that allows you to update and complete the progression outside the class with standard functions.
+ Normally, a Progression is created by passing in a Task that provides the progression with all the updates and data needed to complete the stream and
+ update the progress.  This works well when the task the Progression represents is easily contained.  However, in many cases, the task isn't easily contained,
+ especially when using a delegate pattern, and updates need to be passed in from outside the class.  In those cases, use a Progression Input, pass in
+ progress updates using `updateProgress(to:_)`, and complete the progression by using the `complete(_:_)` function.
+ 
+ - warning: A standard Progression will lock itself in memory until the task is completed.  However, a ProgressionInput has no such lock, so it's
+ important to keep a reference to the stream until the progression is completed or else it will be dropped from memory.
+ */
+public class ProgressionInput<ProgressUnit, T> : Progression<ProgressUnit, T> {
+  
+  /**
+   Initialization of a Progression Input requires no parameters, but may require type information.
+   After initializing, the Progression should be completed by calling  the `complete` func with a value or an error.
+   The Progression's progress can be updated by using the `updateProgress(to: _)` function.
+   */
+  public init() {
+    super.init(op: "Input")
+  }
+  
+  /**
+   This will complete the Progression with the provided value.
+   After passing this value, no other values, errors or progression updates can be passed in.
+   
+   - parameter value: The value to complete the progression with.
+   */
+  public func complete(_ value: T) {
+    self.process(event: .next(value))
+  }
+  
+  /**
+   Update the progress of the progression stream.
+
+   - parameter progress: A Progress Event that represents the current progress of the progression stream.
+   */
+  public func updateProgress(to progress: ProgressEvent<ProgressUnit>) {
+    self.processProgressEvent(progress)
+  }
+  
+  /**
+   This will complete the future with the provided error.
+   After passing this error, no other values or errors can be passed in.
+   
+   - parameter error: The error to complete the future with.
+   */
+  public func complete(_ error: Error) {
+    self.process(event: .terminate(reason: .error(error)))
+  }
+  
+  deinit {
+    self.process(event: .terminate(reason: .cancelled))
+  }
+  
 }
