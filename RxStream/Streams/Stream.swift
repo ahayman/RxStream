@@ -610,7 +610,7 @@ extension Stream {
    
    - returns: self
    */
-  @discardableResult func dispatched(_ dispatch: Dispatch) -> Self {
+  @discardableResult public func dispatched(_ dispatch: Dispatch) -> Self {
     self.dispatch = dispatch
     return self
   }
