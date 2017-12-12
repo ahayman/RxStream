@@ -50,25 +50,27 @@ public class Future<T> : Stream<T> {
   /**
    A Future is initialized with the task.  The task should call the completions handler with the result when it's done.
    
+   - parameter dispatch: How the task should be dispatched.  Default: `.inline`
    - parameter task: The task that should complete the future
    
    - returns: A new Future
    */
-  public init(task: @escaping Task<T>) {
+  public init(dispatch: Dispatch = .inline, task: @escaping Task<T>) {
     super.init(op: "Task")
     persist()
     self.lock = self
     var complete = false
-    task { [weak self] completion in
-      guard let me = self, !complete else { return }
-      complete = true
-      completion
-        .onFailure{ me.process(event: .error($0)) }
-        .onSuccess{ me.process(event: .next($0)) }
-      me.lock = nil
+    dispatch.execute {
+      task { [weak self] completion in
+        guard let me = self, !complete else { return }
+        complete = true
+        completion
+          .onFailure{ me.process(event: .error($0)) }
+          .onSuccess{ me.process(event: .next($0)) }
+        me.lock = nil
+      }
     }
   }
-  
   override init(op: String) {
     super.init(op: op)
   }
@@ -91,11 +93,11 @@ public class Future<T> : Stream<T> {
     switch signal {
     case .push, .error:
       if self.isActive && pendingTermination == nil {
-        self.terminate(reason: .completed, andPrune: .none, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
+        self.terminate(reason: .completed, andPrune: .upStream, pushDownstreamTo: StreamType.all().removing([.promise, .future]))
       }
     case .cancel:
       if self.isActive && pendingTermination == nil {
-        self.terminate(reason: .completed, andPrune: .none, pushDownstreamTo: StreamType.all())
+        self.terminate(reason: .completed, andPrune: .upStream, pushDownstreamTo: StreamType.all())
       }
     case .merging:
       complete = false
@@ -551,26 +553,29 @@ public class Lazy<T> : Future<T> {
   private var task: Task<T>?
 
   /**
-    Initialize a Lazy with a Task that generates the expected value.
-    The task will not be run until the value is needed, after which the task
-    will be discarded.
-  */
-  public override init(task: @escaping Task<T>) {
+   Initialize a Lazy with a Task that generates the expected value.
+   The task will not be run until the value is needed, after which the task
+   will be discarded.
+   */
+  public override init(dispatch: Dispatch? = nil, task: @escaping Task<T>) {
     super.init(op: "Task")
     persist()
+    self.dispatch = dispatch
     self.task = task
   }
-
+  
   override func didAttachStream<U>(stream: Stream<U>) {
     if let task = self.task {
       self.task = nil
       var complete = false
-      task { [weak self] completion in
-        guard let me = self, !complete else { return }
-        complete = true
-        completion
-          .onFailure{ me.process(event: .error($0)) }
-          .onSuccess{ me.process(event: .next($0)) }
+      (self.dispatch ?? .inline).execute {
+        task { [weak self] completion in
+          guard let me = self, !complete else { return }
+          complete = true
+          completion
+            .onFailure{ me.process(event: .error($0)) }
+            .onSuccess{ me.process(event: .next($0)) }
+        }
       }
     } else {
       super.didAttachStream(stream: stream)

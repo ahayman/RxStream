@@ -7,7 +7,7 @@
 //
 
 import XCTest
-import Rx
+@testable import Rx
 
 class FutureTests: XCTestCase {
   
@@ -177,6 +177,32 @@ class FutureTests: XCTestCase {
 
     XCTAssertEqual(generated, [1], "Adding an op should trigger the value to be generated.")
     XCTAssertEqual(observed, ["1"], "Generated value should be observed.")
+  }
+  
+  func testFutureCleanup() {
+    let future: Future<Int> = Future.completed(1)
+    var values = [Int]()
+    
+    let done = expectation(description: "Complete")
+    
+    future.on{ values.append($0)}
+    future.on{ values.append($0)}
+    future.on{ values.append($0)}
+    future.on{ values.append($0)}
+    future.on{ values.append($0)}
+    future.on{ values.append($0)}
+    future.on{ values.append($0)}
+    future
+      .on{ values.append($0)}
+      .onTerminate { _ in done.fulfill() }
+    
+    XCTAssertEqual(future.downStreams.count, 8)
+    XCTAssertEqual(values.count, 0)
+    
+    waitForExpectations(timeout: 10.0)
+    
+    XCTAssertEqual(values.count, 8)
+    XCTAssertEqual(future.downStreams.count, 0)
   }
 
 }

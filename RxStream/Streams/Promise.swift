@@ -73,17 +73,19 @@ public class Promise<T> : Stream<T> {
   /**
    A Promise is initialized with the task.
    The task should call the completions handler with the result when it's done.
-   The task will also be passed an observable that indicates the current stream state.  
-   If the stream is terminated, the task should cancel whatever it's doing (if possible).  
+   The task will also be passed an observable that indicates the current stream state.
+   If the stream is terminated, the task should cancel whatever it's doing (if possible).
    After a stream has been terminated, calling the completion handler will do nothing.
    
    - parameter task: The task that should complete the Promise
+   - parameter dispatch: (Optional) set the dispatch the task is to run on.
    
    - returns: A new Promise
    */
-  public init(task: @escaping PromiseTask<T>) {
+  public init(dispatch: Dispatch? = nil, task: @escaping PromiseTask<T>) {
     self.task = task
     super.init(op: "Task")
+    self.dispatch = dispatch
     persist()
     run(task: task)
   }

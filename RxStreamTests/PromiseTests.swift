@@ -546,5 +546,31 @@ class PromiseTests: XCTestCase {
     XCTAssertEqual(bTerminations, [.completed])
     XCTAssertEqual(promise.state, .terminated(reason: .completed))
   }
+  
+  func testPromiseCleanup() {
+    let future: Promise<Int> = Promise { (_, result) in result(.success(1)) }
+    var values = [Int]()
+    
+    let done = expectation(description: "Complete")
+    
+    future.on{ values.append($0)}
+    future.on{ values.append($0)}
+    future.on{ values.append($0)}
+    future.on{ values.append($0)}
+    future.on{ values.append($0)}
+    future.on{ values.append($0)}
+    future.on{ values.append($0)}
+    future
+      .on{ values.append($0)}
+      .onTerminate { _ in done.fulfill() }
+    
+    XCTAssertEqual(future.downStreams.count, 8)
+    XCTAssertEqual(values.count, 0)
+    
+    waitForExpectations(timeout: 10.0)
+    
+    XCTAssertEqual(values.count, 8)
+    XCTAssertEqual(future.downStreams.count, 0)
+  }
 
 }
