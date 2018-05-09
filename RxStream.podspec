@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
 
   s.name = "RxStream"
-  s.version = "2.1.3"
+  s.version = "2.1.4"
   s.summary = "Simple React in Swift"
   s.description  = <<-DESC
     RxStream is a simple React framework for Swift that seeks to integrate well into existing language paradigms instead of replacing them.
