@@ -120,6 +120,20 @@ public class Future<T> : Stream<T> {
   @discardableResult public func on(_ handler: @escaping (_ value: T) -> Void) -> Future<T> {
     return appendOn(stream: Future<T>(op: "on"), handler: handler)
   }
+  
+  /**
+   ## Branching
+   
+   Attach a simple observation handler to the stream to observe the promised values.
+   
+   - parameter handler: The handler used to observe new values.
+   - parameter value: The next value in the stream
+   
+   - returns: A new Future stream
+   */
+  @discardableResult public func then(_ handler: @escaping (_ value: T) -> Void) -> Future<T> {
+    return appendOn(stream: Future<T>(op: "on"), handler: handler)
+  }
 
   /**
    ## Branching

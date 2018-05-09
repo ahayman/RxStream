@@ -19,7 +19,7 @@ to the parent.  If there is no parent, then the stream should be cancelled.
 streams are both Cancelable
 */
 protocol Cancelable : class {
-  weak var cancelParent: Cancelable? { get set }
+  var cancelParent: Cancelable? { get set }
   func cancelTask()
 }
 
@@ -32,7 +32,7 @@ and if there is, cancel the task and the stream. If not, then the cancellation s
 streams are both Retriable
 */
 protocol Retriable : class {
-  weak var retryParent: Retriable? { get set }
+  var retryParent: Retriable? { get set }
   func retry()
 }
 

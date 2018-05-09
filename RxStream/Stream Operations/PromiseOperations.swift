@@ -118,6 +118,20 @@ extension Promise {
   @discardableResult public func on(_ handler: @escaping (_ value: T) -> Void) -> Promise<T> {
     return appendOn(stream: Promise<T>(op: "on"), handler: handler)
   }
+  
+  /**
+   ## Branching
+   
+   Attach a simple observation handler to the stream to observe the promised value.
+   
+   - parameter handler: The handler used to observe new values.
+   - parameter value: The next value in the stream
+   
+   - returns: A new Promise stream
+   */
+  @discardableResult public func then(_ handler: @escaping (_ value: T) -> Void) -> Promise<T> {
+    return appendOn(stream: Promise<T>(op: "on"), handler: handler)
+  }
 
   /**
    ## Branching
