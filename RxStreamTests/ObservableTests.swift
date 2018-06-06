@@ -72,5 +72,26 @@ class ObservableTests: XCTestCase {
     XCTAssertEqual(observed, ["0", "1", "2"])
   }
   
+  func testAccessWithinFlow() {
+    let observable = ObservableInput(0)
+    
+    func getValue() -> Int {
+      return observable.value
+    }
+    
+    var observed = 0
+    observable.on { _ in
+      observed = getValue()
+    }
+    
+    XCTAssertEqual(observed, 0)
+    
+    observable.set(1)
+    XCTAssertEqual(observed, 1)
+    
+    observable.set(2)
+    XCTAssertEqual(observed, 2)
+  }
+  
   
 }

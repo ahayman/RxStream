@@ -480,12 +480,14 @@ public class Stream<T> {
             }
             self.currentWork -= 1
 
+            self.prePushProcessing(event: event, pushingSignal: opSignal)
             self.postProcess(event: event, producedSignal: opSignal)
             self.printDebug(info: "throttle cancelled \(event)")
             return
           }
 
           op(event) { opSignal in
+            self.prePushProcessing(event: event, pushingSignal: opSignal)
             let signalWork = {
               switch opSignal {
               case .push(let value): self.push(events: value.events, withKey: nextKey)
@@ -543,14 +545,24 @@ public class Stream<T> {
   }
   
   /**
+   Pre-pushing override function for subclassing.
+   This function is called after an event value has been transformed, but _before_ is has been pushed downstream.
+   It's a notification only function, to allow a subclass stream access to the value before it's pushed.
+   This is most likely to be used to update a streams internal state before the signal moves downstream.
+   
+   - parameter event: The initial event that was processed.
+   - parameter signal: The signal (or transformed event) that will be pushed
+  */
+  func prePushProcessing<U>(event: Event<U>, pushingSignal signal: OpSignal<T>) { }
+  
+  /**
    Post-processing override function for subclassing.
    Many subclasses need access to the post-processed values that are returned from the stream's processor work.
    This function is called _after_ all values have been processed, pushed downstream and termination (if any) are processed.
    Override this class to gain access to these values.
    
    - parameter event: The initial event that was processed.
-   - parameter events: All events returned from the stream processor.
-   - parameter termination: _Optional_,  if a termination was processed, it will be returned here.  Note: If this is non-nil, then the stream has been terminated.
+   - parameter signal: The signal (or transformed event) that was produced
    */
   func postProcess<U>(event: Event<U>, producedSignal signal: OpSignal<T>) { }
 
