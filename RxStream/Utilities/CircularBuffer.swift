@@ -14,7 +14,7 @@ import Foundation
  Data can be iterated, accessed and appended. The size of the buffer can't change and data cannot be deleted from the buffer.
  */
 struct CircularBuffer<Element> : RandomAccessCollection {
-  typealias Indices = DefaultRandomAccessIndices<CircularBuffer<Element>>
+  typealias Indices = DefaultIndices<CircularBuffer<Element>>
 
   /// Privately, we use a simple fixed array to store the collection and replace elements as needed, keeping track of the head index.
   private var buffer: [Element] = []

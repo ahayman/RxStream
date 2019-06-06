@@ -129,7 +129,7 @@ final public class DispatchThread: Thread {
    */
   final public override func main() {
     let runLoop = RunLoop.current
-    runLoop.add(self.loopPort, forMode: .commonModes)
+    runLoop.add(self.loopPort, forMode: RunLoop.Mode.common)
     self.runLoop = runLoop
 
     /**
@@ -143,7 +143,7 @@ final public class DispatchThread: Thread {
      The RunLoop will wake up to process the event (which involves exactly nothing), unblock our loop so that we can process our queue,
      and then our `while` loop will re-schedule the runloop to to check for the next "event" it receives.
     */
-    while !isCancelled && (lock.get{ queue.count } > 0 || runLoop.run(mode: .defaultRunLoopMode, before: Date.distantFuture)) {
+    while !isCancelled && (lock.get{ queue.count } > 0 || runLoop.run(mode: RunLoop.Mode.default, before: Date.distantFuture)) {
       lock.lock()
       guard queue.count > 0 && !paused else {
         lock.signal()
@@ -210,7 +210,7 @@ final public class DispatchThread: Thread {
       guard !self.isCancelled else { return }
       super.cancel()
       //Removing the loop port should cause the run loop to terminate since it's the only source
-      runLoop?.remove(self.loopPort, forMode: .defaultRunLoopMode)
+      runLoop?.remove(self.loopPort, forMode: RunLoop.Mode.default)
       // The run loop is set to nil as a signal that we're done with it.
       runLoop = nil
     }
@@ -255,7 +255,7 @@ final public class DispatchThread: Thread {
       we're keeping a reference to it anyway.
   */
   deinit {
-    runLoop?.remove(self.loopPort, forMode: .defaultRunLoopMode)
+    runLoop?.remove(self.loopPort, forMode: RunLoop.Mode.default)
   }
 
 }
