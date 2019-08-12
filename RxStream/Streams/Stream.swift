@@ -320,8 +320,10 @@ public class Stream<T> {
     let work = {
       guard prune != .none else { return }
       self.downStreams = self.downStreams.filter{ !$0.stream.shouldPrune }
-      if case .upStream = prune {
+      if (self.downStreams.count == 0) {
         self.terminate(reason: reason, andPrune: .none, pushDownstreamTo: [])
+      }
+      if case .upStream = prune {
         self.parent?.prune(prune, withReason: reason)
       }
     }
