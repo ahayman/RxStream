@@ -320,6 +320,7 @@ public class Stream<T> {
     let work = {
       guard prune != .none else { return }
       self.downStreams = self.downStreams.filter{ !$0.stream.shouldPrune }
+      if self.persist { return }
       if (self.downStreams.count == 0) {
         self.terminate(reason: reason, andPrune: .none, pushDownstreamTo: [])
       }
