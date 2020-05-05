@@ -163,6 +163,14 @@
 		658C5E281EA91BB900F2018C /* ColdOperationsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658C5E271EA91BB900F2018C /* ColdOperationsTests.swift */; };
 		659432E11E83187800B71335 /* FutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659432E01E83187800B71335 /* FutureTests.swift */; };
 		659432E31E831B3100B71335 /* ColdTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659432E21E831B3100B71335 /* ColdTests.swift */; };
+		659CCC2B24619AD40086CE65 /* Operators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659CCC2A24619AD40086CE65 /* Operators.swift */; };
+		659CCC2C24619AE00086CE65 /* Operators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659CCC2A24619AD40086CE65 /* Operators.swift */; };
+		659CCC2D24619AE20086CE65 /* Operators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659CCC2A24619AD40086CE65 /* Operators.swift */; };
+		659CCC2E24619AE30086CE65 /* Operators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659CCC2A24619AD40086CE65 /* Operators.swift */; };
+		659CCC3024619B250086CE65 /* PropertyWrappers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659CCC2F24619B250086CE65 /* PropertyWrappers.swift */; };
+		659CCC3124619B250086CE65 /* PropertyWrappers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659CCC2F24619B250086CE65 /* PropertyWrappers.swift */; };
+		659CCC3224619B250086CE65 /* PropertyWrappers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659CCC2F24619B250086CE65 /* PropertyWrappers.swift */; };
+		659CCC3324619B250086CE65 /* PropertyWrappers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659CCC2F24619B250086CE65 /* PropertyWrappers.swift */; };
 		65ACFD301E82BB1C00641BB2 /* Cold.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ACFD291E82BB1C00641BB2 /* Cold.swift */; };
 		65ACFD311E82BB1C00641BB2 /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ACFD2A1E82BB1C00641BB2 /* Future.swift */; };
 		65ACFD321E82BB1C00641BB2 /* Hot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ACFD2B1E82BB1C00641BB2 /* Hot.swift */; };
@@ -267,6 +275,8 @@
 		658C5E271EA91BB900F2018C /* ColdOperationsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ColdOperationsTests.swift; sourceTree = "<group>"; };
 		659432E01E83187800B71335 /* FutureTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FutureTests.swift; sourceTree = "<group>"; };
 		659432E21E831B3100B71335 /* ColdTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ColdTests.swift; sourceTree = "<group>"; };
+		659CCC2A24619AD40086CE65 /* Operators.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Operators.swift; sourceTree = "<group>"; };
+		659CCC2F24619B250086CE65 /* PropertyWrappers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PropertyWrappers.swift; sourceTree = "<group>"; };
 		65ACFD291E82BB1C00641BB2 /* Cold.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Cold.swift; path = Streams/Cold.swift; sourceTree = "<group>"; };
 		65ACFD2A1E82BB1C00641BB2 /* Future.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Future.swift; path = Streams/Future.swift; sourceTree = "<group>"; };
 		65ACFD2B1E82BB1C00641BB2 /* Hot.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Hot.swift; path = Streams/Hot.swift; sourceTree = "<group>"; };
@@ -495,6 +505,8 @@
 				65ACFD491E82BB3300641BB2 /* WeakBox.swift */,
 				65C9781B1EA912880059D3D1 /* ConditionalTimer.swift */,
 				65E807221F154E0500AFF837 /* DispatchThread.swift */,
+				659CCC2A24619AD40086CE65 /* Operators.swift */,
+				659CCC2F24619B250086CE65 /* PropertyWrappers.swift */,
 			);
 			name = Utilities;
 			sourceTree = "<group>";
@@ -858,9 +870,11 @@
 				65ACFD331E82BB1C00641BB2 /* Observable.swift in Sources */,
 				65ACFD4A1E82BB3300641BB2 /* Arithmetic.swift in Sources */,
 				65ACFD511E82BB3300641BB2 /* Throttle.swift in Sources */,
+				659CCC2B24619AD40086CE65 /* Operators.swift in Sources */,
 				65C978161EA911550059D3D1 /* Event.swift in Sources */,
 				65CDD9621E8461D200FF5C06 /* ArrayExtensions.swift in Sources */,
 				65ACFD3E1E82BB2700641BB2 /* HotOperations.swift in Sources */,
+				659CCC3024619B250086CE65 /* PropertyWrappers.swift in Sources */,
 				65ACFD351E82BB1C00641BB2 /* Stream.swift in Sources */,
 				65ACFD311E82BB1C00641BB2 /* Future.swift in Sources */,
 				65ACFD341E82BB1C00641BB2 /* Promise.swift in Sources */,
@@ -928,9 +942,11 @@
 				6585B0DA1EBCB8230034F1E4 /* ArrayExtensions.swift in Sources */,
 				6585B0D11EBCB8140034F1E4 /* HotOperations.swift in Sources */,
 				6585B0CC1EBCB80D0034F1E4 /* Observable.swift in Sources */,
+				659CCC2C24619AE00086CE65 /* Operators.swift in Sources */,
 				6585B0DB1EBCB8230034F1E4 /* Arithmetic.swift in Sources */,
 				6585B0E01EBCB8230034F1E4 /* Result.swift in Sources */,
 				6585B0DF1EBCB8230034F1E4 /* Functional.swift in Sources */,
+				659CCC3124619B250086CE65 /* PropertyWrappers.swift in Sources */,
 				6585B0D41EBCB8140034F1E4 /* ObservableOperations.swift in Sources */,
 				6585B0DD1EBCB8230034F1E4 /* Dispatch.swift in Sources */,
 				6585B0E21EBCB8230034F1E4 /* Throttle.swift in Sources */,
@@ -997,9 +1013,11 @@
 				6585B1821EBCBF750034F1E4 /* ArrayExtensions.swift in Sources */,
 				6585B1791EBCBF690034F1E4 /* HotOperations.swift in Sources */,
 				6585B1741EBCBF640034F1E4 /* Observable.swift in Sources */,
+				659CCC2E24619AE30086CE65 /* Operators.swift in Sources */,
 				6585B1831EBCBF750034F1E4 /* Arithmetic.swift in Sources */,
 				6585B1881EBCBF750034F1E4 /* Result.swift in Sources */,
 				6585B1871EBCBF750034F1E4 /* Functional.swift in Sources */,
+				659CCC3324619B250086CE65 /* PropertyWrappers.swift in Sources */,
 				6585B17C1EBCBF690034F1E4 /* ObservableOperations.swift in Sources */,
 				6585B1851EBCBF750034F1E4 /* Dispatch.swift in Sources */,
 				6585B18A1EBCBF750034F1E4 /* Throttle.swift in Sources */,
@@ -1034,9 +1052,11 @@
 				6585B1BF1EBCC5C20034F1E4 /* ArrayExtensions.swift in Sources */,
 				6585B1B61EBCC5B40034F1E4 /* HotOperations.swift in Sources */,
 				6585B1B11EBCC5AD0034F1E4 /* Observable.swift in Sources */,
+				659CCC2D24619AE20086CE65 /* Operators.swift in Sources */,
 				6585B1C01EBCC5C20034F1E4 /* Arithmetic.swift in Sources */,
 				6585B1C51EBCC5C20034F1E4 /* Result.swift in Sources */,
 				6585B1C41EBCC5C20034F1E4 /* Functional.swift in Sources */,
+				659CCC3224619B250086CE65 /* PropertyWrappers.swift in Sources */,
 				6585B1B91EBCC5B40034F1E4 /* ObservableOperations.swift in Sources */,
 				6585B1C21EBCC5C20034F1E4 /* Dispatch.swift in Sources */,
 				6585B1C71EBCC5C20034F1E4 /* Throttle.swift in Sources */,
